@@ -3,6 +3,7 @@ from flask import Flask
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
 from flask.ext.mail import Mail
+from flask import render_template
 import uuid
 from rq import Queue
 import redis
@@ -15,13 +16,23 @@ app.AWS_ACCESS_KEY_ID = app.config['AWS_ACCESS_KEY_ID']
 app.AWS_SECRET_ACCESS_KEY = app.config['AWS_SECRET_ACCESS_KEY']
 
 app.CROWDJS_API_KEY = app.config['CROWDJS_API_KEY']
-app.CROWDJS_GET_ANSWERS_URL = app.config['CROWDJS_GET_ANSWERS_URL']
 app.CROWDJS_REQUESTER_ID = app.config['CROWDJS_REQUESTER_ID']
+
+app.CROWDJS_GET_ANSWERS_URL = app.config['CROWDJS_GET_ANSWERS_URL']
+app.CROWDJS_SUBMIT_ANSWER_URL = app.config['CROWDJS_SUBMIT_ANSWER_URL']
+app.CROWDJS_PUT_TASK_URL =  app.config['CROWDJS_PUT_TASK_URL']
+app.CROWDJS_GET_TASK_DATA_URL =  app.config['CROWDJS_GET_TASK_DATA_URL']
+app.CROWDJS_PUT_TASK_DATA_URL =  app.config['CROWDJS_PUT_TASK_DATA_URL']
+app.CROWDJS_PUT_QUESTIONS_URL =  app.config['CROWDJS_PUT_QUESTIONS_URL']
+app.CROWDJS_RETURN_HIT_URL =  app.config['CROWDJS_RETURN_HIT_URL']
+app.CROWDJS_ASSIGN_URL =  app.config['CROWDJS_ASSIGN_URL']
 
 app.MTURK_HOST = app.config['MTURK_HOST']
 app.CONTROLLER = app.config['CONTROLLER']
 app.CONTROLLER_BATCH_SIZE = app.config['CONTROLLER_BATCH_SIZE']
+app.config['CONTROLLER_BATCH_SIZE'] = int(app.config['CONTROLLER_BATCH_SIZE'])
 app.CONTROLLER_APQ = app.config['CONTROLLER_APQ']
+app.config['CONTROLLER_APQ'] = int(app.config['CONTROLLER_APQ'])
 
 app.EXAMPLE_CATEGORIES = app.config['EXAMPLE_CATEGORIES']
 
@@ -60,24 +71,28 @@ sys.stdout.flush()
 
 @app.route('/')
 def hello():
-    html = "<p>Welcome to Extremest Extraction v0.01!</p>"
-    html += '<form action="" method="post">Event: <input type="text"/><br/>'
-    html += 'Event Definition: <input type="text"/></br/>'
-    html += 'Event Good Example 1: <input type="text"/></br/>'
-    html += 'Event Good Example 1 Trigger: <input type="text"/></br/>'
-    html += 'Event Good Example 2: <input type="text"/></br/>'
-    html += 'Event Good Example 2 Trigger: <input type="text"/></br/>'
-    html += 'Event Bad Example 1: <input type="text"/></br/>'
-    html += 'Event Negatve Good Example 1: <input type="text"/></br/>'
-    html += 'Event Negatve Bad Example 1: <input type="text"/></br/>'
-    html += '<input type="submit" value="Submit"></form>'
-    return html
+    return render_template('index.html')
+
+@app.route('/status/<event_name>/<event_definition>/<event_pos_example_1>/<event_pos_example_1_trigger>/<event_pos_example_2>/<event_pos_example_2_trigger>/<event_pos_example_nearmiss>/<event_neg_example>/<event_neg_example_nearmiss>')
+def status(event_name, event_definition, event_pos_example_1,
+           event_pos_example_1_trigger, event_pos_example_2,
+           event_pos_example_2_trigger, event_pos_example_nearmiss,
+           event_neg_example, event_neg_example_nearmiss):
+    return render_template(
+        'status.html',
+        event_name = event_name,
+        event_definition = event_definition,
+        event_pos_example_1 = event_pos_example_1,
+        event_pos_example_1_trigger = event_pos_example_1_trigger,
+        event_pos_example_2 = event_pos_example_2,
+        event_pos_example_2_trigger = event_pos_example_2_trigger,
+        event_pos_example_nearmiss = event_pos_example_nearmiss,
+        event_neg_example = event_neg_example,
+        event_neg_example_nearmiss = event_neg_example_nearmiss)
 
 
-
-
-from api.taboo_api import *
+from api.taboo_api import ComputeTabooApi
 api.add_resource(ComputeTabooApi, '/taboo') 
 
-from api.train_api import *
+from api.train_api import TrainExtractorApi
 api.add_resource(TrainExtractorApi, '/train')

@@ -1,11 +1,14 @@
 import nltk
 import pickle
 import sys
+import json
+import requests
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
 #they have been used
-def compute_taboo_words(old_taboo_words, old_sentence, new_sentence):
+def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
+                        requester_id, put_task_data_url):
     nltk.download('punkt')
     nltk.download('stopwords')
 
@@ -37,5 +40,20 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence):
     print old_taboo_words
     sys.stdout.flush()
 
-    return pickle.dumps(old_taboo_words)
+    #convert to string
+    taboo_words = pickle.dumps(old_taboo_words)
+
+
+    #Put the new task data into crowdjs.
+    #headers = {'Authentication-Token': app.CROWDJS_API_KEY,
+    #           'content_type' : 'application/json'}
+    
+    data = {'task_id' : task_id ,
+            'requester_id' : requester_id,
+            'data' : taboo_words}
+
+    r = requests.post(put_task_data_url,
+                      json=json.dumps(data))
+    
+    return taboo_words
     

@@ -25,37 +25,57 @@ class Config(object):
 
     MAIL_SUPPRESS_SEND = True
 
-    AWS_ACCESS_KEY_ID = 'AKIAIOGNWDMLQIYOKRQQ'
-    AWS_SECRET_ACCESS_KEY = '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'
+    CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
+    CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']
 
+    CROWDJS_BASE_URL = os.environ['CROWDJS_BASE_URL']
+    CROWDJS_GET_ANSWERS_URL = CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_GET_ANSWERS_URL']
+    CROWDJS_SUBMIT_ANSWER_URL = CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_SUBMIT_ANSWER_URL']
+    CROWDJS_PUT_TASK_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_PUT_TASK_URL']
+    CROWDJS_GET_TASK_DATA_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_GET_TASK_DATA_URL']
+    CROWDJS_PUT_TASK_DATA_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_PUT_TASK_DATA_URL']
+    CROWDJS_PUT_QUESTIONS_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_PUT_QUESTIONS_URL']
+    CROWDJS_RETURN_HIT_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_RETURN_HIT_URL']
+    CROWDJS_ASSIGN_URL =  CROWDJS_BASE_URL + os.environ[
+        'CROWDJS_ASSIGN_URL']
 
-    #CROWDJS STUFF
-    CROWDJS_API_KEY = 'seomthing'
-    CROWDJS_REQUESTER_ID = 'asdfasdfasdf'
-    CROWDJS_GET_ANSWERS_URL = 'http://crowdjs.heroku.com/answers?'
-    CROWDJS_PUT_TASK_URL =  'http://crowdjs.heroku.com/tasks'
-    CROWDJS_PUT_QUESTIONS_URL =  'http://crowdjs.heroku.com/questions'
+    EE_BASE_URL = os.environ['EE_BASE_URL']
+    SUBMIT_TABOO_URL = EE_BASE_URL + os.environ['EE_SUBMIT_TABOO_URL']
 
+    
+    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+    
+    CONTROLLER = os.environ['CONTROLLER']
+    CONTROLLER_BATCH_SIZE = os.environ['CONTROLLER_BATCH_SIZE']
+    CONTROLLER_APQ = os.environ['CONTROLLER_APQ']
 
 
     
-    PRECISION_EXAMPLE_TASK = {'hit_layout_id' : 'alskdfadf',
-                              'needs_data': True,
-                              'task_name' : 'Event Negation',
-                              'task_description' : 'Negate a sentence'}
-    RECALL_EXAMPLE_TASK = {'hit_layout_id' : 'aklsjdlka',
-                           'needs_data' : False,
-                           'task_name' : 'Event Generation',
-                           'task_description' : 'Generate sentences'}
+    PRECISION_EXAMPLE_TASK = {
+        'hit_layout_id' : os.environ['PRECISION_LAYOUT_ID'],
+        'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
+        'needs_data': True,
+        'task_name' : 'Event Negation',
+        'task_description' : 'Negate a sentence'}
+    RECALL_EXAMPLE_TASK = {
+        'hit_layout_id' : os.environ['RECALL_LAYOUT_ID'],
+        'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
+        'needs_data' : False,
+        'task_name' : 'Event Generation',
+        'task_description' : 'Generate sentences'}
 
     
     EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK]
 
 
-    #greedy, fixed
-    CONTROLLER = 'greedy'
-    CONTROLLER_BATCH_SIZE = 100
-    CONTROLLER_APQ = 2
 
     
 class DevelopmentConfig(Config):
