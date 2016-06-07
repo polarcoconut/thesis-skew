@@ -15,7 +15,7 @@ taboo_parser.add_argument('task_id', type=str, required=True)
 taboo_parser.add_argument('requester_id', type=str, required=True)
 
 class ComputeTabooApi(Resource):
-    def get(self):
+    def post(self):
         args = taboo_parser.parse_args()
         old_taboo_words = args['old_taboo_words']
         old_sentence = args['old_sentence']

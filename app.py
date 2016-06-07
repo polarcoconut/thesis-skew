@@ -39,8 +39,8 @@ app.EXAMPLE_CATEGORIES = app.config['EXAMPLE_CATEGORIES']
 api = Api(app)
 
 app.config['CORS_HEADERS'] = 'Content-Type'
-cors = CORS(app, resources={"/assign_next_question": {"origins": "*"},
-                            "/answers":  {"origins": "*"}})
+cors = CORS(app, resources={"/taboo": {"origins": "*"},
+                            "/train":  {"origins": "*"}})
 
 
 print "Loading mail extension"
