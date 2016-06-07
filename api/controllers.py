@@ -47,7 +47,8 @@ def greedy_controller(task_categories, training_examples,
         task = {'task_name': next_category['task_name'],
                 'task_description': next_category['task_description'],
                 'requester_id' : config['CROWDJS_REQUESTER_ID'],
-                'data' : pickle.dumps({}),
+                'data' : pickle.dumps({event_good_example_1_trigger: 2,
+                                       event_good_example_2_trigger: 2}),
                 'questions' : questions,
                 'unique_workers' : False}
             

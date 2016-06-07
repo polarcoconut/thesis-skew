@@ -12,29 +12,30 @@ from boto.mturk.connection import MTurkConnection
 app = Flask(__name__)
 
 app.config.from_object(os.environ['APP_SETTINGS'])
-app.AWS_ACCESS_KEY_ID = app.config['AWS_ACCESS_KEY_ID']
-app.AWS_SECRET_ACCESS_KEY = app.config['AWS_SECRET_ACCESS_KEY']
 
-app.CROWDJS_API_KEY = app.config['CROWDJS_API_KEY']
-app.CROWDJS_REQUESTER_ID = app.config['CROWDJS_REQUESTER_ID']
+#app.AWS_ACCESS_KEY_ID = app.config['AWS_ACCESS_KEY_ID']
+#app.AWS_SECRET_ACCESS_KEY = app.config['AWS_SECRET_ACCESS_KEY']
 
-app.CROWDJS_GET_ANSWERS_URL = app.config['CROWDJS_GET_ANSWERS_URL']
-app.CROWDJS_SUBMIT_ANSWER_URL = app.config['CROWDJS_SUBMIT_ANSWER_URL']
-app.CROWDJS_PUT_TASK_URL =  app.config['CROWDJS_PUT_TASK_URL']
-app.CROWDJS_GET_TASK_DATA_URL =  app.config['CROWDJS_GET_TASK_DATA_URL']
-app.CROWDJS_PUT_TASK_DATA_URL =  app.config['CROWDJS_PUT_TASK_DATA_URL']
-app.CROWDJS_PUT_QUESTIONS_URL =  app.config['CROWDJS_PUT_QUESTIONS_URL']
-app.CROWDJS_RETURN_HIT_URL =  app.config['CROWDJS_RETURN_HIT_URL']
-app.CROWDJS_ASSIGN_URL =  app.config['CROWDJS_ASSIGN_URL']
+#app.CROWDJS_API_KEY = app.config['CROWDJS_API_KEY']
+#app.CROWDJS_REQUESTER_ID = app.config['CROWDJS_REQUESTER_ID']
 
-app.MTURK_HOST = app.config['MTURK_HOST']
-app.CONTROLLER = app.config['CONTROLLER']
-app.CONTROLLER_BATCH_SIZE = app.config['CONTROLLER_BATCH_SIZE']
-app.config['CONTROLLER_BATCH_SIZE'] = int(app.config['CONTROLLER_BATCH_SIZE'])
-app.CONTROLLER_APQ = app.config['CONTROLLER_APQ']
-app.config['CONTROLLER_APQ'] = int(app.config['CONTROLLER_APQ'])
+#app.CROWDJS_GET_ANSWERS_URL = app.config['CROWDJS_GET_ANSWERS_URL']
+#app.CROWDJS_SUBMIT_ANSWER_URL = app.config['CROWDJS_SUBMIT_ANSWER_URL']
+#app.CROWDJS_PUT_TASK_URL =  app.config['CROWDJS_PUT_TASK_URL']
+#app.CROWDJS_GET_TASK_DATA_URL =  app.config['CROWDJS_GET_TASK_DATA_URL']
+#app.CROWDJS_PUT_TASK_DATA_URL =  app.config['CROWDJS_PUT_TASK_DATA_URL']
+#app.CROWDJS_PUT_QUESTIONS_URL =  app.config['CROWDJS_PUT_QUESTIONS_URL']
+#app.CROWDJS_RETURN_HIT_URL =  app.config['CROWDJS_RETURN_HIT_URL']
+#app.CROWDJS_ASSIGN_URL =  app.config['CROWDJS_ASSIGN_URL']
 
-app.EXAMPLE_CATEGORIES = app.config['EXAMPLE_CATEGORIES']
+#app.MTURK_HOST = app.config['MTURK_HOST']
+#app.CONTROLLER = app.config['CONTROLLER']
+#app.CONTROLLER_BATCH_SIZE = app.config['CONTROLLER_BATCH_SIZE']
+#app.config['CONTROLLER_BATCH_SIZE'] = int(app.config['CONTROLLER_BATCH_SIZE'])
+#app.CONTROLLER_APQ = app.config['CONTROLLER_APQ']
+#app.config['CONTROLLER_APQ'] = int(app.config['CONTROLLER_APQ'])
+
+#app.EXAMPLE_CATEGORIES = app.config['EXAMPLE_CATEGORIES']
 
 api = Api(app)
 
@@ -52,10 +53,10 @@ from worker import conn
 app.rq = Queue(connection = conn)
 app.redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
 
-print "Setting up Mturk connection"
-app.mturk = MTurkConnection(app.AWS_ACCESS_KEY_ID,
-                            app.AWS_SECRET_ACCESS_KEY,
-                            host=app.MTURK_HOST)
+#print "Setting up Mturk connection"
+#app.mturk = MTurkConnection(app.AWS_ACCESS_KEY_ID,
+#                            app.AWS_SECRET_ACCESS_KEY,
+#                            host=app.MTURK_HOST)
 
 print "Loading logging"
 sys.stdout.flush()
