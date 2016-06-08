@@ -40,7 +40,7 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
     print old_taboo_words
     sys.stdout.flush()
     print "Posting to"
-    print app.config['CROWDJS_PUT_TASK_DATA_URL']
+    print put_task_data_url
     sys.stdout.flush()
 
 
