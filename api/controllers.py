@@ -41,7 +41,8 @@ def greedy_controller(task_categories, training_examples,
             'question_data': question_data,
             'requester_id' : config['CROWDJS_REQUESTER_ID'],
             'answers_per_question' : (config['CONTROLLER_BATCH_SIZE'] *
-                                      config['CONTROLLER_APQ'])}
+                                      config['CONTROLLER_APQ']),
+            'unique_workers' : False}
         questions.append(question)
 
         task = {'task_name': next_category['task_name'],
@@ -49,8 +50,7 @@ def greedy_controller(task_categories, training_examples,
                 'requester_id' : config['CROWDJS_REQUESTER_ID'],
                 'data' : pickle.dumps({event_good_example_1_trigger: 2,
                                        event_good_example_2_trigger: 2}),
-                'questions' : questions,
-                'unique_workers' : False}
+                'questions' : questions}
             
         return next_category, task
 
@@ -75,7 +75,8 @@ def greedy_controller(task_categories, training_examples,
         question_data += "%s"
         
         questions = []
-        for training_example in training_examples[0]:
+        for i, training_example in zip(range(len(training_examples[0])),
+                                       training_examples[0]):
             new_question_information = task_information + (training_example,)
             new_question_data =  question_data % new_question_information
             question = {

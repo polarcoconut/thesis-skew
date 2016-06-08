@@ -5,6 +5,7 @@ import string
 import pickle
 from app import app
 from util import compute_taboo_words
+import sys
 
 taboo_parser = reqparse.RequestParser()
 
@@ -23,9 +24,13 @@ class ComputeTabooApi(Resource):
         task_id = args['task_id']
         requester_id = args['requester_id']
         
-        old_taboo_words = pickle.dumps({'not':2})
-        old_sentence = "Gagan likes apples."
-        new_sentence = "Gagan really likes apples."
+        #old_taboo_words = pickle.dumps({'not':2})
+        #old_sentence = "Gagan likes apples."
+        #new_sentence = "Gagan really likes apples."
+
+        print "Posting to"
+        print app.config['CROWDJS_PUT_TASK_DATA_URL']
+        sys.stdout.flush()
 
         result = app.rq.enqueue(compute_taboo_words, old_taboo_words,
                                 old_sentence, new_sentence, task_id,

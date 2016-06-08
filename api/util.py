@@ -39,6 +39,10 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
     print "Here is the new dictionary of taboo words"
     print old_taboo_words
     sys.stdout.flush()
+    print "Posting to"
+    print app.config['CROWDJS_PUT_TASK_DATA_URL']
+    sys.stdout.flush()
+
 
     #convert to string
     taboo_words = pickle.dumps(old_taboo_words)
@@ -53,7 +57,11 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
             'data' : taboo_words}
 
     r = requests.post(put_task_data_url,
-                      json=json.dumps(data))
-    
+                      json=data)
+
+    print "Here is the response after trying to modify the task data"
+    print r.text
+    sys.stdout.flush()
+
     return taboo_words
     
