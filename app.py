@@ -8,6 +8,8 @@ import uuid
 from rq import Queue
 import redis
 from boto.mturk.connection import MTurkConnection
+from celery import Celery
+
 
 app = Flask(__name__)
 
@@ -48,15 +50,27 @@ print "Loading mail extension"
 sys.stdout.flush()
 mail = Mail(app)
 
-print "Loading redis and redis queue"
-from worker import conn
-app.rq = Queue(connection = conn)
-app.redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
+#print "Loading redis and redis queue"
+#from worker import conn
+#app.rq = Queue(connection = conn)
+#app.redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
 
-#print "Setting up Mturk connection"
-#app.mturk = MTurkConnection(app.AWS_ACCESS_KEY_ID,
-#                            app.AWS_SECRET_ACCESS_KEY,
-#                            host=app.MTURK_HOST)
+print "Loading Celery"
+def make_celery(app):
+    celery = Celery(app.import_name, backend=app.config['REDIS_URL'],
+                    broker=app.config['REDIS_URL'])
+    celery.conf.update(app.config)
+    TaskBase = celery.Task
+    class ContextTask(TaskBase):
+        abstract = True
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+    celery.Task = ContextTask
+    return celery
+celery = make_celery(app)
+app.celery = celery
+
 
 print "Loading logging"
 sys.stdout.flush()

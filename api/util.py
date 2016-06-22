@@ -3,10 +3,12 @@ import pickle
 import sys
 import json
 import requests
+from app import app
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
 #they have been used
+@app.celery.task(name='compute_taboo_words')
 def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
                         requester_id, put_task_data_url):
     nltk.download('punkt')

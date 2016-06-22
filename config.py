@@ -48,6 +48,7 @@ class Config(object):
     CONTROLLER = os.environ['CONTROLLER']
     CONTROLLER_BATCH_SIZE = int(os.environ['CONTROLLER_BATCH_SIZE'])
     CONTROLLER_APQ = int(os.environ['CONTROLLER_APQ'])
+    TABOO_THRESHOLD = int(os.environ['TABOO_THRESHOLD'])
 
 
     
@@ -67,6 +68,8 @@ class Config(object):
     
     EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK]
 
+    CELERY_TIMEZONE = 'UTC'
+    CELERY_IMPORTS = ['api.util', 'api.train']
 
 
     

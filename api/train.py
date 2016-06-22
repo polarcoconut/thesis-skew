@@ -1,5 +1,6 @@
 import time
 
+from app import app
 from boto.mturk.question import ExternalQuestion
 from boto.mturk.price import Price
 from boto.mturk.qualification import Qualifications
@@ -13,6 +14,7 @@ import requests
 import pickle
 import json
 import sys
+import redis
 
 
 def upload_questions(task, config):
@@ -76,6 +78,12 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
                 'assign_url', '%s'%
                 config['CROWDJS_ASSIGN_URL']))
 
+        layout_params.add(
+            LayoutParameter(
+                'taboo_threshold', '%s'%
+                config['TABOO_THRESHOLD']))
+
+
         print layout_params
         sys.stdout.flush()
         
@@ -88,17 +96,78 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
         
     return hits
 
-def train(task_information, budget, config):
-    
-    #task_ids is a list of the task_ids that have been assigned
+@app.celery.task(name='restart')
+def restart(task_information, config):
+    #read the latest checkpoint
+    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+    key = pickle_dumps(task_information)
+    timestamps = checkpoint_redis.hkeys(key)
+
+    most_recent_timestamp = max([int(x) for x in timestamps])
+
+    checkpoint = checkpoint_redis.hmget(key, most_recent_timestamp)
+
+    train(task_information, budget, config, checkpoint)
+          
+def test(task_information):
+    #read the latest checkpoint
+    checkpoint = pickle.dumps((task_ids, task_categories))
+    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+    checkpoint_redis.set(str(int(time.time())), checkpoint)
+
+@app.celery.task(name='train')
+def train(task_information, budget, config, checkpoint = None):
+
+    #task_ids is a list of the task_ids that have been assigned by crowdjs
     #training exampes is a list of lists of examples from each task
-    task_ids = []
-    training_examples = []
-    training_labels = []
-    task_categories = []
+    if checkpoint:
+        (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+        print "loading checkpoint..."
+        for task_id, task_category in zip(task_ids[0:-1],
+                                          task_categories[0:-1]):
+            print "loading task_id" % task_id
+            sys.stdout.flush()
+            
+            answers = parse_answers(task_id, category, config)
+            new_examples, new_labels = answers
+            training_examples.append(new_examples)
+            training_labels.append(new_labels)
+
+        
+    else:
+        task_ids = []
+        task_categories = []
+        costSoFar = 0
+        training_examples = []
+        training_labels = []
+
     
-    costSoFar = 0
+    
     while costSoFar < budget:
+        #If we have task_ids, wait for the last one to complete.
+        if len(task_ids) > 0:
+            task_id = task_ids[-1]
+            category = task_categories[-1]
+            #Wait for the task to complete.
+            while True:
+                print "Sleeping"
+                sys.stdout.flush()
+
+                time.sleep(10)
+                #Check if the task is complete
+                answers = parse_answers(task_id, category, config)
+                if answers:
+                    new_examples, new_labels = answers
+                    print "New examples"
+                    print new_examples
+                    sys.stdout.flush()
+                    
+                    training_examples.append(new_examples)
+                    training_labels.append(new_labels)
+                    break
+                print "Task not complete yet"
+                sys.stdout.flush()
 
         print "cost so far: %d" % costSoFar
         print "Deciding which category to do next"
@@ -136,46 +205,52 @@ def train(task_information, budget, config):
         print "Hit IDs:"
         print hit_ids
         sys.stdout.flush()
-        
-        #Wait for the task to complete.
-        while True:
-            print "Sleeping"
-            time.sleep(10)
-            #Check if the task is complete
-            answers = parse_answers(task_id, category, config)
-            if answers:
-                new_examples, new_labels = answers
-                training_examples.append(new_examples)
-                training_labels.append(new_labels)
-                break
 
-        #Now that the task is complete, make a checkpoint
-        checkpoint = pickle.dumps((task_ids, task_categories))
-        redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-        redis.set(str(int(time.time())), checkpoint)
+        #update the cost
+        costSoFar += (config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_BATCH_SIZE'])
+        
+        #make a checkpoint
+        checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
+        checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+        #checkpoint_redis.set(str(int(time.time())), checkpoint)
+        checkpoint_redis.hset(pickle.dumps(task_information),
+                              str(int(time.time())),
+                              checkpoint)
+
+
+
 
 
 def parse_answers(task_id, category, config):
     headers = {'Authentication-Token': config['CROWDJS_API_KEY']}
-    answers_crowdjs_url += 'task_id=%s' % task_id
-    answers_crowdjs_url += '&requester_id=%s' % requester_id
-    r = requests.get(config['CROWDJS_GET_ANSWERS_URL'], headers=headers)        
+    answers_crowdjs_url = config['CROWDJS_GET_ANSWERS_URL']
+    answers_crowdjs_url += '?task_id=%s' % task_id
+    answers_crowdjs_url += '&requester_id=%s' % config['CROWDJS_REQUESTER_ID']
+    r = requests.get(answers_crowdjs_url, headers=headers)
+    print "Response from getting answers"
+    print r.text
+    sys.stdout.flush()
+
     answers = r.json()
 
-    if (len(answers) <=
+    if (len(answers) <
         config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_APQ']):
         return None
     examples = []
     labels = []
-    if category['name'] == 'Event Generation':
+    print "Answers"
+    if category['task_name'] == 'Event Generation':
         for answer in answers:
             value = answer['value']
+            print value
+            sys.stdout.flush()
+                
             value = value.split('\t')
             sentence = value[0]
             trigger = value[1]
             examples.append(sentence)
             labels.append(1)
-    elif category['name'] == 'Event Negation':
+    elif category['task_name'] == 'Event Negation':
         for answer in answers:
             value = answer['value']
             examples.append(value)

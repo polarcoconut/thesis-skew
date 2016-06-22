@@ -32,10 +32,12 @@ class ComputeTabooApi(Resource):
         print app.config['CROWDJS_PUT_TASK_DATA_URL']
         sys.stdout.flush()
 
-        result = app.rq.enqueue(compute_taboo_words, old_taboo_words,
-                                old_sentence, new_sentence, task_id,
-                                requester_id,
-                                app.config['CROWDJS_PUT_TASK_DATA_URL'])
+        compute_taboo_words.delay(old_taboo_words,
+                                  old_sentence,
+                                  new_sentence,
+                                  task_id,
+                                  requester_id,
+                                  app.config['CROWDJS_PUT_TASK_DATA_URL'])
         
         return {'success' : 'New taboo words will be computed'}
 

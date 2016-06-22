@@ -1,2 +1,2 @@
 web: gunicorn app:app --log-file=- --timeout=300
-worker: python worker.py
+worker: celery -A app.celery worker

@@ -4,7 +4,8 @@ import json
 import string
 import pickle
 from app import app
-from train import train
+from train import train, restart
+import sys
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -23,6 +24,7 @@ train_parser.add_argument('event_neg_example_nearmiss',
 
 #train_parser.add_argument('task_information', type=str, required=True)
 train_parser.add_argument('budget', type=str, required=True)
+train_parser.add_argument('restart', type=bool, default=False)
 
 
 class TrainExtractorApi(Resource):
@@ -51,11 +53,13 @@ class TrainExtractorApi(Resource):
         
         #task_information = args['task_information']
         budget = int(args['budget'])
+        restart = args['restart']
 
-
-        result = app.rq.enqueue(train, task_information, budget,
-                                app.config)
-
+        if restart:
+            restart.delay(task_information, budget, app.config)
+        else:
+            train.delay(task_information, budget, app.config)
+            
         return redirect(url_for(
             'status',  
             event_name = event_name,
@@ -67,5 +71,6 @@ class TrainExtractorApi(Resource):
             event_pos_example_nearmiss = event_pos_example_nearmiss,
             event_neg_example = event_neg_example,
             event_neg_example_nearmiss = event_neg_example_nearmiss))
+
 
 
