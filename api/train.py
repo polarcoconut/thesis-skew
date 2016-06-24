@@ -272,7 +272,9 @@ def parse_answers(task_id, category, config):
 def get_next_batch(task_categories, training_examples, training_labels,
                    task_information, config):
                       
-                                                        
+
+    print "Using the controller:"
+    print config['CONTROLLER']
     if config['CONTROLLER'] == 'greedy':
         return greedy_controller(task_categories, training_examples,
                                  training_labels,
