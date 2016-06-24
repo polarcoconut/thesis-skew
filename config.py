@@ -49,7 +49,7 @@ class Config(object):
     CONTROLLER_BATCH_SIZE = int(os.environ['CONTROLLER_BATCH_SIZE'])
     CONTROLLER_APQ = int(os.environ['CONTROLLER_APQ'])
     TABOO_THRESHOLD = int(os.environ['TABOO_THRESHOLD'])
-
+    ASSIGNMENT_DURATION = int(os.environ['ASSIGNMENT_DURATION'])
 
     
     PRECISION_EXAMPLE_TASK = {
@@ -70,7 +70,7 @@ class Config(object):
 
     CELERY_TIMEZONE = 'UTC'
     CELERY_IMPORTS = ['api.util', 'api.train']
-
+    CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 
     
 class DevelopmentConfig(Config):

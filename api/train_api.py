@@ -6,6 +6,7 @@ import pickle
 from app import app
 from train import train, restart
 import sys
+import uuid
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -24,8 +25,9 @@ train_parser.add_argument('event_neg_example_nearmiss',
 
 #train_parser.add_argument('task_information', type=str, required=True)
 train_parser.add_argument('budget', type=str, required=True)
-train_parser.add_argument('restart', type=bool, default=False)
 
+restart_parser = reqparse.RequestParser()
+restart_parser.add_argument('job_id', type=str, required=True)
 
 class TrainExtractorApi(Resource):
     def post(self):
@@ -53,12 +55,10 @@ class TrainExtractorApi(Resource):
         
         #task_information = args['task_information']
         budget = int(args['budget'])
-        restart = args['restart']
 
-        if restart:
-            restart.delay(task_information, budget, app.config)
-        else:
-            train.delay(task_information, budget, app.config)
+        #Generate a random job_id
+        job_id = str(uuid.uuid4())
+        train.delay(task_information, budget, app.config, job_id)
             
         return redirect(url_for(
             'status',  
@@ -70,7 +70,18 @@ class TrainExtractorApi(Resource):
             event_pos_example_2_trigger = event_pos_example_2_trigger,
             event_pos_example_nearmiss = event_pos_example_nearmiss,
             event_neg_example = event_neg_example,
-            event_neg_example_nearmiss = event_neg_example_nearmiss))
+            event_neg_example_nearmiss = event_neg_example_nearmiss,
+            job_id = job_id))
+
+
+class RestartExtractorApi(Resource):
+    def post(self):
+        args = restart_parser.parse_args()
+        job_id = args['job_id']
+        
+        restart.delay(job_id, app.config)
+            
+        return True
 
 
 

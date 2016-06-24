@@ -51,6 +51,7 @@ def greedy_controller(task_categories, training_examples,
                                        config['TABOO_THRESHOLD'] + 1,
                                        event_good_example_2_trigger:
                                        config['TABOO_THRESHOLD'] + 1}),
+                'assignment_duration' : config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
             
         return next_category, task
@@ -76,7 +77,7 @@ def greedy_controller(task_categories, training_examples,
         question_data += "%s"
         
         questions = []
-        last_batch = training_examples.pop()
+        last_batch = training_examples[-1]
         for i, training_example in zip(range(len(last_batch)), last_batch):
             new_question_information = task_information + (training_example,)
             new_question_data =  question_data % new_question_information
@@ -93,6 +94,7 @@ def greedy_controller(task_categories, training_examples,
                 'task_description': next_category['task_description'],
                 'requester_id' : config['CROWDJS_REQUESTER_ID'],
                 'data' : pickle.dumps({'not':config['TABOO_THRESHOLD'] + 1}),
+                'assignment_duration' : config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 
         return next_category, task

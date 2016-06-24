@@ -97,17 +97,17 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
     return hits
 
 @app.celery.task(name='restart')
-def restart(task_information, config):
+def restart(job_id, config):
     #read the latest checkpoint
     checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-    key = pickle_dumps(task_information)
-    timestamps = checkpoint_redis.hkeys(key)
-
+    timestamps = checkpoint_redis.hkeys(job_id)
+    timestamps.remove('task_information')
     most_recent_timestamp = max([int(x) for x in timestamps])
 
-    checkpoint = checkpoint_redis.hmget(key, most_recent_timestamp)
-
-    train(task_information, budget, config, checkpoint)
+    checkpoint = checkpoint_redis.hmget(job_id, most_recent_timestamp)[0]
+    (task_information, budget) = pickle.loads(
+        checkpoint_redis.hmget(job_id, 'task_information')[0])
+    train(task_information, budget, config, job_id, checkpoint)
           
 def test(task_information):
     #read the latest checkpoint
@@ -116,7 +116,14 @@ def test(task_information):
     checkpoint_redis.set(str(int(time.time())), checkpoint)
 
 @app.celery.task(name='train')
-def train(task_information, budget, config, checkpoint = None):
+def train(task_information, budget, config, job_id, checkpoint = None):
+
+    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+    training_examples = []
+    training_labels = []
+    task_ids = []
+    task_categories = []
+    costSoFar = 0
 
     #task_ids is a list of the task_ids that have been assigned by crowdjs
     #training exampes is a list of lists of examples from each task
@@ -126,25 +133,29 @@ def train(task_information, budget, config, checkpoint = None):
         print "loading checkpoint..."
         for task_id, task_category in zip(task_ids[0:-1],
                                           task_categories[0:-1]):
-            print "loading task_id" % task_id
+            print "loading task_id %s" % task_id
             sys.stdout.flush()
             
-            answers = parse_answers(task_id, category, config)
+            answers = parse_answers(task_id, task_category, config)
             new_examples, new_labels = answers
             training_examples.append(new_examples)
             training_labels.append(new_labels)
 
         
     else:
-        task_ids = []
-        task_categories = []
-        costSoFar = 0
-        training_examples = []
-        training_labels = []
+        checkpoint_redis.hset(job_id,
+                              'task_information',
+                              pickle.dumps((task_information, budget)))
+        
+
 
     
     
     while costSoFar < budget:
+        print "Cost so far: %d" % costSoFar
+        print "Number of training example batches and label batches: %d, %d" % (
+            len(training_examples), len(training_labels))
+        print training_examples
         #If we have task_ids, wait for the last one to complete.
         if len(task_ids) > 0:
             task_id = task_ids[-1]
@@ -169,7 +180,6 @@ def train(task_information, budget, config, checkpoint = None):
                 print "Task not complete yet"
                 sys.stdout.flush()
 
-        print "cost so far: %d" % costSoFar
         print "Deciding which category to do next"
         sys.stdout.flush()
         #Decide which category of task to do.
@@ -207,13 +217,14 @@ def train(task_information, budget, config, checkpoint = None):
         sys.stdout.flush()
 
         #update the cost
-        costSoFar += (config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_BATCH_SIZE'])
+        print "Updating the Cost so far"
+        costSoFar += (config['CONTROLLER_BATCH_SIZE'] *
+                      config['CONTROLLER_APQ'])
         
         #make a checkpoint
         checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
-        checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
         #checkpoint_redis.set(str(int(time.time())), checkpoint)
-        checkpoint_redis.hset(pickle.dumps(task_information),
+        checkpoint_redis.hset(job_id, 
                               str(int(time.time())),
                               checkpoint)
 
@@ -227,9 +238,6 @@ def parse_answers(task_id, category, config):
     answers_crowdjs_url += '?task_id=%s' % task_id
     answers_crowdjs_url += '&requester_id=%s' % config['CROWDJS_REQUESTER_ID']
     r = requests.get(answers_crowdjs_url, headers=headers)
-    print "Response from getting answers"
-    print r.text
-    sys.stdout.flush()
 
     answers = r.json()
 

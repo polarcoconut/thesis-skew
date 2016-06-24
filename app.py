@@ -88,11 +88,11 @@ sys.stdout.flush()
 def hello():
     return render_template('index.html')
 
-@app.route('/status/<event_name>/<event_definition>/<event_pos_example_1>/<event_pos_example_1_trigger>/<event_pos_example_2>/<event_pos_example_2_trigger>/<event_pos_example_nearmiss>/<event_neg_example>/<event_neg_example_nearmiss>')
+@app.route('/status/<event_name>/<event_definition>/<event_pos_example_1>/<event_pos_example_1_trigger>/<event_pos_example_2>/<event_pos_example_2_trigger>/<event_pos_example_nearmiss>/<event_neg_example>/<event_neg_example_nearmiss>/<job_id>')
 def status(event_name, event_definition, event_pos_example_1,
            event_pos_example_1_trigger, event_pos_example_2,
            event_pos_example_2_trigger, event_pos_example_nearmiss,
-           event_neg_example, event_neg_example_nearmiss):
+           event_neg_example, event_neg_example_nearmiss, job_id):
     return render_template(
         'status.html',
         event_name = event_name,
@@ -103,7 +103,8 @@ def status(event_name, event_definition, event_pos_example_1,
         event_pos_example_2_trigger = event_pos_example_2_trigger,
         event_pos_example_nearmiss = event_pos_example_nearmiss,
         event_neg_example = event_neg_example,
-        event_neg_example_nearmiss = event_neg_example_nearmiss)
+        event_neg_example_nearmiss = event_neg_example_nearmiss,
+        job_id = job_id)
 
 
 from api.taboo_api import ComputeTabooApi
@@ -111,3 +112,6 @@ api.add_resource(ComputeTabooApi, '/taboo')
 
 from api.train_api import TrainExtractorApi
 api.add_resource(TrainExtractorApi, '/train')
+
+from api.train_api import RestartExtractorApi
+api.add_resource(RestartExtractorApi, '/restart')
