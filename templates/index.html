@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <title>Extremest Extraction></title>
+  </head>
+  <body>
+    <p>Welcome to Extremest Extraction v0.01!</p>
+    <form action="/train" method="post">
+      <label>Event:</label>
+      <input name="event_name" type="text" size="100" value="Movement of a Person"/><br/>
+      <label> Event Definition: </label>
+      <input name="event_definition" type="text" size="100" value="Any event in which a person goes somewhere, for instance due to travel."/><br/>
+      <label>Event Positive Example 1:</label>
+      <input name="event_pos_example_1" type="text" size="100" value="The Vermont senator flew to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+      <label>Event Positive Example 1 Trigger: </label>
+      <input name="event_pos_example_1_trigger" type="text" size="100" value="flew"/><br/>
+      <label>Event Positive Example 2: </label>
+      <input name="event_pos_example_2" type="text" size="100" value="The Israeli Prime Minister greeted Kerry after he arrived last night."/><br/>
+      <label>Event Positive Example 2 Trigger:</label>
+      <input name="event_pos_example_2_trigger" type="text" size="100" value="arrived"/><br/>
+      <label>Event Positive Example Near-Miss: </label>
+      <input name="event_pos_example_nearmiss" type="text" size="100" value="'We received the king crabs yesterday from Japan,' said the waitress."/><br/>
+      <label>Event Negative Example: </label>
+      <input name="event_neg_example" type="text" size="100" value="The Vermont senator talked about Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+      <label>Event Negative Example Near-Miss: </label>
+      <input name="event_neg_example_nearmiss" type="text" size="100" value="The Vermont senator traveled to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+      <label>Budget: </label>
+      <input name="budget" type="text" size="100" value="100"/><br/>
+      <input type="submit" value="Submit">
+    </form>
+  </body>
+</html>

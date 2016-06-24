@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <title>Extremest Extraction></title>
+  </head>
+  <body>
+    <p> Your event is now being learned! </p>
+    <b>Event:</b> {{ event_name }}
+    <br/>
+    <b>Event Definition:</b> {{ event_definition }}
+    <br/>
+    <b>Event Positive Example 1: </b> {{ event_pos_example_1 }}
+    <br/>
+    <b>Event Positive Example 1 Trigger: </b> {{ event_pos_example_1_trigger }}
+    <br/>
+    <b>Event Positive Example 2: </b> {{ event_pos_example_2 }}
+    <br/>
+    <b>Event Positive Example 2 Trigger: </b> {{ event_pos_example_2_trigger }}
+    <br/>
+    <b>Event Positive Example Near-miss: </b> {{ event_pos_example_nearmiss }}
+    <br/>
+    <b>Event Negative Example </b> {{ event_neg_example }}
+    <br/>
+    <b>Event Negative Example Near-Miss </b> {{event_neg_example_nearmiss}}
+    <br/>
+
+    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe">
+    </iframe>
+
+    <p> <b>Current Status:</b> </p>
+    <p> 0 training examples. Not yet ready to extract.</p>
+    <form action="/restart" method="post" target="dummyframe">
+      <label>Job Id</label>
+      <input name="job_id" type="text" size="100" value="{{job_id}}"/>
+      <input type="submit" value="Restart Training">
+    </form>
+    <input type="submit" value="Refresh and train using new examples."/>
+    
+
+    <p> Try a sentence: </p>
+    <input type="text" size="100" value="test sentence"/>
+    <input type="submit" value="Extract!"/>
+  </body>
+  
+</html>
