@@ -8,6 +8,11 @@ def greedy_controller(task_categories, training_examples,
                       config):
 
 
+    print "Greedy Controller activated."
+    print len(task_categories)
+    print len(task_categories) % 2
+    print len(task_categories) % 1
+    
     sys.stdout.flush()
 
     #if task_categories is empty,
