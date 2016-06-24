@@ -181,6 +181,8 @@ def train(task_information, budget, config, job_id, checkpoint = None):
                 sys.stdout.flush()
 
         print "Deciding which category to do next"
+        print "Task categories so far:"
+        print task_categories
         sys.stdout.flush()
         #Decide which category of task to do.
         category, task_object  = get_next_batch(
