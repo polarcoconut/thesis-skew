@@ -55,8 +55,9 @@ def greedy_controller(task_categories, training_examples,
                                        config['TABOO_THRESHOLD'] + 1}),
                 'assignment_duration' : config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
-            
-        return next_category, task
+
+        num_hits = config['CONTROLLER_BATCH_SIZE']
+        return next_category, task, num_hits
 
     #If task_categories has one element in it, pick a category that
     #can use previous training data
@@ -99,4 +100,4 @@ def greedy_controller(task_categories, training_examples,
                 'assignment_duration' : config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 
-        return next_category, task
+        return next_category, task, len(last_batch)

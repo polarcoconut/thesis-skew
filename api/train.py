@@ -185,7 +185,7 @@ def train(task_information, budget, config, job_id, checkpoint = None):
         print task_categories
         sys.stdout.flush()
         #Decide which category of task to do.
-        category, task_object  = get_next_batch(
+        category, task_object, num_hits  = get_next_batch(
             task_categories, training_examples, training_labels,
             task_information, config)
 
@@ -208,11 +208,8 @@ def train(task_information, budget, config, job_id, checkpoint = None):
 
         #Upload assignments onto MTurk
         #number of workers per question is set in mturk layout
-        hit_ids = create_hits(
-            hit_type_id,
-            hit_layout_id, task_id,
-            int(config['CONTROLLER_BATCH_SIZE']),
-            config)
+        hit_ids = create_hits(hit_type_id, hit_layout_id, task_id,
+                              num_hits, config)
 
         print "Hit IDs:"
         print hit_ids
