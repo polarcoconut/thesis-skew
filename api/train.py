@@ -15,7 +15,8 @@ import pickle
 import json
 import sys
 import redis
-
+from ml.train_cnn import trainCNN
+from ml.extractors.cnn_core.test import test_cnn
 
 def upload_questions(task, config):
     headers = {'Authentication-Token': config['CROWDJS_API_KEY'],
@@ -96,24 +97,75 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
         
     return hits
 
-@app.celery.task(name='restart')
-def restart(job_id, config):
+def getLatestCheckpoint(job_id, config):
     #read the latest checkpoint
     checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
     timestamps = checkpoint_redis.hkeys(job_id)
     timestamps.remove('task_information')
+    timestamps.remove('model_dir')
+
     most_recent_timestamp = max([int(x) for x in timestamps])
 
     checkpoint = checkpoint_redis.hmget(job_id, most_recent_timestamp)[0]
     (task_information, budget) = pickle.loads(
         checkpoint_redis.hmget(job_id, 'task_information')[0])
+
+    return (task_information, budget, checkpoint)
+
+@app.celery.task(name='restart')
+def restart(job_id, config):
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     train(task_information, budget, config, job_id, checkpoint)
-          
-def test(task_information):
-    #read the latest checkpoint
-    checkpoint = pickle.dumps((task_ids, task_categories))
+
+def gather_status(job_id, config):
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
+    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+    num_examples = 0
+    for task_id, task_category in zip(task_ids,task_categories):
+        answers = parse_answers(task_id, task_category, config, False)
+        new_examples, new_labels = answers
+        num_examples += len(new_examples)
+
+    return num_examples
+
+@app.celery.task(name='retrain')
+def retrain(job_id, config):
+    print "Retraining a CNN"
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
+    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+    positive_examples = []
+    negative_examples = []
+    
+    for task_id, task_category in zip(task_ids,task_categories):
+        answers = parse_answers(task_id, task_category, config, False)
+        new_examples, new_labels = answers
+        for new_example, new_label in zip(new_examples, new_labels):
+            if new_label == 1:
+                positive_examples.append(new_example)
+            else:
+                negative_examples.append(new_example)                
+    model_dir = trainCNN(positive_examples, negative_examples)
+
     checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-    checkpoint_redis.set(str(int(time.time())), checkpoint)
+    checkpoint_redis.hset(job_id, 'model_dir', model_dir)
+
+    print "Model Dir:"
+    print model_dir
+    
+    return True
+
+"""
+def test(job_id, test_sentence, config):
+
+    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+    model_dir = checkpoint_redis.hmget(job_id, 'model_dir')[0]
+
+    predicted_labels = test_cnn([test_sentence], [0], model_dir)
+
+    return predicted_labels[0]
+"""
 
 @app.celery.task(name='train')
 def train(task_information, budget, config, job_id, checkpoint = None):
@@ -146,6 +198,8 @@ def train(task_information, budget, config, job_id, checkpoint = None):
         checkpoint_redis.hset(job_id,
                               'task_information',
                               pickle.dumps((task_information, budget)))
+        checkpoint_redis.hset(job_id,'model_dir','None')
+        
         
 
 
@@ -168,6 +222,7 @@ def train(task_information, budget, config, job_id, checkpoint = None):
                 time.sleep(10)
                 #Check if the task is complete
                 answers = parse_answers(task_id, category, config)
+
                 if answers:
                     new_examples, new_labels = answers
                     print "New examples"
@@ -230,8 +285,7 @@ def train(task_information, budget, config, job_id, checkpoint = None):
 
 
 
-
-def parse_answers(task_id, category, config):
+def get_answers(task_id, category, config):
     headers = {'Authentication-Token': config['CROWDJS_API_KEY']}
     answers_crowdjs_url = config['CROWDJS_GET_ANSWERS_URL']
     answers_crowdjs_url += '?task_id=%s' % task_id
@@ -240,9 +294,16 @@ def parse_answers(task_id, category, config):
 
     answers = r.json()
 
-    if (len(answers) <
+    return answers
+
+def parse_answers(task_id, category, config, wait_until_batch_finished=True):
+
+    answers = get_answers(task_id, category, config)
+
+    if wait_until_batch_finished and (len(answers) <
         config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_APQ']):
         return None
+
     examples = []
     labels = []
     print "Answers"

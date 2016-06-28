@@ -4,9 +4,11 @@ import json
 import string
 import pickle
 from app import app
-from train import train, restart
+from train import train, restart, gather_status, retrain
 import sys
 import uuid
+import redis
+
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -28,6 +30,17 @@ train_parser.add_argument('budget', type=str, required=True)
 
 restart_parser = reqparse.RequestParser()
 restart_parser.add_argument('job_id', type=str, required=True)
+
+
+gather_status_parser = reqparse.RequestParser()
+gather_status_parser.add_argument('job_id', type=str, required=True)
+
+retrain_parser = reqparse.RequestParser()
+retrain_parser.add_argument('job_id', type=str, required=True)
+
+retrain_status_parser = reqparse.RequestParser()
+retrain_status_parser.add_argument('job_id', type=str, required=True)
+
 
 class TrainExtractorApi(Resource):
     def post(self):
@@ -74,7 +87,7 @@ class TrainExtractorApi(Resource):
             job_id = job_id))
 
 
-class RestartExtractorApi(Resource):
+class RestartApi(Resource):
     def post(self):
         args = restart_parser.parse_args()
         job_id = args['job_id']
@@ -83,5 +96,37 @@ class RestartExtractorApi(Resource):
             
         return True
 
+    
+class GatherStatusApi(Resource):
+    def get(self):
+        args = gather_status_parser.parse_args()
+        job_id = args['job_id']
 
+        return gather_status(job_id, app.config)            
+
+
+class RetrainExtractorApi(Resource):
+    def get(self):
+        args = retrain_parser.parse_args()
+        job_id = args['job_id']
+
+        checkpoint_redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
+        checkpoint_redis.hset(job_id, 'model_dir', 'None')
+
+        retrain.delay(job_id, app.config)            
+
+        return True
+
+
+class RetrainStatusApi(Resource):
+    def get(self):
+        args = retrain_status_parser.parse_args()
+        job_id = args['job_id']
+
+        checkpoint_redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
+        model_dir = checkpoint_redis.hmget(job_id, 'model_dir')[0]
+        if model_dir == 'None':
+            return 'Model still training...'
+        else:
+            return 'Model Ready'
 

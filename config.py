@@ -56,12 +56,14 @@ class Config(object):
         'hit_layout_id' : os.environ['PRECISION_LAYOUT_ID'],
         'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
         'needs_data': True,
+        'label': 0,
         'task_name' : 'Event Negation',
         'task_description' : 'Negate a sentence'}
     RECALL_EXAMPLE_TASK = {
         'hit_layout_id' : os.environ['RECALL_LAYOUT_ID'],
         'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
         'needs_data' : False,
+        'label' : 1,
         'task_name' : 'Event Generation',
         'task_description' : 'Generate sentences'}
 

@@ -113,5 +113,17 @@ api.add_resource(ComputeTabooApi, '/taboo')
 from api.train_api import TrainExtractorApi
 api.add_resource(TrainExtractorApi, '/train')
 
-from api.train_api import RestartExtractorApi
-api.add_resource(RestartExtractorApi, '/restart')
+from api.train_api import RestartApi
+api.add_resource(RestartApi, '/restart')
+
+from api.train_api import GatherStatusApi
+api.add_resource(GatherStatusApi, '/gather_status')
+
+from api.train_api import RetrainExtractorApi
+api.add_resource(RetrainExtractorApi, '/retrain')
+
+from api.train_api import RetrainStatusApi
+api.add_resource(RetrainStatusApi, '/retrain_status')
+
+from api.test_api import TestExtractorApi
+api.add_resource(TestExtractorApi, '/test')

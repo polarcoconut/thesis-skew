@@ -3,7 +3,7 @@
     <title>Extremest Extraction></title>
   </head>
   <body>
-    <p> Your event is now being learned! </p>
+    <h2> Your event is now being learned! </h2>
     <b>Event:</b> {{ event_name }}
     <br/>
     <b>Event Definition:</b> {{ event_definition }}
@@ -26,19 +26,164 @@
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe">
     </iframe>
 
-    <p> <b>Current Status:</b> </p>
-    <p> 0 training examples. Not yet ready to extract.</p>
+    <h2> <b>Current Status:</b> </h2>
+    <b> Job Id (save this somewhere!): </b> {{job_id}} <br/>
+    <p> <b><span id="num_training_examples">0</span></b> training examples. </p>
+
+    <button id="refresh">Refresh</button>
+    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
+
+
+    <hr/>
+    <h2> <b> Restart a crashed job (Don't push this unless you know what you're doing!): </b> </h2>
     <form action="/restart" method="post" target="dummyframe">
-      <label>Job Id</label>
-      <input name="job_id" type="text" size="100" value="{{job_id}}"/>
+      <input type="hidden" name="job_id" size="100" value="{{job_id}}" /><br/>
       <input type="submit" value="Restart Training">
     </form>
-    <input type="submit" value="Refresh and train using new examples."/>
-    
+    <hr/>
+    <h2><b> Retrain a CNN using all available training data: </b></h2>
+    <span id="retrain_status"></span><br/>
+    <button id="retrain">Retrain a CNN</button>
+    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
 
-    <p> Try a sentence: </p>
-    <input type="text" size="100" value="test sentence"/>
-    <input type="submit" value="Extract!"/>
+    <hr/>
+    <h2><b> Try a sentence: </b></h2>
+      <input id="test_sentence" type="text" size="100" placeholder="Enter a test sentence here."/> <br/>
+      <button id="test">{{event_name}}??</button>
+      <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-test" style="visibility:hidden;"/>
+
+      <br/>
+      
+      <b><span id="test_result"></span></b>
   </body>
+
+
+
   
+  <script type="text/javascript">
+    //
+    //REFRESH CODE
+    //
+    var xmlhttp_refresh = new XMLHttpRequest();
+    var refresh_url = '/gather_status';
+    refresh_url += '?job_id={{job_id}}';
+    
+    document.getElementById("refresh").onclick = refresh;
+    function refresh() {
+	document.getElementById(
+	    'submitting-indicator-refresh').style.visibility = 'visible';
+	xmlhttp_refresh.open("GET", refresh_url, true);
+	xmlhttp_refresh.send();
+
+    }
+
+    xmlhttp_refresh.onreadystatechange = function() {
+	if (xmlhttp_refresh.readyState == 4 && xmlhttp_refresh.status == 200) {
+	    var num_training_examples = JSON.parse(xmlhttp_refresh.responseText);
+	    console.log(num_training_examples);
+	    document.getElementById(
+		'num_training_examples').innerHTML = num_training_examples;
+	    document.getElementById(
+	      'submitting-indicator-refresh').style.visibility = 'hidden';
+
+	}
+    };
+
+    //
+    // TEST CODE
+    //
+    var xmlhttp_test = new XMLHttpRequest();
+    var test_url = '/test';
+    test_url += '?job_id={{job_id}}';
+
+    document.getElementById("test").onclick = test;
+    function test() {
+	document.getElementById(
+	    'submitting-indicator-test').style.visibility = 'visible';
+	test_url += '&test_sentence=';
+	var test_sentence = document.getElementById("test_sentence").value;
+	test_url += test_sentence;
+
+	xmlhttp_test.open("GET", test_url, true);
+	xmlhttp_test.send();
+
+    }
+
+    xmlhttp_test.onreadystatechange = function() {
+	if (xmlhttp_test.readyState == 4 && xmlhttp_test.status == 200) {
+	    var test_result = JSON.parse(xmlhttp_test.responseText);
+	    console.log(test_result);
+	    if (test_result == 0){
+		document.getElementById(
+		    'test_result').innerHTML = "NO";
+	    } else {
+		document.getElementById(
+		    'test_result').innerHTML = "YES";
+	    }
+	    document.getElementById(
+	      'submitting-indicator-test').style.visibility = 'hidden';
+
+	}
+    };
+
+
+    //
+    //RETRAIN CODE
+    //
+    var xmlhttp_retrain = new XMLHttpRequest();
+    var retrain_url = '/retrain';
+    retrain_url += '?job_id={{job_id}}';
+    
+    document.getElementById("retrain").onclick = retrain;
+    function retrain() {
+	document.getElementById(
+	    'submitting-indicator-retrain').style.visibility = 'visible';
+	document.getElementById(
+	    'retrain').disabled = true;
+	xmlhttp_retrain.open("GET", retrain_url, true);
+	xmlhttp_retrain.send();
+
+    }
+
+    xmlhttp_retrain.onreadystatechange = function() {
+	if (xmlhttp_retrain.readyState == 4 && xmlhttp_retrain.status == 200) {
+	    var response = JSON.parse(xmlhttp_retrain.responseText);
+	    console.log(response);
+	    document.getElementById(
+		'retrain_status').innerHTML = 'Retraining...';
+	    
+	    setTimeout(check_retrain_status,5000);
+	    
+	}
+    };
+
+    var xmlhttp_retrain_status = new XMLHttpRequest();
+    var retrain_status_url = '/retrain_status';
+    retrain_status_url += '?job_id={{job_id}}';
+
+    xmlhttp_retrain_status.onreadystatechange = function() {
+	if (xmlhttp_retrain_status.readyState == 4 &&
+	    xmlhttp_retrain_status.status == 200) {
+	    var response = JSON.parse(xmlhttp_retrain_status.responseText);
+	    console.log(response);
+	    if (response == 'Model Ready') {
+		document.getElementById(
+		    'retrain_status').innerHTML = 'Model Ready.';
+		document.getElementById(
+		    'submitting-indicator-retrain').style.visibility = 'hidden';
+		document.getElementById(
+		    'retrain').disabled = false;
+	    } else {
+		setTimeout(check_retrain_status, 5000);
+
+	    }
+	    
+	}
+    };
+
+    function check_retrain_status() {
+	xmlhttp_retrain_status.open("GET", retrain_status_url, true);
+	xmlhttp_retrain_status.send();
+    }
+  </script>
 </html>
