@@ -1,6 +1,15 @@
 <html>
   <head>
     <title>Extremest Extraction></title>
+     <style type='text/css'>
+       textarea {
+       white-space: nowrap;
+       overflow:    scroll;
+       overflow-y:  scroll;
+       overflow-x:  scroll;
+       overflow:    -moz-scrollbars-horizontal;
+       }
+     </style>
   </head>
   <body>
     <h3> Extremest Extraction v0.1</h3>
@@ -30,7 +39,12 @@
     <h2> <b>Current Status:</b> </h2>
     <b> Job Id (save this somewhere!): </b> {{job_id}} <br/>
     <p> <b><span id="num_training_examples">0</span></b> training examples. </p>
-
+    Positive examples:<br/>
+    <textarea id=positive_examples rows="10" cols="100" wrap="soft">
+    </textarea><br/>
+    Negative examples<br/>
+    <textarea id=negative_examples rows="10" cols="100" wrap="soft">
+    </textarea><br/>
     <button id="refresh">Refresh</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
 
@@ -80,10 +94,30 @@
 
     xmlhttp_refresh.onreadystatechange = function() {
 	if (xmlhttp_refresh.readyState == 4 && xmlhttp_refresh.status == 200) {
-	    var num_training_examples = JSON.parse(xmlhttp_refresh.responseText);
+	    var status  = JSON.parse(xmlhttp_refresh.responseText);
+	    var num_training_examples = status[0]
+	    var positive_examples = status[1]
+	    var negative_examples = status[2]
+
+	    var positive_examples_string = "";
+	    var negative_examples_string = "";
+
+	    for (var i=0; i < positive_examples.length; i++) {
+		positive_examples_string += positive_examples[i];
+		positive_examples_string += "\n";
+	    }
+	    for (var i=0; i < negative_examples.length; i++) {
+		negative_examples_string += negative_examples[i];
+		negative_examples_string += "\n";
+	    }
+	    
 	    console.log(num_training_examples);
 	    document.getElementById(
 		'num_training_examples').innerHTML = num_training_examples;
+	    document.getElementById(
+		'positive_examples').innerHTML = positive_examples_string;
+	    document.getElementById(
+		'negative_examples').innerHTML = negative_examples_string;
 	    document.getElementById(
 	      'submitting-indicator-refresh').style.visibility = 'hidden';
 

@@ -117,17 +117,29 @@ def restart(job_id, config):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     train(task_information, budget, config, job_id, checkpoint)
 
+def split_examples(task_ids, task_categories, config):
+    positive_examples = []
+    negative_examples = []
+    for task_id, task_category in zip(task_ids,task_categories):
+        answers = parse_answers(task_id, task_category, config, False)
+        new_examples, new_labels = answers
+        for new_example, new_label in zip(new_examples, new_labels):
+            if new_label == 1:
+                positive_examples.append(new_example)
+            else:
+                negative_examples.append(new_example)
+    return positive_examples, negative_examples
+
 def gather_status(job_id, config):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-    num_examples = 0
-    for task_id, task_category in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category, config, False)
-        new_examples, new_labels = answers
-        num_examples += len(new_examples)
+    positive_examples, negative_examples = split_examples(task_ids,
+                                                          task_categories,
+                                                          config)
+    num_examples = len(positive_examples) + len(negative_examples)
 
-    return num_examples
+    return [num_examples, positive_examples, negative_examples]
 
 @app.celery.task(name='retrain')
 def retrain(job_id, config):
@@ -137,15 +149,11 @@ def retrain(job_id, config):
 
     positive_examples = []
     negative_examples = []
+
+    positive_examples, negative_examples = split_examples(task_ids,
+                                                          task_categories,
+                                                          config)
     
-    for task_id, task_category in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category, config, False)
-        new_examples, new_labels = answers
-        for new_example, new_label in zip(new_examples, new_labels):
-            if new_label == 1:
-                positive_examples.append(new_example)
-            else:
-                negative_examples.append(new_example)                
     model_dir = trainCNN(positive_examples, negative_examples)
 
     checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
@@ -321,7 +329,11 @@ def parse_answers(task_id, category, config, wait_until_batch_finished=True):
     elif category['task_name'] == 'Event Negation':
         for answer in answers:
             value = answer['value']
-            examples.append(value)
+            value = value.split('\t')
+            sentence = value[0]
+            previous_sentence_not_example_of_event = value[1]
+            
+            examples.append(sentence)
             labels.append(0)
 
     return examples, labels
