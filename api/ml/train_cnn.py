@@ -17,20 +17,19 @@ testfile_name = 'test_strict_new_feature'
 ################
             
 
-def trainCNN(positive_examples, negative_examples):
+def trainCNN(training_positive_examples, training_negative_examples):
 
             
     model_file_name, vocabulary = train_cnn(
-        positive_examples + negative_examples,
-        [1 for e in positive_examples] + [0 for e in negative_examples])
+        training_positive_examples + training_negative_examples,
+        ([1 for e in training_positive_examples] +
+         [0 for e in training_negative_examples]))
 
+    #This is just for angli's data.
     test_labels, test_examples, test_sentences = parse_test_data(
         testfile_name, [], 4)
-
     predicted_labels =  test_cnn(test_sentences, test_labels,
                                  model_file_name, vocabulary)
-
-
     precision, recall, f1 = computeScores(predicted_labels, test_labels)
 
     print "Results on the test file:"
@@ -38,5 +37,5 @@ def trainCNN(positive_examples, negative_examples):
     print "Recall: %f" % recall
     print "F1: %f" % f1
 
-    
+
     return model_file_name, vocabulary

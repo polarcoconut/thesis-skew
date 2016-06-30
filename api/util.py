@@ -67,3 +67,20 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
 
     return taboo_words
     
+
+
+def write_model_to_file(job_id):
+    model = app.redis.hmget(job_id,'model')[0]
+    
+    model_file_handle = open('temp_model_file', 'wb')
+    model_file_handle.write(model)
+    model_file_handle.close()
+    
+    model_meta = app.redis.hmget(job_id,'model_meta')[0]
+    
+    model_meta_file_handle = open('temp_model_file.meta', 'wb')
+    model_meta_file_handle.write(model_meta)
+    model_meta_file_handle.close()
+
+
+    return 'temp_model_file'

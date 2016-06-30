@@ -43,10 +43,10 @@
     <b> Job Id (save this somewhere!): </b> {{job_id}} <br/>
     <p> <b><span id="num_training_examples">0</span></b> training examples. </p>
     Positive examples:<br/>
-    <textarea id=positive_examples rows="10" cols="100" wrap="soft">
+    <textarea id="positive_examples" rows="10" cols="100" wrap="soft">
     </textarea><br/>
     Negative examples<br/>
-    <textarea id=negative_examples rows="10" cols="100" wrap="soft">
+    <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
     </textarea><br/>
     <button id="refresh">Refresh</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
@@ -59,10 +59,28 @@
       <input type="submit" value="Restart Training">
     </form>
     <hr/>
-    <h2><b> Retrain a CNN using all available training data: </b></h2>
+    <h2><b> Current CNN Model: </b></h2>
+    Trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
     <span id="retrain_status"></span><br/>
-    <button id="retrain">Retrain a CNN</button>
+    <button id="retrain">Retrain the model</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
+    <br/><br/>
+    <button id="cv">Test on Held-out examples:</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
+    F1: <span id="f1"></span> <br/>
+    Precision: <span id="precision"></span> <br/>
+    Recall: <span id="recall"></span> <br/>
+    True Positives:<br/>
+    <textarea id="true_positives" rows="5" cols="100" wrap="soft">
+    </textarea><br/>
+    False Positives:<br/>
+    <textarea id="false_positives" rows="5" cols="100" wrap="soft">
+    </textarea><br/>
+    True Negatives:<br/>
+    <textarea id="true_negatives" rows="5" cols="100" wrap="soft">
+    </textarea><br/>
+    False Negatives:<br/>
+    <textarea id="false_negatives" rows="5" cols="100" wrap="soft">
+    </textarea><br/>
 
     <hr/>
     <h2><b> Try a sentence: </b></h2>
@@ -72,7 +90,10 @@
 
       <br/>
       
-      <b><span id="test_result"></span></b>
+      <h3>Result:<span id="test_result"></span> </h3>
+
+      <br/>
+      <br/>
       </div>
   </body>
 
@@ -81,7 +102,7 @@
   
   <script type="text/javascript">
     //
-    //REFRESH CODE
+    //STATUS CODE
     //
     var xmlhttp_refresh = new XMLHttpRequest();
     var refresh_url = '/gather_status';
@@ -165,6 +186,84 @@
 
 	}
     };
+
+
+    //
+    // Cross validation Code
+    //
+    var xmlhttp_cv = new XMLHttpRequest();
+    var cv_url = '/cv';
+    cv_url += '?job_id={{job_id}}';
+
+    document.getElementById("cv").onclick = cv;
+    function cv() {
+	document.getElementById(
+	    'submitting-indicator-cv').style.visibility = 'visible';
+	xmlhttp_cv.open("GET", cv_url, true);
+	xmlhttp_cv.send();
+
+    }
+
+    xmlhttp_cv.onreadystatechange = function() {
+	if (xmlhttp_cv.readyState == 4 && xmlhttp_cv.status == 200) {
+	    var cv_result = JSON.parse(xmlhttp_cv.responseText);
+
+	    var true_positives = cv_result[0]
+	    var false_positives = cv_result[1]
+	    var true_negatives = cv_result[2]
+	    var false_negatives = cv_result[3]
+	    var stats = cv_result[4]
+	    var precision = stats[0]
+	    var recall = stats[1]
+	    var f1 = stats[2]
+
+	    var true_positives_string = "";
+	    var false_positives_string = "";
+	    var true_negatives_string = "";
+	    var false_negatives_string = "";
+	    
+	    for (var i=0; i < true_positives.length; i++) {
+		true_positives_string += true_positives[i];
+		true_positives_string += "\r\n";
+	    }
+	    for (var i=0; i < false_positives.length; i++) {
+		false_positives_string += false_positives[i];
+		false_positives_string += "\r\n";
+	    }
+	    for (var i=0; i < false_negatives.length; i++) {
+		false_negatives_string += false_negatives[i];
+		false_negatives_string += "\r\n";
+	    }
+	    for (var i=0; i < true_negatives.length; i++) {
+		true_negatives_string += true_negatives[i];
+		true_negatives_string += "\r\n";
+	    }
+	    
+	    
+	    
+	    console.log(cv_result);
+	    
+	    document.getElementById(
+	      'submitting-indicator-cv').style.visibility = 'hidden';
+
+	    document.getElementById(
+		'true_positives').innerHTML = true_positives_string;
+	    document.getElementById(
+		'false_positives').innerHTML = false_positives_string;
+	    document.getElementById(
+		'true_negatives').innerHTML = true_negatives_string;
+	    document.getElementById(
+		'false_negatives').innerHTML = false_negatives_string;
+
+	    document.getElementById(
+		'precision').innerHTML = precision;
+	    document.getElementById(
+		'recall').innerHTML = recall;
+	    document.getElementById(
+		'f1').innerHTML = f1;
+	}
+    };
+
 
 
     //

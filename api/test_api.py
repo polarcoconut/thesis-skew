@@ -4,16 +4,20 @@ import json
 import string
 import pickle
 from app import app
-from train import train
+from train import train, getLatestCheckpoint, split_examples
 import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn
+from ml.computeScores import computeScores
 import redis
+from util import write_model_to_file
 
 test_parser = reqparse.RequestParser()
-
 test_parser.add_argument('job_id', type=str, required=True)
 test_parser.add_argument('test_sentence', type=str, required=True)
+
+cv_parser = reqparse.RequestParser()
+cv_parser.add_argument('job_id', type=str, required=True)
 
 class TestExtractorApi(Resource):
     def get(self):
@@ -25,22 +29,10 @@ class TestExtractorApi(Resource):
         print "Extracting event from sentence:"
         print test_sentence
         sys.stdout.flush()
-
-        model = app.redis.hmget(job_id,'model')[0]
-                                
-        model_file_handle = open('temp_model_file', 'wb')
-        model_file_handle.write(model)
-        model_file_handle.close()
-
-        model_meta = app.redis.hmget(job_id,'model_meta')[0]
-                                
-        model_meta_file_handle = open('temp_model_file.meta', 'wb')
-        model_meta_file_handle.write(model_meta)
-        model_meta_file_handle.close()
-
         
         vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
-        predicted_labels = test_cnn([test_sentence], [0], 'temp_model_file',
+        predicted_labels = test_cnn([test_sentence], [0],
+                                    write_model_to_file(job_id),
                                     vocabulary)
 
         print "predicted_labels"
@@ -48,3 +40,66 @@ class TestExtractorApi(Resource):
         sys.stdout.flush()
             
         return predicted_labels[0]
+
+class CrossValidationExtractorApi(Resource):
+    def get(self):
+
+        args = cv_parser.parse_args()
+        job_id = args['job_id']
+
+        print "Doing cross validation"
+        sys.stdout.flush()
+
+        task_information, budget, checkpoint = getLatestCheckpoint(
+            job_id, app.config)
+        (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+        test_positive_examples, test_negative_examples = split_examples(
+            task_ids[-2:],
+            task_categories[-2:],
+            app.config)
+        test_labels = ([1 for e in test_positive_examples] +
+                       [0 for e in test_negative_examples])
+        
+        vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
+
+        predicted_labels = test_cnn(
+            test_positive_examples + test_negative_examples,
+            test_labels,
+            write_model_to_file(job_id),
+            vocabulary)
+
+        print "predicted_labels"
+        print predicted_labels
+        sys.stdout.flush()
+
+        precision, recall, f1 = computeScores(predicted_labels, test_labels)
+
+
+        true_positives = []
+        false_positives = []
+        true_negatives = []
+        false_negatives = []
+
+        for example, label in zip(
+                test_positive_examples,
+                predicted_labels[0:len(test_positive_examples)]):
+            if label == 1:
+                true_positives.append(example)
+            else:
+                false_negatives.append(example)
+
+        for example, label in zip(
+                test_negative_examples,
+                predicted_labels[len(test_positive_examples):]):
+            if label == 1:
+                false_positives.append(example)
+            else:
+                true_negatives.append(example)
+
+
+        return (true_positives,
+                false_positives,
+                true_negatives,
+                false_negatives,
+                [precision, recall, f1])

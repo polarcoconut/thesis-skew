@@ -157,14 +157,15 @@ def retrain(job_id, config):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-    positive_examples = []
-    negative_examples = []
 
-    positive_examples, negative_examples = split_examples(task_ids,
-                                                          task_categories,
-                                                          config)
+    training_positive_examples, training_negative_examples = split_examples(
+        task_ids[0:-2],
+        task_categories[0:-2],
+        config)
+
     
-    model_file_name, vocabulary = trainCNN(positive_examples, negative_examples)
+    model_file_name, vocabulary = trainCNN(
+        training_positive_examples, training_negative_examples)
 
 
     app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))

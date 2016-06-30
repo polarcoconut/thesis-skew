@@ -125,3 +125,6 @@ api.add_resource(RetrainStatusApi, '/retrain_status')
 
 from api.test_api import TestExtractorApi
 api.add_resource(TestExtractorApi, '/test')
+
+from api.test_api import CrossValidationExtractorApi
+api.add_resource(CrossValidationExtractorApi, '/cv')
