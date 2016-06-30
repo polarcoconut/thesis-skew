@@ -108,6 +108,8 @@ def getLatestCheckpoint(job_id, config):
         timestamps.remove('model')
     if 'model_dir' in timestamps:
         timestamps.remove('model_dir')
+    if 'model_meta' in timestamps:
+        timestamps.remove('model_meta')
     if 'vocabulary' in timestamps:
         timestamps.remove('vocabulary')
 
@@ -151,6 +153,7 @@ def gather_status(job_id, config):
 @app.celery.task(name='retrain')
 def retrain(job_id, config):
     print "Retraining a CNN"
+    sys.stdout.flush()
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
@@ -163,16 +166,20 @@ def retrain(job_id, config):
     
     model_file_name, vocabulary = trainCNN(positive_examples, negative_examples)
 
-    app.redis.hset(job_id, 'model_file_name', model_file_name)
 
     app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))
 
     model_file_handle = open(model_file_name, 'rb')
-    model_file_binary = model_file_handle.read()
-    
-    app.redis.hset(job_id, 'model', model_file_binary)
+    model_binary = model_file_handle.read()
+    app.redis.hset(job_id, 'model', model_binary)
+
+    model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
+    model_meta_binary = model_meta_file_handle.read()
+    app.redis.hset(job_id, 'model_meta', model_meta_binary)
+
     
     model_file_handle.close()
+    model_meta_file_handle.close()
                 
     return True
 
@@ -322,18 +329,19 @@ def parse_answers(task_id, category, config, wait_until_batch_finished=True):
 
     answers = get_answers(task_id, category, config)
 
+    print "Number of answers"
+    print len(answers)
+    sys.stdout.flush()
+            
     if wait_until_batch_finished and (len(answers) <
         config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_APQ']):
         return None
 
     examples = []
     labels = []
-    print "Answers"
     if category['task_name'] == 'Event Generation':
         for answer in answers:
             value = answer['value']
-            print value
-            sys.stdout.flush()
                 
             value = value.split('\t')
             sentence = value[0]

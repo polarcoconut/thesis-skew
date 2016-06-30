@@ -26,15 +26,21 @@ class TestExtractorApi(Resource):
         print test_sentence
         sys.stdout.flush()
 
-        model_file_name = app.redis.hmget(job_id, 'model_file_name')[0]
         model = app.redis.hmget(job_id,'model')[0]
                                 
-        model_file_handle = open(model_file_name, 'wb')
+        model_file_handle = open('temp_model_file', 'wb')
         model_file_handle.write(model)
         model_file_handle.close()
 
+        model_meta = app.redis.hmget(job_id,'model_meta')[0]
+                                
+        model_meta_file_handle = open('temp_model_file.meta', 'wb')
+        model_meta_file_handle.write(model_meta)
+        model_meta_file_handle.close()
+
+        
         vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
-        predicted_labels = test_cnn([test_sentence], [0], model_file_name,
+        predicted_labels = test_cnn([test_sentence], [0], 'temp_model_file',
                                     vocabulary)
 
         print "predicted_labels"

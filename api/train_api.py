@@ -110,7 +110,7 @@ class RetrainExtractorApi(Resource):
         args = retrain_parser.parse_args()
         job_id = args['job_id']
 
-        app.redis.hset(job_id, 'model_file_name', 'None')
+        app.redis.hset(job_id, 'model_meta', 'None')
         app.redis.hset(job_id, 'model', 'None')
 
         retrain.delay(job_id, app.config)            
@@ -123,7 +123,7 @@ class RetrainStatusApi(Resource):
         args = retrain_status_parser.parse_args()
         job_id = args['job_id']
 
-        model_file_name = app.redis.hmget(job_id, 'model_file_name')[0]
+        model_file_name = app.redis.hmget(job_id, 'model_meta')[0]
         if model_file_name == 'None':
             return 'Model still training...'
         else:
