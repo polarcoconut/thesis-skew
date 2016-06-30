@@ -47,7 +47,7 @@ def train_cnn(training_sentences, training_labels):
     # Load data
     print("Loading data...")
     sys.argv
-    x, y, vocabulary, vocabulary_inv = data_helpers.load_data(
+    x, y, vocabulary, vocabulary_inv, sequence_length = data_helpers.load_data(
         training_sentences, training_labels)
     # Randomly shuffle data
     np.random.seed(10)
@@ -200,6 +200,6 @@ def train_cnn(training_sentences, training_labels):
                 if current_step % FLAGS.checkpoint_every == 0:
                     path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                     print("Saved model checkpoint to {}\n".format(path))
-
-            #Return the model directory
-            return checkpoint_dir
+                    
+            checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
+            return checkpoint_file,(vocabulary, vocabulary_inv, sequence_length)

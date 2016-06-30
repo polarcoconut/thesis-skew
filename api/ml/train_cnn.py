@@ -1,23 +1,16 @@
 from constructTrainingData import constructTrainingData
 from computeScores import computeScores
-from extractors.cnn import run_cnn
+#from extractors.cnn import run_cnn
+from extractors.parse import parse_test_data, parse_training_data
+from extractors.cnn_core.train import train_cnn
+from extractors.cnn_core.test import test_cnn
+from extractors.cnn_core.computeScores import computeScores
+from app import app
 
 ################
 # CONFIGURATION
 relations = ['nationality', 'born', 'lived', 'died', 'travel']
 amount_of_data = [1898, 496, 3897, 1493, 1992]
-
-#Extractor Choices: 'multir', 'lr', 'mimlre', 'cnn'
-#extractor = 'multir' 
-#extractor = 'lr'
-extractor = 'cnn'
-#extractor = 'mimlre'
-
-len_positive_data = 400
-negative_to_positive_ratio = 1.0
-base_negative_to_positive_ratio = 1.0
-#Where to put multir results
-outputfile_name = 'extremestextraction_results'
 
 testfile_name = 'test_strict_new_feature'
 
@@ -26,20 +19,24 @@ testfile_name = 'test_strict_new_feature'
 
 def trainCNN(positive_examples, negative_examples):
 
-        
-    training_data_file_name = constructTrainingData(positive_examples,
-                                                    negative_examples)
-    
-    (model_dir, results) = run_cnn(
-        training_data_file_name,
-        testfile_name,
-        outputfile_name, False)
+            
+    model_file_name, vocabulary = train_cnn(
+        positive_examples + negative_examples,
+        [1 for e in positive_examples] + [0 for e in negative_examples])
 
-    precision, recall, f1 = results
+    test_labels, test_examples, test_sentences = parse_test_data(
+        testfile_name, [], 4)
+
+    predicted_labels =  test_cnn(test_sentences, test_labels,
+                                 model_file_name, vocabulary)
+
+
+    precision, recall, f1 = computeScores(predicted_labels, test_labels)
 
     print "Results on the test file:"
     print "Precision: %f" % precision
     print "Recall: %f" % recall
     print "F1: %f" % f1
 
-    return model_dir
+    
+    return model_file_name, vocabulary

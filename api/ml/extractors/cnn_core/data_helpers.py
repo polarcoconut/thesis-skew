@@ -5,6 +5,7 @@ from collections import Counter
 from parse import parse_test_data
 from random import shuffle
 import pickle
+from app import app
 
 def clean_str(string):
     """
@@ -174,25 +175,29 @@ def load_data(training_sentences, training_labels):
     vocabulary, vocabulary_inv = build_vocab(sentences_padded)
 
     #remember the vocabulary that was used.
-    pickle.dump((vocabulary, vocabulary_inv, sequence_length),
-                open('temp_data', 'wb'))
+
+    #pickle.dump((vocabulary, vocabulary_inv, sequence_length),
+    #            open('temp_data', 'wb'))
 
     #pickle.dump((sentences, labels),
     #            open('temp_data', 'wb'))
 
     x, y = build_input_data(sentences_padded, labels, vocabulary)
-    return [x, y, vocabulary, vocabulary_inv]
+    return [x, y, vocabulary, vocabulary_inv, sequence_length]
 
-def load_test_data(test_sentences, test_labels):
+def load_test_data(test_sentences, test_labels, vocabulary):
     """
     Loads and preprocessed data for the MR dataset.
     Returns input vectors, labels, vocabulary, and inverse vocabulary.
     """
 
  
-    (train_vocabulary, train_vocabulary_inv, sequence_length) = pickle.load(
-        open('temp_data', 'rb'))
-   
+    #(train_vocabulary, train_vocabulary_inv, sequence_length) = pickle.load(
+    #    open('temp_data', 'rb'))
+
+
+    (train_vocabulary, train_vocabulary_inv, sequence_length) = vocabulary
+
     # Load and preprocess data
     test_sentences, test_labels = load_test_data_and_labels(
         test_sentences, test_labels)

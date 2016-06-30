@@ -1,6 +1,8 @@
 <html>
   <head>
     <title>Extremest Extraction></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
      <style type='text/css'>
        textarea {
        white-space: nowrap;
@@ -12,6 +14,7 @@
      </style>
   </head>
   <body>
+    <div class="container">
     <h3> Extremest Extraction v0.1</h3>
     <h2> Your event is now being learned! </h2>
     <b>Event:</b> {{ event_name }}
@@ -70,6 +73,7 @@
       <br/>
       
       <b><span id="test_result"></span></b>
+      </div>
   </body>
 
 
@@ -128,15 +132,16 @@
     // TEST CODE
     //
     var xmlhttp_test = new XMLHttpRequest();
-    var test_url = '/test';
-    test_url += '?job_id={{job_id}}';
 
     document.getElementById("test").onclick = test;
     function test() {
 	document.getElementById(
 	    'submitting-indicator-test').style.visibility = 'visible';
+	var test_url = '/test';
+	test_url += '?job_id={{job_id}}';
 	test_url += '&test_sentence=';
 	var test_sentence = document.getElementById("test_sentence").value;
+	console.log(test_sentence);
 	test_url += test_sentence;
 
 	xmlhttp_test.open("GET", test_url, true);
@@ -187,7 +192,7 @@
 	    document.getElementById(
 		'retrain_status').innerHTML = 'Retraining...';
 	    
-	    setTimeout(check_retrain_status,5000);
+	    setTimeout(check_retrain_status,10000);
 	    
 	}
     };
@@ -209,7 +214,7 @@
 		document.getElementById(
 		    'retrain').disabled = false;
 	    } else {
-		setTimeout(check_retrain_status, 5000);
+		setTimeout(check_retrain_status, 10000);
 
 	    }
 	    

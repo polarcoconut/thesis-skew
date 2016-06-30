@@ -5,11 +5,9 @@ from flask.ext.restful import Api
 from flask.ext.mail import Mail
 from flask import render_template
 import uuid
-from rq import Queue
-import redis
 from boto.mturk.connection import MTurkConnection
 from celery import Celery
-
+import redis
 
 app = Flask(__name__)
 
@@ -50,10 +48,10 @@ print "Loading mail extension"
 sys.stdout.flush()
 mail = Mail(app)
 
-#print "Loading redis and redis queue"
+print "Loading redis"
 #from worker import conn
 #app.rq = Queue(connection = conn)
-#app.redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
+app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
 
 print "Loading Celery"
 def make_celery(app):

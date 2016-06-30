@@ -99,16 +99,23 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
 
 def getLatestCheckpoint(job_id, config):
     #read the latest checkpoint
-    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-    timestamps = checkpoint_redis.hkeys(job_id)
-    timestamps.remove('task_information')
-    timestamps.remove('model_dir')
+    timestamps = app.redis.hkeys(job_id)
+    if 'task_information' in timestamps:
+        timestamps.remove('task_information')
+    if 'model_file_name' in timestamps:
+        timestamps.remove('model_file_name')
+    if 'model' in timestamps:
+        timestamps.remove('model')
+    if 'model_dir' in timestamps:
+        timestamps.remove('model_dir')
+    if 'vocabulary' in timestamps:
+        timestamps.remove('vocabulary')
 
     most_recent_timestamp = max([int(x) for x in timestamps])
 
-    checkpoint = checkpoint_redis.hmget(job_id, most_recent_timestamp)[0]
+    checkpoint = app.redis.hmget(job_id, most_recent_timestamp)[0]
     (task_information, budget) = pickle.loads(
-        checkpoint_redis.hmget(job_id, 'task_information')[0])
+        app.redis.hmget(job_id, 'task_information')[0])
 
     return (task_information, budget, checkpoint)
 
@@ -154,14 +161,19 @@ def retrain(job_id, config):
                                                           task_categories,
                                                           config)
     
-    model_dir = trainCNN(positive_examples, negative_examples)
+    model_file_name, vocabulary = trainCNN(positive_examples, negative_examples)
 
-    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-    checkpoint_redis.hset(job_id, 'model_dir', model_dir)
+    app.redis.hset(job_id, 'model_file_name', model_file_name)
 
-    print "Model Dir:"
-    print model_dir
+    app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))
+
+    model_file_handle = open(model_file_name, 'rb')
+    model_file_binary = model_file_handle.read()
     
+    app.redis.hset(job_id, 'model', model_file_binary)
+    
+    model_file_handle.close()
+                
     return True
 
 """
@@ -206,7 +218,9 @@ def train(task_information, budget, config, job_id, checkpoint = None):
         checkpoint_redis.hset(job_id,
                               'task_information',
                               pickle.dumps((task_information, budget)))
-        checkpoint_redis.hset(job_id,'model_dir','None')
+        checkpoint_redis.hset(job_id,'model_file_name','None')
+        checkpoint_redis.hset(job_id,'model','None')
+
         
         
 

@@ -26,10 +26,16 @@ class TestExtractorApi(Resource):
         print test_sentence
         sys.stdout.flush()
 
-        checkpoint_redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
-        model_dir = checkpoint_redis.hmget(job_id, 'model_dir')[0]
+        model_file_name = app.redis.hmget(job_id, 'model_file_name')[0]
+        model = app.redis.hmget(job_id,'model')[0]
+                                
+        model_file_handle = open(model_file_name, 'wb')
+        model_file_handle.write(model)
+        model_file_handle.close()
 
-        predicted_labels = test_cnn([test_sentence], [0], model_dir)
+        vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
+        predicted_labels = test_cnn([test_sentence], [0], model_file_name,
+                                    vocabulary)
 
         print "predicted_labels"
         print predicted_labels

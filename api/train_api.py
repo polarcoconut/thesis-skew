@@ -110,8 +110,8 @@ class RetrainExtractorApi(Resource):
         args = retrain_parser.parse_args()
         job_id = args['job_id']
 
-        checkpoint_redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
-        checkpoint_redis.hset(job_id, 'model_dir', 'None')
+        app.redis.hset(job_id, 'model_file_name', 'None')
+        app.redis.hset(job_id, 'model', 'None')
 
         retrain.delay(job_id, app.config)            
 
@@ -123,9 +123,8 @@ class RetrainStatusApi(Resource):
         args = retrain_status_parser.parse_args()
         job_id = args['job_id']
 
-        checkpoint_redis = redis.StrictRedis.from_url(app.config['REDIS_URL'])
-        model_dir = checkpoint_redis.hmget(job_id, 'model_dir')[0]
-        if model_dir == 'None':
+        model_file_name = app.redis.hmget(job_id, 'model_file_name')[0]
+        if model_file_name == 'None':
             return 'Model still training...'
         else:
             return 'Model Ready'

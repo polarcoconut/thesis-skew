@@ -80,7 +80,9 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = True
     MTURK_HOST = 'mechanicalturk.sandbox.amazonaws.com'
-
+    #CELERY_REDIS_MAX_CONNECTIONS = 5
+    BROKER_POOL_LIMIT = 0
+    
 class Production(Config):
     DEBUG = False
     DEVELOPMENT = False

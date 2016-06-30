@@ -12,7 +12,7 @@ from computeScores import computeScores
 # Parameters
 # ==================================================
 
-def test_cnn(test_examples, test_labels, checkpoint_dir):
+def test_cnn(test_examples, test_labels, checkpoint_file, vocabulary):
     # Eval Parameters
     #tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
     #tf.flags.DEFINE_string("checkpoint_dir", checkpoint_dir, "checkpoint directory from training run")
@@ -31,7 +31,7 @@ def test_cnn(test_examples, test_labels, checkpoint_dir):
 
     # Load data. Load your own data here
     print("Loading data...")
-    x_test, y_test, vocabulary, vocabulary_inv = data_helpers.load_test_data(test_examples, test_labels)
+    x_test, y_test, vocabulary, vocabulary_inv = data_helpers.load_test_data(test_examples, test_labels, vocabulary)
     #x_test, y_test, vocabulary, vocabulary_inv = data_helpers.load_data()
 
     y_test = np.argmax(y_test, axis=1)
@@ -42,8 +42,8 @@ def test_cnn(test_examples, test_labels, checkpoint_dir):
 
     # Evaluation
     # ==================================================
-    #checkpoint_file = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
-    checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
+
+    #checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
     graph = tf.Graph()
     with graph.as_default():
         session_conf = tf.ConfigProto(
