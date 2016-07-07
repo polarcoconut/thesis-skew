@@ -106,3 +106,6 @@ api.add_resource(TestExtractorApi, '/test')
 
 from api.test_api import CrossValidationExtractorApi
 api.add_resource(CrossValidationExtractorApi, '/cv')
+
+from api.util_api import MoveJobsFromRedisToMongoApi
+api.add_resource(MoveJobsFromRedisToMongoApi, '/move')

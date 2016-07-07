@@ -71,9 +71,6 @@ class TrainExtractorApi(Resource):
 
         #Generate a random job_id
         job = Job(task_information = pickle.dumps((task_information, budget)),
-                  model = 'None',
-                  model_meta = 'None',
-                  vocabulary = 'None',
                   num_training_examples_in_model = -1,
                   checkpoints = {})
         job.save()
@@ -119,9 +116,6 @@ class RetrainExtractorApi(Resource):
         job_id = args['job_id']
 
         job = Job.objects.get(id = job_id)
-        job.model = 'None'
-        job.model_meta = 'None'
-        job.vocabulary = 'None'
         job.num_training_examples_in_model = -1
         job.save()
         
@@ -141,3 +135,6 @@ class RetrainStatusApi(Resource):
         #model_file_name = app.redis.hmget(job_id, 'model_meta')[0]
         job = Job.objects.get(id=job_id)
         return job.num_training_examples_in_model
+
+
+
