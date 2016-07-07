@@ -43,7 +43,7 @@ class MoveJobsFromRedisToMongoApi(Resource):
             timestamps.remove('num_training_examples_in_model')
 
         for timestamp in timestamps:
-            checkpoints[timestamp] = redis_handle.hmget(job_id, timestamp)
+            checkpoints[timestamp] = redis_handle.hmget(job_id, timestamp)[0]
 
         
         job = Job(task_information = task_information,
