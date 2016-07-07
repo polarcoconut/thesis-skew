@@ -48,4 +48,4 @@ class MoveJobsFromRedisToMongoApi(Resource):
 
         job.save()
         
-        return job.id
+        return str(job.id)
