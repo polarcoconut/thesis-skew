@@ -28,7 +28,7 @@ mail = Mail(app)
 print "Loading redis and mongo"
 #from worker import conn
 #app.rq = Queue(connection = conn)
-#app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
+app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
 db = MongoEngine(app)
 
 print "Loading Celery"
