@@ -3,6 +3,7 @@ from flask import Flask
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
 from flask.ext.mail import Mail
+from flask.ext.mongoengine import MongoEngine
 from flask import render_template
 import uuid
 from boto.mturk.connection import MTurkConnection
@@ -12,30 +13,6 @@ import redis
 app = Flask(__name__)
 
 app.config.from_object(os.environ['APP_SETTINGS'])
-
-#app.AWS_ACCESS_KEY_ID = app.config['AWS_ACCESS_KEY_ID']
-#app.AWS_SECRET_ACCESS_KEY = app.config['AWS_SECRET_ACCESS_KEY']
-
-#app.CROWDJS_API_KEY = app.config['CROWDJS_API_KEY']
-#app.CROWDJS_REQUESTER_ID = app.config['CROWDJS_REQUESTER_ID']
-
-#app.CROWDJS_GET_ANSWERS_URL = app.config['CROWDJS_GET_ANSWERS_URL']
-#app.CROWDJS_SUBMIT_ANSWER_URL = app.config['CROWDJS_SUBMIT_ANSWER_URL']
-#app.CROWDJS_PUT_TASK_URL =  app.config['CROWDJS_PUT_TASK_URL']
-#app.CROWDJS_GET_TASK_DATA_URL =  app.config['CROWDJS_GET_TASK_DATA_URL']
-#app.CROWDJS_PUT_TASK_DATA_URL =  app.config['CROWDJS_PUT_TASK_DATA_URL']
-#app.CROWDJS_PUT_QUESTIONS_URL =  app.config['CROWDJS_PUT_QUESTIONS_URL']
-#app.CROWDJS_RETURN_HIT_URL =  app.config['CROWDJS_RETURN_HIT_URL']
-#app.CROWDJS_ASSIGN_URL =  app.config['CROWDJS_ASSIGN_URL']
-
-#app.MTURK_HOST = app.config['MTURK_HOST']
-#app.CONTROLLER = app.config['CONTROLLER']
-#app.CONTROLLER_BATCH_SIZE = app.config['CONTROLLER_BATCH_SIZE']
-#app.config['CONTROLLER_BATCH_SIZE'] = int(app.config['CONTROLLER_BATCH_SIZE'])
-#app.CONTROLLER_APQ = app.config['CONTROLLER_APQ']
-#app.config['CONTROLLER_APQ'] = int(app.config['CONTROLLER_APQ'])
-
-#app.EXAMPLE_CATEGORIES = app.config['EXAMPLE_CATEGORIES']
 
 api = Api(app)
 
@@ -48,10 +25,11 @@ print "Loading mail extension"
 sys.stdout.flush()
 mail = Mail(app)
 
-print "Loading redis"
+print "Loading redis and mongo"
 #from worker import conn
 #app.rq = Queue(connection = conn)
-app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
+#app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
+db = MongoEngine(app)
 
 print "Loading Celery"
 def make_celery(app):

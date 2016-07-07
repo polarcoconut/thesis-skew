@@ -11,6 +11,7 @@ from ml.extractors.cnn_core.test import test_cnn
 from ml.computeScores import computeScores
 import redis
 from util import write_model_to_file
+from schema.job import Job
 
 test_parser = reqparse.RequestParser()
 test_parser.add_argument('job_id', type=str, required=True)
@@ -29,8 +30,10 @@ class TestExtractorApi(Resource):
         print "Extracting event from sentence:"
         print test_sentence
         sys.stdout.flush()
-        
-        vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
+
+        #vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
+        job = Job.objects.get(id = job_id)
+        vocabulary = pickle.loads(job.vocabulary)
         predicted_labels = test_cnn([test_sentence], [0],
                                     write_model_to_file(job_id),
                                     vocabulary)
@@ -60,8 +63,10 @@ class CrossValidationExtractorApi(Resource):
             app.config)
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
-        
-        vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
+
+        job = Job.objects.get(id = job_id)
+        vocabulary = pickle.loads(job.vocabulary)
+        #vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
 
         predicted_labels = test_cnn(
             test_positive_examples + test_negative_examples,

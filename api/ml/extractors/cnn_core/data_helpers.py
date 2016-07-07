@@ -116,7 +116,7 @@ def pad_sentences(sentences, padding_word="<PAD/>", sequence_length = None):
     padded_sentences = []
     for i in range(len(sentences)):
         sentence = sentences[i]
-        num_padding = sequence_length - len(sentence)
+        num_padding = sequence_length - len(sentence) + 1
         if num_padding < 0:
             new_sentence = sentence[0: len(sentence)+num_padding]
         else:

@@ -8,7 +8,7 @@ from train import train, restart, gather_status, retrain
 import sys
 import uuid
 import redis
-
+from schema.job import Job
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -70,7 +70,15 @@ class TrainExtractorApi(Resource):
         budget = int(args['budget'])
 
         #Generate a random job_id
-        job_id = str(uuid.uuid4())
+        job = Job(task_information = pickle.dumps((task_information, budget)),
+                  model = 'None',
+                  model_meta = 'None',
+                  vocabulary = 'None',
+                  num_training_examples_in_model = -1,
+                  checkpoints = {})
+        job.save()
+        job_id = str(job.id)
+        
         train.delay(task_information, budget, app.config, job_id)
             
         return redirect(url_for(
@@ -110,8 +118,15 @@ class RetrainExtractorApi(Resource):
         args = retrain_parser.parse_args()
         job_id = args['job_id']
 
-        app.redis.hset(job_id, 'model_meta', 'None')
-        app.redis.hset(job_id, 'model', 'None')
+        job = Job.objects.get(id = job_id)
+        job.model = 'None'
+        job.model_meta = 'None'
+        job.vocabulary = 'None'
+        job.num_training_examples_in_model = -1
+        job.save()
+        
+        #app.redis.hset(job_id, 'model_meta', 'None')
+        #app.redis.hset(job_id, 'model', 'None')
 
         retrain.delay(job_id, app.config)            
 
@@ -123,9 +138,6 @@ class RetrainStatusApi(Resource):
         args = retrain_status_parser.parse_args()
         job_id = args['job_id']
 
-        model_file_name = app.redis.hmget(job_id, 'model_meta')[0]
-        if model_file_name == 'None':
-            return 'Model still training...'
-        else:
-            return 'Model Ready'
-
+        #model_file_name = app.redis.hmget(job_id, 'model_meta')[0]
+        job = Job.objects.get(id=job_id)
+        return job.num_training_examples_in_model

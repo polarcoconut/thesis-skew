@@ -4,6 +4,7 @@ import sys
 import json
 import requests
 from app import app
+from schema.job import Job
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -70,17 +71,23 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
 
 
 def write_model_to_file(job_id):
-    model = app.redis.hmget(job_id,'model')[0]
+    job = Job.objects.get(id = job_id)
+
+        
     
-    model_file_handle = open('temp_model_file', 'wb')
-    model_file_handle.write(model)
-    model_file_handle.close()
+    #model = app.redis.hmget(job_id,'model')[0]
+    #model_file = job.model_file.read()
     
-    model_meta = app.redis.hmget(job_id,'model_meta')[0]
+    temp_model_file_handle = open('temp_model_file', 'wb')
+    temp_model_file_handle.write(job.model_file)
+    temp_model_file_handle.close()
     
-    model_meta_file_handle = open('temp_model_file.meta', 'wb')
-    model_meta_file_handle.write(model_meta)
-    model_meta_file_handle.close()
+    #model_meta = app.redis.hmget(job_id,'model_meta')[0]
+    #model_meta_file = job.model_meta_file.read()
+    
+    temp_model_meta_file_handle = open('temp_model_file.meta', 'wb')
+    temp_model_meta_file_handle.write(job.model_meta_file)
+    temp_model_meta_file_handle.close()
 
 
     return 'temp_model_file'

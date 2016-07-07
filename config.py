@@ -4,19 +4,19 @@ class Config(object):
     DEBUG = False
     TESTING = False
 
-    #mongolab_uri = os.environ['MONGOLAB_URI'].split('/')
-    #(dbuser, dbpass_host, port) = mongolab_uri[2].split(':')
-    #(dbpass, host) = dbpass_host.split('@')
-    #dbname = mongolab_uri[3]
+    mongolab_uri = os.environ['MONGOLAB_URI'].split('/')
+    (dbuser, dbpass_host, port) = mongolab_uri[2].split(':')
+    (dbpass, host) = dbpass_host.split('@')
+    dbname = mongolab_uri[3]
 
     REDIS_URL = os.environ['REDIS_URL']
 
-    #MONGODB_SETTINGS = {    
-    #    'db': dbname,
-    #    'host': host,
-    #    'port': int(port),
-    #    'username' : dbuser,
-    #    'password' : dbpass}
+    MONGODB_SETTINGS = {    
+        'db': dbname,
+        'host': host,
+        'port': int(port),
+        'username' : dbuser,
+        'password' : dbpass}
 
     SECRET_KEY = 'super-secret'
     SECURITY_REGISTERABLE = True
@@ -73,7 +73,6 @@ class Config(object):
     CELERY_TIMEZONE = 'UTC'
     CELERY_IMPORTS = ['api.util', 'api.train']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
-
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True

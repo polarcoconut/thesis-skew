@@ -305,7 +305,9 @@
 	    xmlhttp_retrain_status.status == 200) {
 	    var response = JSON.parse(xmlhttp_retrain_status.responseText);
 	    console.log(response);
-	    if (response == 'Model Ready') {
+	    if (response >= 0) {
+		document.getElementById(
+		    'num_training_examples_in_model').innerHTML = response;
 		document.getElementById(
 		    'retrain_status').innerHTML = 'Model Ready.';
 		document.getElementById(

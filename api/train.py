@@ -17,6 +17,7 @@ import sys
 import redis
 from ml.train_cnn import trainCNN
 from ml.extractors.cnn_core.test import test_cnn
+from schema.job import Job
 
 def upload_questions(task, config):
     headers = {'Authentication-Token': config['CROWDJS_API_KEY'],
@@ -99,25 +100,20 @@ def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
 
 def getLatestCheckpoint(job_id, config):
     #read the latest checkpoint
-    timestamps = app.redis.hkeys(job_id)
-    if 'task_information' in timestamps:
-        timestamps.remove('task_information')
-    if 'model_file_name' in timestamps:
-        timestamps.remove('model_file_name')
-    if 'model' in timestamps:
-        timestamps.remove('model')
-    if 'model_dir' in timestamps:
-        timestamps.remove('model_dir')
-    if 'model_meta' in timestamps:
-        timestamps.remove('model_meta')
-    if 'vocabulary' in timestamps:
-        timestamps.remove('vocabulary')
+    job = Job.objects.get(id = job_id)
 
+
+    timestamps = job.checkpoints.keys()
+
+        
     most_recent_timestamp = max([int(x) for x in timestamps])
 
-    checkpoint = app.redis.hmget(job_id, most_recent_timestamp)[0]
-    (task_information, budget) = pickle.loads(
-        app.redis.hmget(job_id, 'task_information')[0])
+    #checkpoint = app.redis.hmget(job_id, most_recent_timestamp)[0]
+    #    (task_information, budget) = pickle.loads(
+    #        app.redis.hmget(job_id, 'task_information')[0])
+
+    checkpoint = job.checkpoints[str(most_recent_timestamp)]
+    (task_information, budget) = pickle.loads(job.task_information)
 
     return (task_information, budget, checkpoint)
 
@@ -167,38 +163,54 @@ def retrain(job_id, config):
     model_file_name, vocabulary = trainCNN(
         training_positive_examples, training_negative_examples)
 
-
-    app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))
+    
+    #app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))
 
     model_file_handle = open(model_file_name, 'rb')
     model_binary = model_file_handle.read()
-    app.redis.hset(job_id, 'model', model_binary)
+    #app.redis.hset(job_id, 'model', model_binary)
 
     model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
     model_meta_binary = model_meta_file_handle.read()
-    app.redis.hset(job_id, 'model_meta', model_meta_binary)
+    #app.redis.hset(job_id, 'model_meta', model_meta_binary)
 
-    
+    print "Saving the model"
+    print job_id
+    sys.stdout.flush()
+
+    job = Job.objects.get(id=job_id)
+    job.vocabulary = pickle.dumps(vocabulary)
+    job.model_file = model_binary
+    job.model_meta_file = model_meta_binary
+    #job.model_file.replace(model_file_handle)
+    #job.model_meta_file.replace(model_meta_file_handle)
+    print "Model saved"
+    sys.stdout.flush()
+
+    job.num_training_examples_in_model = (
+        len(training_positive_examples) + len(training_negative_examples))
+
+    print "training saved"
+    sys.stdout.flush()
+
+    job.save()
+
+    print "Job modified"
+    sys.stdout.flush()
+
     model_file_handle.close()
     model_meta_file_handle.close()
-                
+
+    print "file handles closed"
+    sys.stdout.flush()
+    
     return True
 
-"""
-def test(job_id, test_sentence, config):
-
-    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
-    model_dir = checkpoint_redis.hmget(job_id, 'model_dir')[0]
-
-    predicted_labels = test_cnn([test_sentence], [0], model_dir)
-
-    return predicted_labels[0]
-"""
 
 @app.celery.task(name='train')
 def train(task_information, budget, config, job_id, checkpoint = None):
 
-    checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
+    #checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
     training_examples = []
     training_labels = []
     task_ids = []
@@ -222,12 +234,13 @@ def train(task_information, budget, config, job_id, checkpoint = None):
             training_labels.append(new_labels)
 
         
-    else:
-        checkpoint_redis.hset(job_id,
-                              'task_information',
-                              pickle.dumps((task_information, budget)))
-        checkpoint_redis.hset(job_id,'model_file_name','None')
-        checkpoint_redis.hset(job_id,'model','None')
+    #else:
+    #    
+    #    checkpoint_redis.hset(job_id,
+    #                          'task_information',
+    #                          pickle.dumps((task_information, budget)))
+    #    checkpoint_redis.hset(job_id,'model_file_name','None')
+    #    checkpoint_redis.hset(job_id,'model','None')
 
         
         
@@ -240,6 +253,17 @@ def train(task_information, budget, config, job_id, checkpoint = None):
         print "Number of training example batches and label batches: %d, %d" % (
             len(training_examples), len(training_labels))
         print training_examples
+
+        #make a checkpoint
+        checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
+        #checkpoint_redis.set(str(int(time.time())), checkpoint)
+        job = Job.objects.get(id = job_id)
+        job.checkpoints[str(int(time.time()))] = checkpoint
+        job.save()
+        #checkpoint_redis.hset(job_id, 
+        #                      str(int(time.time())),
+        #                      checkpoint)
+
         #If we have task_ids, wait for the last one to complete.
         if len(task_ids) > 0:
             task_id = task_ids[-1]
@@ -305,12 +329,6 @@ def train(task_information, budget, config, job_id, checkpoint = None):
         costSoFar += (config['CONTROLLER_BATCH_SIZE'] *
                       config['CONTROLLER_APQ'])
         
-        #make a checkpoint
-        checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
-        #checkpoint_redis.set(str(int(time.time())), checkpoint)
-        checkpoint_redis.hset(job_id, 
-                              str(int(time.time())),
-                              checkpoint)
 
 
 
