@@ -31,6 +31,10 @@ class MoveJobsFromRedisToMongoApi(Resource):
             timestamps.remove('model_meta')
         if 'model_file' in timestamps:
             timestamps.remove('model_file')
+        if 'model_dir' in timestamps:
+            timestamps.remove('model_dir')
+        if 'model_file_name' in timestamps:
+            timestamps.remove('model_file_name')
         if 'model_meta_file' in timestamps:
             timestamps.remove('model_meta_file')
         if 'vocabulary' in timestamps:
