@@ -57,15 +57,17 @@ class Config(object):
         'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
         'needs_data': True,
         'label': 0,
+        'hit_html' : open('tasks/negateevent.html').read(),
         'task_name' : 'Event Negation',
-        'task_description' : 'Negate a sentence'}
+        'task_description' : 'Modify a sentence so that an event is no longer expressed by the sentence.'}
     RECALL_EXAMPLE_TASK = {
         'hit_layout_id' : os.environ['RECALL_LAYOUT_ID'],
         'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
         'needs_data' : False,
         'label' : 1,
+        'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
-        'task_description' : 'Generate sentences'}
+        'task_description' : 'Provide a sentence that is an example of a given event.'}
 
     
     EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK]
@@ -73,17 +75,19 @@ class Config(object):
     CELERY_TIMEZONE = 'UTC'
     CELERY_IMPORTS = ['api.util', 'api.train']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
+    BROKER_POOL_LIMIT = 0
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
     TESTING = True
     MTURK_HOST = 'mechanicalturk.sandbox.amazonaws.com'
+    MTURK_EXTERNAL_SUBMIT = 'https://workersandbox.mturk.com/mturk/externalSubmit'
     #CELERY_REDIS_MAX_CONNECTIONS = 5
-    BROKER_POOL_LIMIT = 0
     
 class Production(Config):
     DEBUG = False
     DEVELOPMENT = False
     TESTING = False
     MTURK_HOST = 'mechanicalturk.amazonaws.com'
+    MTURK_EXTERNAL_SUBMIT = 'https://www.mturk.com/mturk/externalSubmit'

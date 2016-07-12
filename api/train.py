@@ -1,23 +1,14 @@
 import time
-
 from app import app
-from boto.mturk.question import ExternalQuestion
-from boto.mturk.price import Price
-from boto.mturk.qualification import Qualifications
-from boto.mturk.qualification import PercentAssignmentsApprovedRequirement
-from boto.mturk.qualification import NumberHitsApprovedRequirement
-from boto.mturk.layoutparam import LayoutParameter
-from boto.mturk.layoutparam import LayoutParameters
-from boto.mturk.connection import MTurkConnection
 from controllers import greedy_controller
 import requests
 import pickle
 import json
 import sys
-import redis
 from ml.train_cnn import trainCNN
 from ml.extractors.cnn_core.test import test_cnn
 from schema.job import Job
+from mturk_util import delete_hits, create_hits
 
 def upload_questions(task, config):
     headers = {'Authentication-Token': config['CROWDJS_API_KEY'],
@@ -36,67 +27,7 @@ def upload_questions(task, config):
         
     return task_id
 
-def create_hits(hit_type_id, hit_layout_id, task_id, num_hits, config):
 
-    print "Connecting to Turk host at"
-    print config['MTURK_HOST']
-    sys.stdout.flush()
-    
-    mturk = MTurkConnection(config['AWS_ACCESS_KEY_ID'],
-                            config['AWS_SECRET_ACCESS_KEY'],
-                            host=config['MTURK_HOST'])
-
-    print "Uploading %d hits to turk" % num_hits
-    hits = []
-    for hit_num in range(num_hits):
-        layout_params = LayoutParameters()
-
-        #layout_params.add(
-        #    LayoutParameter('questionNumber', '%s' % hit_num))
-        layout_params.add(
-            LayoutParameter('task_id', '%s' % task_id))
-        layout_params.add(
-            LayoutParameter('requester_id', '%s'%
-                            config['CROWDJS_REQUESTER_ID']))
-
-        layout_params.add(
-            LayoutParameter(
-                'task_data_url', '%s'%
-                config['CROWDJS_GET_TASK_DATA_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'submit_answer_url', '%s'%
-                config['CROWDJS_SUBMIT_ANSWER_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'compute_taboo_url', '%s'%
-                config['SUBMIT_TABOO_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'return_hit_url', '%s'%
-                config['CROWDJS_RETURN_HIT_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'assign_url', '%s'%
-                config['CROWDJS_ASSIGN_URL']))
-
-        layout_params.add(
-            LayoutParameter(
-                'taboo_threshold', '%s'%
-                config['TABOO_THRESHOLD']))
-
-
-        print layout_params
-        sys.stdout.flush()
-        
-        hit = mturk.create_hit(
-            hit_type= hit_type_id,
-            hit_layout = hit_layout_id,
-            layout_params = layout_params)[0]
-        
-        hits.append(hit.HITId)
-        
-    return hits
 
 def getLatestCheckpoint(job_id, config):
     #read the latest checkpoint
@@ -108,14 +39,11 @@ def getLatestCheckpoint(job_id, config):
         
     most_recent_timestamp = max([int(x) for x in timestamps])
 
-    #checkpoint = app.redis.hmget(job_id, most_recent_timestamp)[0]
-    #    (task_information, budget) = pickle.loads(
-    #        app.redis.hmget(job_id, 'task_information')[0])
-
     checkpoint = job.checkpoints[str(most_recent_timestamp)]
     (task_information, budget) = pickle.loads(job.task_information)
 
     return (task_information, budget, checkpoint)
+
 
 @app.celery.task(name='restart')
 def restart(job_id, config):
@@ -164,15 +92,12 @@ def retrain(job_id, config):
         training_positive_examples, training_negative_examples)
 
     
-    #app.redis.hset(job_id, 'vocabulary', pickle.dumps(vocabulary))
 
     model_file_handle = open(model_file_name, 'rb')
     model_binary = model_file_handle.read()
-    #app.redis.hset(job_id, 'model', model_binary)
 
     model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
     model_meta_binary = model_meta_file_handle.read()
-    #app.redis.hset(job_id, 'model_meta', model_meta_binary)
 
     print "Saving the model"
     print job_id
@@ -182,8 +107,6 @@ def retrain(job_id, config):
     job.vocabulary = pickle.dumps(vocabulary)
     job.model_file = model_binary
     job.model_meta_file = model_meta_binary
-    #job.model_file.replace(model_file_handle)
-    #job.model_meta_file.replace(model_meta_file_handle)
     print "Model saved"
     sys.stdout.flush()
 
@@ -210,7 +133,6 @@ def retrain(job_id, config):
 @app.celery.task(name='train')
 def train(task_information, budget, config, job_id, checkpoint = None):
 
-    #checkpoint_redis = redis.StrictRedis.from_url(config['REDIS_URL'])
     training_examples = []
     training_labels = []
     task_ids = []
@@ -233,20 +155,7 @@ def train(task_information, budget, config, job_id, checkpoint = None):
             training_examples.append(new_examples)
             training_labels.append(new_labels)
 
-        
-    #else:
-    #    
-    #    checkpoint_redis.hset(job_id,
-    #                          'task_information',
-    #                          pickle.dumps((task_information, budget)))
-    #    checkpoint_redis.hset(job_id,'model_file_name','None')
-    #    checkpoint_redis.hset(job_id,'model','None')
-
-        
-        
-
-
-    
+            
     
     while costSoFar < budget:
         print "Cost so far: %d" % costSoFar
@@ -256,13 +165,9 @@ def train(task_information, budget, config, job_id, checkpoint = None):
 
         #make a checkpoint
         checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
-        #checkpoint_redis.set(str(int(time.time())), checkpoint)
         job = Job.objects.get(id = job_id)
         job.checkpoints[str(int(time.time()))] = checkpoint
         job.save()
-        #checkpoint_redis.hset(job_id, 
-        #                      str(int(time.time())),
-        #                      checkpoint)
 
         #If we have task_ids, wait for the last one to complete.
         if len(task_ids) > 0:
@@ -289,6 +194,10 @@ def train(task_information, budget, config, job_id, checkpoint = None):
                 print "Task not complete yet"
                 sys.stdout.flush()
 
+        print "Delete any existing leftover hits from turk"
+        if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
+            delete_hits(job.current_hit_ids)
+        
         print "Deciding which category to do next"
         print "Task categories so far:"
         print task_categories
@@ -317,9 +226,11 @@ def train(task_information, budget, config, job_id, checkpoint = None):
 
         #Upload assignments onto MTurk
         #number of workers per question is set in mturk layout
-        hit_ids = create_hits(hit_type_id, hit_layout_id, task_id,
-                              num_hits, config)
-
+        hit_ids = create_hits(category, task_id,
+                              num_hits)
+        job.current_hit_ids = hit_ids
+        job.save()
+        
         print "Hit IDs:"
         print hit_ids
         sys.stdout.flush()

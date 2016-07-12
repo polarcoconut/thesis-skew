@@ -7,7 +7,6 @@ from app import app
 from train import train, restart, gather_status, retrain
 import sys
 import uuid
-import redis
 from schema.job import Job
 
 train_parser = reqparse.RequestParser()
@@ -72,6 +71,7 @@ class TrainExtractorApi(Resource):
         #Generate a random job_id
         job = Job(task_information = pickle.dumps((task_information, budget)),
                   num_training_examples_in_model = -1,
+                  current_hit_ids = [],
                   checkpoints = {})
         job.save()
         job_id = str(job.id)
@@ -119,9 +119,6 @@ class RetrainExtractorApi(Resource):
         job.num_training_examples_in_model = -1
         job.save()
         
-        #app.redis.hset(job_id, 'model_meta', 'None')
-        #app.redis.hset(job_id, 'model', 'None')
-
         retrain.delay(job_id, app.config)            
 
         return True
@@ -132,7 +129,6 @@ class RetrainStatusApi(Resource):
         args = retrain_status_parser.parse_args()
         job_id = args['job_id']
 
-        #model_file_name = app.redis.hmget(job_id, 'model_meta')[0]
         job = Job.objects.get(id=job_id)
         return job.num_training_examples_in_model
 

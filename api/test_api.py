@@ -9,7 +9,6 @@ import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn
 from ml.computeScores import computeScores
-import redis
 from util import write_model_to_file
 from schema.job import Job
 
@@ -31,7 +30,6 @@ class TestExtractorApi(Resource):
         print test_sentence
         sys.stdout.flush()
 
-        #vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
         predicted_labels = test_cnn([test_sentence], [0],
@@ -66,7 +64,6 @@ class CrossValidationExtractorApi(Resource):
 
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
-        #vocabulary = pickle.loads(app.redis.hmget(job_id, 'vocabulary')[0])
 
         predicted_labels = test_cnn(
             test_positive_examples + test_negative_examples,

@@ -75,15 +75,11 @@ def write_model_to_file(job_id):
 
         
     
-    #model = app.redis.hmget(job_id,'model')[0]
-    #model_file = job.model_file.read()
     
     temp_model_file_handle = open('temp_model_file', 'wb')
     temp_model_file_handle.write(job.model_file)
     temp_model_file_handle.close()
     
-    #model_meta = app.redis.hmget(job_id,'model_meta')[0]
-    #model_meta_file = job.model_meta_file.read()
     
     temp_model_meta_file_handle = open('temp_model_file.meta', 'wb')
     temp_model_meta_file_handle.write(job.model_meta_file)
@@ -91,3 +87,4 @@ def write_model_to_file(job_id):
 
 
     return 'temp_model_file'
+

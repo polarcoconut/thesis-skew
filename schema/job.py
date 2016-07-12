@@ -3,10 +3,6 @@ from app import db
 class Job(db.DynamicDocument):
     task_information = db.StringField()
 
-    #model = db.StringField()
-    #model_meta = db.StringField()
-    model = db.StringField()
-    model_meta = db.StringField()
     model_file = db.BinaryField()
     model_meta_file = db.BinaryField()
 
@@ -15,3 +11,4 @@ class Job(db.DynamicDocument):
     
     checkpoints = db.DictField()
 
+    current_hit_ids = db.ListField()
