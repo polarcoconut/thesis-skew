@@ -1,4 +1,8 @@
 import os
+from boto.mturk.qualification import Qualifications
+from boto.mturk.qualification import PercentAssignmentsApprovedRequirement
+from boto.mturk.qualification import NumberHitsApprovedRequirement
+from boto.mturk.qualification import LocaleRequirement
 
 class Config(object):
     DEBUG = False
@@ -53,18 +57,22 @@ class Config(object):
 
     
     PRECISION_EXAMPLE_TASK = {
+        'id' : 1,
         'hit_layout_id' : os.environ['PRECISION_LAYOUT_ID'],
         'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
         'needs_data': True,
         'label': 0,
+        'price' : 0.05,
         'hit_html' : open('tasks/negateevent.html').read(),
-        'task_name' : 'Event Negation',
-        'task_description' : 'Modify a sentence so that an event is no longer expressed by the sentence.'}
+        'task_name' : 'Event Modification',
+        'task_description' : 'Modify a sentence so that it either expresses a different event than the one it currently expresses or it negates the event.'}
     RECALL_EXAMPLE_TASK = {
+        'id' : 0,
         'hit_layout_id' : os.environ['RECALL_LAYOUT_ID'],
         'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
         'needs_data' : False,
         'label' : 1,
+        'price' : 0.15,
         'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
         'task_description' : 'Provide a sentence that is an example of a given event.'}
@@ -84,10 +92,15 @@ class DevelopmentConfig(Config):
     MTURK_HOST = 'mechanicalturk.sandbox.amazonaws.com'
     MTURK_EXTERNAL_SUBMIT = 'https://workersandbox.mturk.com/mturk/externalSubmit'
     #CELERY_REDIS_MAX_CONNECTIONS = 5
-    
+    QUALIFICATIONS = Qualifications([LocaleRequirement('EqualTo', 'US')])
+
 class Production(Config):
     DEBUG = False
     DEVELOPMENT = False
     TESTING = False
     MTURK_HOST = 'mechanicalturk.amazonaws.com'
     MTURK_EXTERNAL_SUBMIT = 'https://www.mturk.com/mturk/externalSubmit'
+    QUALIFICATIONS = Qualifications(
+        [NumberHitsApprovedRequirement('GreaterThan', 500),
+         PercentAssignmentsApprovedRequirement('GreaterThan', 95),
+         LocaleRequirement('EqualTo', 'US')])

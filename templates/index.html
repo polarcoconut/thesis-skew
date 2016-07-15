@@ -6,31 +6,97 @@
   </head>
   <body>
     <div class="container">
-    <h1>Extremest Extraction v0.1!</h1>
+      <h1>Extremest Extraction v0.1!</h1>
+
+      <h3>Select an example event, or create your own:</h3>
+      <select id="examples">
+	<option value="0">Movement of a Person</option>
+	<option value="1">Conflict: Attack</option>
+	<option value="2">Contact </option>
+	<option value="3"> Transfer of Money </option>
+	<option value="4"> Broadcast </option>
+	<option value="5"> Transfer of Ownership </option>
+	<option value="6"> Death </option>
+      </select>
+      <br/>
+      <br/>
+      
     <form action="/train" method="post">
       <label>Event:</label>
-      <input name="event_name" type="text" size="100" value="Movement of a Person"/><br/>
+      <input name="event_name" id="event_name" type="text"
+	     size="100" value="Movement of a Person"/><br/>
       <label> Event Definition: </label>
-      <input name="event_definition" type="text" size="100" value="Any event in which a person goes somewhere, for instance due to travel."/><br/>
+      <input name="event_definition" id="event_definition"
+	     type="text" size="100" value="Any event in which a person goes somewhere, for instance due to travel."/><br/>
       <label>Event Positive Example 1:</label>
-      <input name="event_pos_example_1" type="text" size="100" value="The Vermont senator flew to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+      <input name="event_pos_example_1" id="event_pos_example_1"
+	     type="text" size="100" value="The Vermont senator flew to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
       <label>Event Positive Example 1 Trigger: </label>
-      <input name="event_pos_example_1_trigger" type="text" size="100" value="flew"/><br/>
+      <input name="event_pos_example_1_trigger" id="event_pos_example_1_trigger" type="text" size="100" value="flew"/><br/>
       <label>Event Positive Example 2: </label>
-      <input name="event_pos_example_2" type="text" size="100" value="The Israeli Prime Minister greeted Kerry after he arrived last night."/><br/>
+      <input name="event_pos_example_2" id="event_pos_example_2"
+	     type="text" size="100" value="The Israeli Prime Minister greeted Kerry after he arrived last night."/><br/>
       <label>Event Positive Example 2 Trigger:</label>
-      <input name="event_pos_example_2_trigger" type="text" size="100" value="arrived"/><br/>
+      <input name="event_pos_example_2_trigger" id="event_pos_example_2_trigger" type="text" size="100" value="arrived"/><br/>
       <label>Event Positive Example Near-Miss: </label>
-      <input name="event_pos_example_nearmiss" type="text" size="100" value="'We received the king crabs yesterday from Japan,' said the waitress."/><br/>
-      <label>Event Negative Example: </label>
-      <input name="event_neg_example" type="text" size="100" value="The Vermont senator talked about Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
-      <label>Event Negative Example Near-Miss: </label>
-      <input name="event_neg_example_nearmiss" type="text" size="100" value="The Vermont senator traveled to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
-      <label>Budget: </label>
+      <input name="event_pos_example_nearmiss" id="event_pos_example_nearmiss" type="text" size="100" value="'We received the king crabs yesterday from Japan,' said the waitress."/><br/>
+      <label>Event Negative Example (DIFFERENT EVENT): </label>
+      <input name="event_neg_example" id="event_neg_example" type="text" size="100" value="The Vermont senator talked about Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+      <label>Event Negative Example (FAILING OF EVENT): </label>
+      <input name="event_neg_example_nearmiss" id="event_neg_example_nearmiss" type="text" size="100" value="The Vermont senator thought about traveling to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."/><br/>
+
+      <hr/>
+      <h3>System Parameters:</h3>
+      <label>Total Budget: </label>
       <input name="budget" type="text" size="100" value="100"/><br/>
-      <input type="submit" value="Submit">
+
+
+      <h2>DO NOT CLICK. THIS IS A LIVE BUTTON</h2>
+      <input type="submit" value="Train an extractor!">
     </form>
 
     </div>
+
+
+    <script type="text/javascript">
+
+      var event_0 = ["Movement of a Person", "Any event in which a person goes somewhere, for instance due to travel.", "The Vermont senator flew to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night.", "flew", "The Israeli Prime Minister greeted Kerry after he arrived last night.", "arrived", "'We received the king crabs yesterday from Japan,' said the waitress.", "The Vermont senator talked about Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night.", "The Vermont senator thought about traveling to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."];
+      var event_1 = ["A Physical Attack", "Any event that is a physical, non-verbal attack, for instance, a bombing, or an assault.", "A 75-year-old man was beaten unconscious in Greenwich Village", "beaten", "Three terrorists armed with bombs and guns killed at least 36 people at Istanbul Ataturk Airport in Turkey.", "killed", "Donald Trump said he loves to drink Jager bombs.", "A 75-year-old man talked about his love for Greenwich Village.", "Three terrorists armed with bombs and guns were unable to kill anyone yesterday."];
+      var event_2 = ["Contact", "Any event in which a person, organization, or other entity contacts another person, organization or entity.", "President Obama called David Cameron yesterday to talk about Brexit.", "called", "Donald Trump met with several vice presidential options on Tuesday.", "met", "Google announced a new way to organize contacts in your phone.", "President Obama thought about David Cameron and Brexit.", "Donald Trump tried to meet with several vice presidential options on Tuesday."]
+      var event_3 = ["Transfer of Money", "Any event in a person, organization, or entity transfers money to another person, organization or entity.", "President Obama paid 10 dollars for a hotdog during a campaign stop yesterday.", "paid", "The United States spent $5 billion on a new fighter program.", "spent", "Harvard said 50 students transfered to the university from other universties last year.", "President Obama ate a hotdog during a campaign stop yesterday.", "Congress is weighing spending $5 billion on a new fighter program."]
+      var event_4 = ["Broadcast", "Any event in which a person, organization, or entity broadcasts something.", "CNN presented the first presidential debate last Thursday", "presented", "An attendee used Facebook Live to stream the event to 50,000 people.", "stream", "The fishing boat cast out many nets to trawl for clams.", "CNN hired a new anchor yesterday.", "CNN tried to broadcast the presidentia debate but could not due to technical difficulties."]
+      var event_5 = ["Transfer of Ownership", "Any event in which a person, organization, or other entity transfers ownership of something to another person, organization, or entity.", "An apartment building in New York sold for $750 million.", "sold", "Facebook acquired Instagram last month." , "acquired",  "Harvard said 50 students transfered to the university from other universties last year.", "An apartment buildling caught on fire last night.", "Facebook is thinking about acquiring several companies in the near future."]
+      var event_6 = ["Death", "Any event in which someone dies", "He died at the ripe old age of 97.", "he", "Three were killed when a truck plowed through a residence late on Sunday.", "killed", "J.K. Rowling discussed how she came up with the name 'death eaters.'", "He traveled to Hawaii at the ripe old age of 97.", "Three were almost killed when a truck plowed through a residence late on Sunday." ]
+
+      var event_examples = [event_0, event_1, event_2, event_3,
+			    event_4, event_5, event_6]
+
+
+      function showSelectedExample() {
+	  var menu = document.getElementById("examples");
+	  var selected_example = event_examples[menu.selectedIndex];
+
+	  document.getElementById("event_name").value = selected_example[0];
+	  document.getElementById(
+	      "event_definition").value = selected_example[1];
+	  document.getElementById(
+	      "event_pos_example_1").value = selected_example[2];
+	  document.getElementById(
+	      "event_pos_example_1_trigger").value = selected_example[3];
+	  document.getElementById(
+	      "event_pos_example_2").value = selected_example[4];
+	  document.getElementById(
+	      "event_pos_example_2_trigger").value = selected_example[5];
+	  document.getElementById(
+	      "event_pos_example_nearmiss").value = selected_example[6];
+	  document.getElementById(
+	      "event_neg_example").value = selected_example[7];
+	  document.getElementById(
+	      "event_neg_example_nearmiss").value = selected_example[8];
+      }
+
+      document.getElementById("examples").onchange = showSelectedExample;
+
+    </script>
   </body>
 </html>

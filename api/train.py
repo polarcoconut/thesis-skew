@@ -55,12 +55,15 @@ def split_examples(task_ids, task_categories, config):
     negative_examples = []
     for task_id, task_category in zip(task_ids,task_categories):
         answers = parse_answers(task_id, task_category, config, False)
+        print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
             if new_label == 1:
                 positive_examples.append(new_example)
             else:
                 negative_examples.append(new_example)
+    print positive_examples
+    print negative_examples
     return positive_examples, negative_examples
 
 def gather_status(job_id, config):
@@ -269,7 +272,11 @@ def parse_answers(task_id, category, config, wait_until_batch_finished=True):
 
     examples = []
     labels = []
-    if category['task_name'] == 'Event Generation':
+    
+    #Data structure of checkpoints were updated so old checkpoints may not have
+    #an id in them.
+    if (('id' in category and category['id'] == 0) or
+        category['task_name'] == 'Event Generation'):
         for answer in answers:
             value = answer['value']
                 
@@ -278,7 +285,8 @@ def parse_answers(task_id, category, config, wait_until_batch_finished=True):
             trigger = value[1]
             examples.append(sentence)
             labels.append(1)
-    elif category['task_name'] == 'Event Negation':
+    elif (('id' in category and category['id'] == 1) or
+          category['task_name'] == 'Event Negation'):
         for answer in answers:
             value = answer['value']
             value = value.split('\t')
