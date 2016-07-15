@@ -1,3 +1,0 @@
-model_checkpoint_path: "/home/christopherlin/chrislin/extremest-extraction/runs/1467147003/checkpoints/model-200"
-all_model_checkpoint_paths: "/home/christopherlin/chrislin/extremest-extraction/runs/1467147003/checkpoints/model-100"
-all_model_checkpoint_paths: "/home/christopherlin/chrislin/extremest-extraction/runs/1467147003/checkpoints/model-200"

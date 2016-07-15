@@ -1,0 +1,658 @@
+<script type="text/javascript" src="https://cloudfront.loggly.com/js/loggly.tracker-2.1.min.js"></script>
+
+<script>
+    var _LTracker = _LTracker || [];
+    _LTracker.push({'logglyKey': '39edf32f-b8dd-4b0d-8694-5d151f6b2fff',
+    'sendConsoleErrors' : true,
+    'tag' : 'loggly-jslogger'  });
+</script>
+<style>
+/* Tooltip container */
+.tip {
+position: relative;
+    display: inline-block;
+border-bottom: 1px dotted black;
+color: blue;
+}
+
+/* Tooltip text */
+.tiptext {
+    visibility: hidden;
+    width: 240px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+ 
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tip:hover .tiptext {
+    visibility: visible;
+}
+</style>
+
+<link href="https://s3.amazonaws.com/mturk-public/bs30/css/bootstrap.min.css" rel="stylesheet" />
+<section class="container" id="DataCollection" style="margin-bottom:15px; padding: 10px 10px; font-family: Verdana, Geneva, sans-serif; color:#333333; font-size:0.9em;">
+<div class="row col-xs-12 col-md-12"><!-- Instructions -->
+<div class="panel panel-primary">
+<div class="panel-heading"><strong>Instructions</strong></div>
+
+<div class="panel-body">An <b>event</b> is something that happens, like an attack, movement of a person or thing, or the formation of a company. In this task, you will be given an <b>event</b>, and your job is to copy and paste a sentence from a news article that is an example of this event. Then, you will identify the <b>event trigger</b>, the single word in the sentence that best indicates the event. Event triggers are highlighted in yellow in the examples below. You will also be asked some simple questions about the sentence to help us categorize it. We may ask you about the same event many times. Please provide a different sentence each time. You will also be given a list of zero or more  <b>taboo</b>  words. Your sentence may not use any of the words in the taboo list. 
+
+
+  <br />
+
+</div>
+</div>
+
+  <strong> Event:</strong> <span id="event_name">...</span><br />
+  <strong> Event Definition:</strong> <span id="event_def">...</span> <br /><br/>
+  <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example <font color="green">Good</font> Submission:</strong> <span id="event_pos_example1">...</span><br />
+  <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example <font color="green">Good</font> Submission:</strong> <span id="event_pos_example2">...</span><br />
+  <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example <font color="red">Bad</font> Submission:</strong> <span id="event_pos_example_nearmiss">...</span> <br />
+  <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example <font color="red">Bad</font> Submission:</strong> <span id="event_neg_example">...</span> <br /><br />
+
+
+
+
+  <div><label>Taboo:</label> <span id="taboo_words">...</span></div>
+  
+<div><label>Your Sentence:</label><textarea class="form-control" id="new_sentence" name="new_sentence" rows="3" type="text" placeholder="Copy and paste a single sentence from a news article that is an example of the given event here"></textarea></div>
+
+<label>Event Trigger: </label><input type="text" id="new_trigger" name="new_trigger" size="100" placeholder="Copy and paste the word in the sentence that best indicates the event."/> <br/>
+
+<label>Source URL: </label><input type="text" name="source_url" size="100" placeholder="Copy and paste the URL of the news article that you used here"/> <br/>
+
+Does your sentence express a: <br/>
+<ol>
+  <li><label>PAST Event? Did the event occur in the past?
+
+    </label> 
+
+<input type="radio" name="past" value="Yes"/> Yes
+<input type="radio" name="past" value="No"/> No
+</li>
+<br/>
+<li><label>FUTURE Event? Is the event going to happen in the future? </label>
+<input type="radio" name="future" value="Yes"/> Yes
+<input type="radio" name="future" value="No"/> No
+</li>
+<br/>
+<li><label>GENERAL Event? Does the event <span class="tip"> not express time of occurrence <span class="tiptext">e.g., "Selling cars is lucrative." vs "He sold a car." </span></span> or  <span class="tip"> is hypothetical?<span class="tiptext">e.g., "He wants to sell his car." vs "He sold his car."</span></span></label>
+  <input type="radio" name="general" value="Yes"/> Yes
+  <input type="radio" name="general" value="No"/> No
+</li>
+</ol>
+</div>
+
+<center><img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator" style="visibility:hidden;"/> </center>
+<center>
+  <form method='post' action='${mturk_external_submit}'>
+    <input type='hidden' value='' name='assignmentId' id='assignmentId'/>
+    <input type='hidden' value=''
+	   name='mturk_submission' id='mturk_submission'/>
+    <input type='submit' id='submitButton' value='Submit' style="visibility:visible;"/>
+  </form>
+</center>
+</section>
+
+<script type="text/javascript">
+
+  
+/*
+  Copyright (c) 2008 Frank Salim
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+  */
+
+  /*
+   * pickle.js
+   * a JavaScript module for parsing and serializing Python objects
+   */
+  
+  var pickle = (new function() {
+      var self = this
+      /* Opcodes
+       * !.. not all opcodes are currently supported!
+       * ... 1.0 should support all opcodes in pickle v0 (text)
+       */
+      var MARK        = "("
+      var STOP        = "."
+      
+      var INT         = "I"
+      var FLOAT       = "F"
+      var NONE        = "N"
+      var STRING      = "S"
+      
+      var APPEND      = "a"
+      var DICT        = "d"
+      var GET         = "g"
+      var LIST        = "l"
+      var PUT         = "p"
+      var SETITEM     = "s"
+      var TUPLE       = "t"
+      
+      var TRUE        = "I01\n"
+      var FALSE       = "I00\n"
+      
+      /* Other magic constants that are not opcodes
+       */
+      NEWLINE         = "\n"
+      MARK_OBJECT     = null
+      SQUO            = "'"
+      
+      /*
+       * loads(string) -> object
+       * load a pickled Python object from a string
+       */
+      self.loads = function(pickle) {
+	  stack = []
+	  memo = []
+	  
+	  var ops = pickle.split(NEWLINE)
+	  var op
+	  
+	  for (var i=0; i<ops.length; i++) {
+	      op = ops[i]
+	      process_op(op, memo, stack)
+	  }
+	  return stack.pop()
+      }
+      
+      // to speed up op processing, declare two args here
+      var arg0
+      var arg1
+      
+      var process_op = function(op, memo, stack) {
+	  if (op.length === 0)
+	      return
+	  
+	  switch (op[0]) {
+	  case MARK:
+	      // TODO: when we support POP_MARK AND POP, we need real marks
+	      // ...we need this for tuple, as well
+	      //stack.push(MARK_OBJECT)
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case STOP:
+	      //console.log("stop")
+	      break
+	  case INT:
+	      // booleans are a special case of integers
+	      if (op[1] === "0") {
+		  arg0 = (op[2] === "1")
+		  stack.push(arg0)
+		  break
+	      }
+	      
+	      arg0 = parseInt(op.slice(1))
+	      //console.log("int", arg0)
+	      stack.push(arg0)
+	      break
+	  case FLOAT:
+	      arg0 = parseFloat(op.slice(1))
+	      //console.log("int", arg0)
+	      stack.push(arg0)
+	      break
+	  case STRING:
+	      arg0 = eval(op.slice(1))
+	      stack.push(arg0)
+	      //console.log("string", arg0)
+	      break
+	  case NONE:
+	      stack.push(null)
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case APPEND:
+	      arg0 = stack.pop()
+	      //console.log("appending to", stack[stack.length-1])
+	      stack[stack.length-1].push(arg0)
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case DICT:
+	      stack.push({})
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case GET:
+	      arg0 = parseInt(op.slice(-1))
+	      arg1 = memo[arg0]
+	      stack.push(arg1)
+	      //console.log("getting", arg1)
+	      break
+	  case LIST:            
+	      stack.push([])
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case PUT:
+	      arg0 = parseInt(op.slice(-1))
+	      arg1 = stack[stack.length-1]
+	      memo[arg0] = arg1
+	      //console.log("memo", arg0, arg1)
+	      break
+	  case SETITEM:
+	      arg1 = stack.pop()
+	      arg0 = stack.pop()
+	      stack[stack.length-1][arg0] = [arg1]
+	      //console.log("current before set", stack)
+	      process_op(op.slice(1), memo, stack)
+	      break
+	  case TUPLE:
+	      //console.log("tuple")
+	      stack.push([])
+	      // TODO: tuples
+	      
+	      process_op(op.slice(1))
+	      break    
+	  default:
+	      throw new Error("unknown opcode " + op[0])
+	  }      
+	  
+      }
+      
+      /*
+       * dumps(object) -> string
+       * serializes a JavaScript object to a Python pickle
+       */
+      self.dumps = function(obj) {
+	  // pickles always end with a stop
+	  return _dumps(obj) + STOP
+      }
+      
+      var _check_memo = function(obj, memo) {
+	  for (var i=0; i<memo.length; i++) {
+	      if (memo[i] === obj) {
+		  return i
+	      }
+	  }
+	  return -1
+      }
+      
+      var _dumps = function(obj, memo) {
+	  memo = memo || []
+	  if (obj === null) {
+	      return NONE
+	  }
+	  
+	  if (typeof(obj) === "object") {
+	      var p = _check_memo(obj, memo)
+	      if (p !== -1) {
+		  return GET + p + NEWLINE
+	      }
+	      
+	      var t = obj.constructor.name
+	      switch (t) {
+	      case Array().constructor.name:
+		  var s = MARK + LIST + PUT + memo.length + NEWLINE
+		  memo.push(obj)
+		  
+		  for (var i=0; i<obj.length; i++) {
+		      s += _dumps(obj[i], memo) + APPEND
+		  }
+		  return s
+		  break
+	      case Object().constructor.name:
+		  var s = MARK + DICT + PUT + memo.length + NEWLINE
+		  memo.push(obj)
+		  
+		  for (var key in obj) {
+		      //console.log(key)
+		      //push the value, then the key, then 'set'
+		      s += _dumps(obj[key], memo)
+		      s += _dumps(key, memo)
+		      s += SETITEM
+		  }                    
+		  return s
+		  break
+	      default:
+		  throw new Error("Cannot pickle this object: " + t)
+		  
+	      }
+	  } else if (typeof(obj) === "string") {
+	      var p = _check_memo(obj, memo)
+	      if (p !== -1) {
+		  return GET + p + NEWLINE
+	      }
+	      
+	      var escaped = obj.replace("\\","\\\\","g")
+		  .replace("'", "\\'", "g")
+		  .replace("\n", "\\n", "g")
+	      
+	      var s = STRING + SQUO + escaped + SQUO + NEWLINE
+		  + PUT + memo.length + NEWLINE
+	      memo.push(obj)
+	      return s
+	  } else if (typeof(obj) === "number") {
+	      return FLOAT + obj + NEWLINE
+	  } else if (typeof(obj) === "boolean") {
+	      return obj ? TRUE : FALSE
+	  } else {
+	      throw new Error("Cannot pickle this type: " + typeof(obj))
+	  }
+      }
+      
+  }())
+  
+  function getQueryVariable(variable)
+  {
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i=0;i<vars.length;i++) {
+	  var pair = vars[i].split("=");
+	  if(pair[0] == variable){return pair[1];}
+      }
+      return(false);
+  }
+  var preview = '';
+  var assignmentId = getQueryVariable("assignmentId");
+  console.log(assignmentId);
+  if (assignmentId === "ASSIGNMENT_ID_NOT_AVAILABLE") {
+      document.getElementById('submitButton').style.visibility = 'hidden';
+      preview = 'True';
+  } else if (!assignmentId){
+      document.getElementById('submitButton').style.visibility = 'hidden';
+      preview = 'True';
+  } else {
+      document.getElementById('assignmentId').value = assignmentId;
+      preview = 'False';
+  }
+
+
+  var worker_id = getQueryVariable("workerId");
+  var worker_source = 'mturk';
+  var task_id = '${task_id}';
+  var taboo_words_pickle = null;
+  var taboo_words_string = '';
+  var requester_id = '${requester_id}';
+  var question_id = '';
+  var question_name = '';
+
+  console.log(task_id);
+  console.log(requester_id);
+
+  var assign_url = '${assign_url}';
+  assign_url += '?worker_id=';
+  assign_url += worker_id; 
+  assign_url += '&worker_source=mturk';
+  assign_url += '&task_id=';
+  assign_url += task_id;
+  assign_url += '&requester_id=';
+  assign_url += requester_id;
+  assign_url += '&preview=';
+  assign_url += preview;
+  assign_url += '&strategy=';
+  assign_url+= 'min_answers';
+  var task_data_url = '${task_data_url}';
+  task_data_url += '?task_id=';
+  task_data_url += task_id;
+  task_data_url += '&requester_id=';
+  task_data_url += requester_id;
+  var submit_answer_url = '${submit_answer_url}';
+  var compute_taboo_url = '${compute_taboo_url}';
+  var return_hit_url = '${return_hit_url}';
+
+  console.log(assign_url);
+  console.log(task_data_url);
+  console.log(submit_answer_url);
+  console.log(compute_taboo_url);
+  console.log(return_hit_url);
+
+
+  function validateForm() {
+      try {
+	  var x = document.getElementById('new_sentence').value;
+	  var new_trigger = document.getElementById('new_trigger').value;
+	  var past = document.querySelector('input[name=past]:checked').value;
+	  var future = document.querySelector('input[name=future]:checked').value;
+	  var general = document.querySelector(
+	      'input[name=general]:checked').value;
+
+	  if (x == null || x == "") {
+	      alert("Your new sentence must not be empty");
+	      return false;
+	  }
+	  list_of_taboo_words = taboo_words_string.split(';');
+	  for (var i=0; i< list_of_taboo_words.length; i++) {
+	      taboo_word = list_of_taboo_words[i];
+	      if (taboo_word == "") {
+		  continue;
+	      }
+	      taboo_word = " " + list_of_taboo_words[i] + " ";
+
+	      if (x.toUpperCase().indexOf(taboo_word.toUpperCase()) > -1) {
+		  alert("The new sentence must not contain: " + taboo_word);
+		  return false;
+	      }	
+	  }
+
+	  document.getElementById('submitButton').style.visibility = 'hidden';
+	  document.getElementById(
+	      'submitting-indicator').style.visibility = 'visible';
+	  //Set up submit taboo request
+	  var compute_taboo_xmlhttp = new XMLHttpRequest();
+	  compute_taboo_request = {}
+	  compute_taboo_request['requester_id'] = requester_id;
+	  compute_taboo_request['task_id'] = task_id;
+	  compute_taboo_request['old_taboo_words'] = taboo_words_pickle;
+	  compute_taboo_request['old_sentence'] = "";  
+	  compute_taboo_request['new_sentence'] = new_trigger;    
+	  compute_taboo_xmlhttp.open("POST", compute_taboo_url, true);
+	  compute_taboo_xmlhttp.setRequestHeader("Content-type",
+						 "application/json");
+      
+	  //Set up submit answer request
+	  var submit_answer_xmlhttp = new XMLHttpRequest();
+	  var submit_answer_request = {}
+	  submit_answer_request['requester_id'] = requester_id;
+	  submit_answer_request['task_id'] = task_id;
+	  submit_answer_request['question_name'] = question_name;
+	  submit_answer_request['worker_id'] = worker_id;
+	  submit_answer_request['worker_source'] = worker_source;
+	  submit_answer_request['value'] = x + "\t" + new_trigger + "\t" + past + "\t" + future + "\t" + general;
+	  submit_answer_xmlhttp.open("PUT", submit_answer_url, true);
+	  submit_answer_xmlhttp.setRequestHeader("Content-type",
+						 "application/json");
+	  
+      
+	  compute_taboo_xmlhttp.onreadystatechange = function() {
+	      if (compute_taboo_xmlhttp.readyState == 4 &&
+		  compute_taboo_xmlhttp.status == 200) {
+		  console.log(compute_taboo_xmlhttp.responseText);
+		  document.getElementById('submitButton').setAttribute(
+		      'onclick', '');
+		  document.getElementById('submitButton').click();
+
+	      } else if (compute_taboo_xmlhttp.status == 500) {
+		  console.log(compute_taboo_xmlhttp.responseText);
+		  console.log("Submission Failed. Please try again");
+		  document.getElementById(
+		      'submitButton').style.visibility = 'visible';
+		  document.getElementById(
+		      'submitting-indicator').style.visibility = 'hidden';
+		  alert("Submission Failed. Please contact us.");
+
+	      } else {
+		  //do nothing
+	      }
+	  }
+	  submit_answer_xmlhttp.onreadystatechange = function() {
+	      if (submit_answer_xmlhttp.readyState == 4 &&
+		  submit_answer_xmlhttp.status == 200) {
+		  console.log(submit_answer_xmlhttp.responseText);
+		  if ('error' in  JSON.parse(
+		      submit_answer_xmlhttp.responseText)) {
+		      document.getElementById(
+			  'submitButton').style.visibility ='visible';
+		      document.getElementById(
+			  'submitting-indicator').style.visibility = 'hidden';
+		      alert("Sorry, please do not submit the same sentence twice.");
+		  } else {
+		      compute_taboo_xmlhttp.send(
+			  JSON.stringify(compute_taboo_request));
+		  }
+
+	      } else if (compute_taboo_xmlhttp.readyState == 500) {
+		  console.log(submit_answer_xmlhttp.responseText);
+		  console.log("Submission Failed. Please try again");
+		  document.getElementById(
+		      'submitButton').style.visibility = 'visible';
+		  document.getElementById(
+		      'submitting-indicator').style.visibility = 'hidden';
+		  alert("Submission Failed. Please contact us.");
+	      } else {
+		  //do nothing
+	      }
+	  }
+
+	  //Send the request!
+	  submit_answer_xmlhttp.send(JSON.stringify(submit_answer_request));
+
+	  return false;
+      } catch(err) {
+	  console.log("error sending answer to server");
+	  document.getElementById('submitButton').style.visibility = 'visible';
+	  document.getElementById(
+	      'submitting-indicator').style.visibility = 'hidden';
+	  alert("Submission Failed. Please try again");
+
+	  return false;
+      }
+  }
+
+
+
+
+
+  /* 
+   *
+   * OnLoad Code 
+   *
+   */
+  window.onload = function () {
+      document.getElementById('submitButton').setAttribute(
+	  'onclick', 'return validateForm()');
+
+      /* 
+       *
+       * Assignment Code 
+       *
+       */
+      var xmlhttp_assign = new XMLHttpRequest();
+      if (preview === "False") {
+	  xmlhttp_assign.open("GET", assign_url, true);
+	  xmlhttp_assign.send();
+      }
+
+      var xmlhttp_task_data = new XMLHttpRequest();
+      if (preview === "False") {
+	  xmlhttp_task_data.open("GET", task_data_url, true);
+	  xmlhttp_task_data.send();
+      }
+
+  
+      xmlhttp_assign.onreadystatechange = function() {
+	  console.log(xmlhttp_assign.responseText);
+	  if (xmlhttp_assign.readyState == 4 && xmlhttp_assign.status == 200) {
+	      var nextQuestion = JSON.parse(xmlhttp_assign.responseText);
+	      if ('error' in nextQuestion) {
+		  document.getElementById('event_name').innerHTML = 'Thank you! You have completed all HITs available to you at this time. Please check back later!';
+		  document.getElementById('submitButton').setAttribute(
+		      'onclick', 'return false;');
+	      } else {
+		  question_id = nextQuestion['question_id'];
+		  question_name = nextQuestion['question_name'];
+		  var nextQuestionDetails = nextQuestion['question_data'];
+		  nextQuestionDetails = nextQuestionDetails.split('\t');
+		  
+		  var event_name = nextQuestionDetails[0];
+		  var event_def = nextQuestionDetails[1];
+		  var event_pos_example1 = nextQuestionDetails[2];
+		  var event_pos_example1_trigger = nextQuestionDetails[3];
+		  var event_pos_example2 = nextQuestionDetails[4];
+		  var event_pos_example2_trigger = nextQuestionDetails[5];
+		  var event_pos_example_nearmiss = nextQuestionDetails[6];
+		  var event_neg_example = nextQuestionDetails[7];
+		  var event_neg_example_nearmiss = nextQuestionDetails[8];
+		  
+		  console.log(event_name);
+		  console.log(event_def);
+		  console.log(event_pos_example1);
+		  console.log(event_pos_example1_trigger);
+		  console.log(event_pos_example2);
+		  console.log(event_pos_example2_trigger);
+		  console.log(event_pos_example_nearmiss);
+		  console.log(event_neg_example);
+		  console.log(event_neg_example_nearmiss);
+		  
+		  
+		  document.getElementById('event_name').innerHTML = event_name;
+		  document.getElementById('event_def').innerHTML = event_def;
+
+		  var trigger_index = event_pos_example1.indexOf(
+		      event_pos_example1_trigger);
+		  
+		  document.getElementById(
+		      'event_pos_example1').innerHTML = event_pos_example1.substring(0, trigger_index) + "<mark>" + event_pos_example1.substring(trigger_index, trigger_index + event_pos_example1_trigger.length) + "</mark>" +  event_pos_example1.substring(trigger_index + event_pos_example1_trigger.length);
+		  
+
+		  var trigger_index = event_pos_example2.indexOf(
+		      event_pos_example2_trigger);
+
+		  document.getElementById(
+		      'event_pos_example2').innerHTML = event_pos_example2.substring(0, trigger_index) + "<mark>" + event_pos_example2.substring(trigger_index, trigger_index + event_pos_example2_trigger.length) + "</mark>" +  event_pos_example2.substring(trigger_index + event_pos_example2_trigger.length);
+		  
+
+		  document.getElementById(
+		      'event_pos_example_nearmiss').innerHTML = event_pos_example_nearmiss;
+		  document.getElementById(
+		      'event_neg_example').innerHTML = event_neg_example;
+
+
+	      }
+	  }
+      };
+  
+      xmlhttp_task_data.onreadystatechange = function() {
+	  console.log(xmlhttp_task_data.responseText);
+	  if (xmlhttp_task_data.readyState == 4 &&
+	      xmlhttp_task_data.status == 200) {
+	      var task_data = JSON.parse(xmlhttp_task_data.responseText);
+	      taboo_words_pickle = task_data['data'];
+	      taboo_words_dict = pickle.loads(taboo_words_pickle);
+	      taboo_words = Object.keys(taboo_words_dict);
+	      taboo_words_string = "";
+	      for (var i = 0; i < taboo_words.length; i++) {
+		  if (taboo_words_dict[taboo_words[i]] >= ${taboo_threshold}) {
+		      taboo_words_string += taboo_words[i];
+		      taboo_words_string += ";";
+		  }
+
+	      }
+	      document.getElementById(
+		  'taboo_words').innerHTML = taboo_words_string;
+	  }
+      };
+
+  };
+
+  //window.onunload = returnHIT;
+
+</script>
+
