@@ -210,10 +210,8 @@ def train(task_information, budget, config, job_id, checkpoint = None):
             task_categories, training_examples, training_labels,
             task_information, config)
 
-        hit_layout_id = category['hit_layout_id']
-        hit_type_id = category['hit_type_id']
         
-        print "hit_layout_id to do next: %s" % hit_layout_id
+        print "hit type to do next: %s" % category['task_name']
         print "Uploading task to CrowdJS"
         sys.stdout.flush()
 

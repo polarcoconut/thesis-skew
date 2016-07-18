@@ -58,8 +58,6 @@ class Config(object):
     
     PRECISION_EXAMPLE_TASK = {
         'id' : 1,
-        'hit_layout_id' : os.environ['PRECISION_LAYOUT_ID'],
-        'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
         'needs_data': True,
         'label': 0,
         'price' : 0.10,
@@ -68,8 +66,6 @@ class Config(object):
         'task_description' : 'Modify a sentence so that it either expresses a different event than the one it currently expresses or it negates the event.'}
     RECALL_EXAMPLE_TASK = {
         'id' : 0,
-        'hit_layout_id' : os.environ['RECALL_LAYOUT_ID'],
-        'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
         'needs_data' : False,
         'label' : 1,
         'price' : 0.10,
