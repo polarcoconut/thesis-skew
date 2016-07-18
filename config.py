@@ -62,7 +62,7 @@ class Config(object):
         'hit_type_id' :  os.environ['PRECISION_HITTYPE_ID'],
         'needs_data': True,
         'label': 0,
-        'price' : 0.05,
+        'price' : 0.10,
         'hit_html' : open('tasks/negateevent.html').read(),
         'task_name' : 'Event Modification',
         'task_description' : 'Modify a sentence so that it either expresses a different event than the one it currently expresses or it negates the event.'}
@@ -72,7 +72,7 @@ class Config(object):
         'hit_type_id' :  os.environ['RECALL_HITTYPE_ID'],
         'needs_data' : False,
         'label' : 1,
-        'price' : 0.15,
+        'price' : 0.10,
         'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
         'task_description' : 'Provide a sentence that is an example of a given event.'}

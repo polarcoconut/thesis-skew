@@ -54,8 +54,8 @@ z-index: 1;
 <br/>
 <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example Sentence:</strong> <span id="event_pos_example1">...</span> <br />
 
-<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example Good Submission (Different event):</strong> <span id="event_neg_example">...</span> <br />
-<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Example Good Submission (Failing/hypothetical of existing event):</strong>  <span id="event_neg_example_nearmiss">...</span> <br /><br/>
+<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Example <font color="green">Good</font> Submission (Different event):</strong> <span id="event_neg_example">...</span> <br />
+<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Example <font color="green">Good</font> Submission (Failing/hypothetical of existing event):</strong>  <span id="event_neg_example_nearmiss">...</span> <br /><br/>
 
 
 <label>Sentence: </label>  <span id="old_sentence">...</span> <br/>
@@ -64,8 +64,8 @@ z-index: 1;
 <div><label>Your Edited Sentence:</label><textarea class="form-control" id="new_sentence" name="new_sentence" rows="5" type="text" placeholder=""></textarea></div>
 
 <label>Is your new sentence an example of a DIFFERENT event or a FAILING/HYPOTHETICAL of the existing event? </label> <br/>
-<input type="radio" name="realis" value="different"/> DIFFERENT EVENT  <span class="tip"> ? <span class="tiptext"> The event expressed by your new sentence is different than the one expressed by the old sentence. </span></span> <br/> <br/>
-<input type="radio" name="realis" value="failing"/> FAILING/HYPOTHETICAL OF EXISTING EVENT <span class="tip"> ? <span class="tiptext"> Your new sentence expresses that the event failed to occur, or it expresses that the event might occur. </span></span> <br/>
+<input type="radio" name="realis" value="different"/> DIFFERENT EVENT  <span class="tip"> ? <span class="tiptext"> The event expressed by your new sentence is different than the event expressed by the old sentence. </span></span> <br/> <br/>
+<input type="radio" name="realis" value="failing"/> FAILING/HYPOTHETICAL OF EXISTING EVENT <span class="tip"> ? <span class="tiptext"> Your new sentence expresses that the event failed to occur, or it expresses that the event might occur, e.g., "He wants to sell his car." (hypothetical) vs "He sold his car." </span></span> <br/>
 
 </div>
 
@@ -450,7 +450,7 @@ z-index: 1;
 	  submit_answer_request['question_name'] = question_name;
 	  submit_answer_request['worker_id'] = worker_id;
 	  submit_answer_request['worker_source'] = worker_source;
-	  submit_answer_request['value'] = x + "\t" + checked + "\t" + realis;
+	  submit_answer_request['value'] = x + "\t" + checked + "\t" + realis + "\t" + old_sentence;
 	  submit_answer_xmlhttp.open("PUT", submit_answer_url, true);
 	  submit_answer_xmlhttp.setRequestHeader("Content-type",
 						 "application/json");
