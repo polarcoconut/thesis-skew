@@ -9,6 +9,7 @@ from boto.mturk.layoutparam import LayoutParameter
 from boto.mturk.layoutparam import LayoutParameters
 from boto.mturk.connection import MTurkConnection
 from boto.mturk.question import HTMLQuestion
+from boto.mturk.connection import MTurkRequestError
 import sys
 import datetime
 
@@ -24,8 +25,11 @@ def delete_hits(hits_to_delete):
     print "Deleting extra hits"
     
     for hit in hits_to_delete:
-        mturk.disable_hit(hit)
-
+        try:
+            mturk.disable_hit(hit)
+        except MTurkRequestError:
+            print "Trying to delete hit that doesn't exist"
+        
     return True
 
 #task_id is the crowd_js assigned task id.
