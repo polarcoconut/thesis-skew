@@ -4,7 +4,6 @@ import json
 import string
 import pickle
 from app import app
-from train import train, restart, gather_status, retrain
 import sys
 import uuid
 import redis

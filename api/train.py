@@ -50,11 +50,11 @@ def restart(job_id):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     gather(task_information, budget, job_id, checkpoint)
 
-def split_examples(task_ids, task_categories):
+def split_examples(task_ids, task_categories, positive_types = None):
     positive_examples = []
     negative_examples = []
     for task_id, task_category in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category, False)
+        answers = parse_answers(task_id, task_category, False, positive_types)
         print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
@@ -66,18 +66,19 @@ def split_examples(task_ids, task_categories):
     print negative_examples
     return positive_examples, negative_examples
 
-def gather_status(job_id):
+def gather_status(job_id, positive_types):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-    positive_examples, negative_examples = split_examples(task_ids,
-                                                          task_categories)
+    positive_examples, negative_examples = split_examples(
+        task_ids, task_categories, positive_types)
+    
     num_examples = len(positive_examples) + len(negative_examples)
 
     return [num_examples, positive_examples, negative_examples]
 
 @app.celery.task(name='retrain')
-def retrain(job_id):
+def retrain(job_id, positive_types):
     print "Training a CNN"
     sys.stdout.flush()
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
@@ -86,8 +87,8 @@ def retrain(job_id):
 
     training_positive_examples, training_negative_examples = split_examples(
         task_ids[0:-2],
-        task_categories[0:-2])
-
+        task_categories[0:-2],
+        positive_types)
     
     model_file_name, vocabulary = trainCNN(
         training_positive_examples, training_negative_examples)
@@ -255,7 +256,8 @@ def get_answers(task_id, category):
 
     return answers
 
-def parse_answers(task_id, category, wait_until_batch_finished=True):
+def parse_answers(task_id, category, wait_until_batch_finished=True,
+                  positive_types = None):
 
     answers = get_answers(task_id, category)
 
@@ -280,8 +282,44 @@ def parse_answers(task_id, category, wait_until_batch_finished=True):
             value = value.split('\t')
             sentence = value[0]
             trigger = value[1]
+
+            if len(value) > 2:
+                if value[2] == 'Yes':                
+                    past = True
+                else:
+                    past = False
+                    
+                if value[3] == 'Yes':
+                    future = True
+                else:
+                    future = False
+                    
+                if value[4] == 'Yes':
+                    general = True
+                else:
+                    general = False
+            
+            
             examples.append(sentence)
-            labels.append(1)
+
+            if 'past' in positive_types:
+                if past:
+                    labels.append(1)
+                else:
+                    labels.append(0)
+            elif 'future' in positive_types:
+                if future:
+                    labels.append(1)
+                else:
+                    labels.append(0)
+            elif 'general' in positive_types:
+                if general:
+                    labels.append(1)
+                else:
+                    labels.append(0)
+            else:
+                labels.append(0)
+                
     elif (('id' in category and category['id'] == 1) or
           category['task_name'] == 'Event Negation'):
         for answer in answers:
@@ -289,9 +327,24 @@ def parse_answers(task_id, category, wait_until_batch_finished=True):
             value = value.split('\t')
             sentence = value[0]
             previous_sentence_not_example_of_event = value[1]
+
+            if len(value) > 2:
+                if value[2] == 'failing':                
+                    failing = True
+                else:
+                    failing = False
             
             examples.append(sentence)
-            labels.append(0)
+
+            if 'failing' in positive_types:
+                if failing:
+                    labels.append(1)
+                else:
+                    labels.append(0)
+            else:
+                labels.append(0)
+                
+            examples.append(sentence)
 
     return examples, labels
         

@@ -36,20 +36,28 @@
     <b>Event Negative Example Near-Miss </b> {{event_neg_example_nearmiss}}
     <br/>
 
-    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe">
+    <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
     </iframe>
 
-    <h2> <b>Current Status:</b> </h2>
-    <b> Job Id (save this somewhere!): </b> {{job_id}} <br/>
+    <hr>
+    <h2> <b>Current Examples:</b> </h2>
+    <b> Job Id (save this somewhere!): </b> {{job_id}} <br/><br/>
+    Label the following event types as positive examples, and all other types as negative:
+    <br/>
+    <input type="checkbox" id="view_types_past" value="past" checked> Past events </input>
+    <input type="checkbox" id="view_types_future" value="future"> Future events </input>
+    <input type="checkbox" id="view_types_general" value="general"> General events </input>
+    <input type="checkbox" id="view_types_failing" value="failing"> Hypothetical/Failed events </input><br/>
+    <button id="refresh">View current examples</button>
+    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
+    <br/><br/>
     <p> <b><span id="num_training_examples">0</span></b> training examples. </p>
-    Positive examples:<br/>
+    Positive examples <span id=view_num_pos>(0) </span> : <br/>
     <textarea id="positive_examples" rows="10" cols="100" wrap="soft">
     </textarea><br/>
-    Negative examples<br/>
+    Negative examples <span id=view_num_neg>(0) </span> :<br/>
     <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
     </textarea><br/>
-    <button id="refresh">Refresh</button>
-    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
 
 
     <hr/>
@@ -60,9 +68,17 @@
     </form>
     <hr/>
     <h2><b> Current CNN Model: </b></h2>
-    Trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
+    Model currently trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
+
+    Train using the following event types as positive examples, and all other types as negative:
+    <br/>
+    <input type="checkbox" name="train_types" value="past"> Past events </input>
+    <input type="checkbox" name="train_types" value="future"> Future events </input>
+    <input type="checkbox" name="train_types" value="general"> General events </input>
+    <input type="checkbox" name="train_types" value="hypothetical"> Hypothetical/Failed events </input>
+
     <span id="retrain_status"></span><br/>
-    <button id="retrain">Retrain the model</button>
+    <button id="retrain">Train the model</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
     <br/><br/>
     <button id="cv">Test on Held-out examples:</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
@@ -104,12 +120,34 @@
     //
     //STATUS CODE
     //
+
     var xmlhttp_refresh = new XMLHttpRequest();
-    var refresh_url = '/gather_status';
-    refresh_url += '?job_id={{job_id}}';
-    
     document.getElementById("refresh").onclick = refresh;
     function refresh() {
+	var refresh_url = '/gather_status';
+	refresh_url += '?job_id={{job_id}}';
+	refresh_url += '&positive_types=dummytype';
+	
+	if (document.getElementById('view_types_past').checked) {
+	    refresh_url += '&positive_types=';
+	    refresh_url += document.getElementById('view_types_past').value;
+	}
+	if (document.getElementById('view_types_future').checked) {
+	    refresh_url += '&positive_types=';
+	    refresh_url += document.getElementById('view_types_future').value;
+	}
+	
+	if (document.getElementById('view_types_general').checked) {
+	    refresh_url += '&positive_types=';
+	    refresh_url += document.getElementById('view_types_general').value;
+	}
+	
+	if (document.getElementById('view_types_failing').checked) {
+	    refresh_url += '&positive_types=';
+	    refresh_url += document.getElementById('view_types_failing').value;
+	}
+
+	console.log(refresh_url);
 	document.getElementById(
 	    'submitting-indicator-refresh').style.visibility = 'visible';
 	xmlhttp_refresh.open("GET", refresh_url, true);
@@ -141,8 +179,10 @@
 		'num_training_examples').innerHTML = num_training_examples;
 	    document.getElementById(
 		'positive_examples').innerHTML = positive_examples_string;
+	    document.getElementById('view_num_pos').innerHTML = '(' + positive_examples.length + ')';
 	    document.getElementById(
 		'negative_examples').innerHTML = negative_examples_string;
+	    document.getElementById('view_num_neg').innerHTML = '(' + negative_examples.length + ')';
 	    document.getElementById(
 	      'submitting-indicator-refresh').style.visibility = 'hidden';
 

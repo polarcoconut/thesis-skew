@@ -4,7 +4,7 @@ import json
 import string
 import pickle
 from app import app
-from train import train, getLatestCheckpoint, split_examples
+from train import getLatestCheckpoint, split_examples
 import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn

@@ -33,13 +33,16 @@ restart_parser.add_argument('job_id', type=str, required=True)
 
 gather_status_parser = reqparse.RequestParser()
 gather_status_parser.add_argument('job_id', type=str, required=True)
+gather_status_parser.add_argument('positive_types', required=True,
+                                  action='append')
 
 retrain_parser = reqparse.RequestParser()
 retrain_parser.add_argument('job_id', type=str, required=True)
+retrain_parser.add_argument('positive_types', required=True,
+                            action='append')
 
 retrain_status_parser = reqparse.RequestParser()
 retrain_status_parser.add_argument('job_id', type=str, required=True)
-retrain_status_parser.add_argument('positive_type', type=int, required=True)
 
 
 class GatherExtractorApi(Resource):
@@ -107,21 +110,24 @@ class GatherStatusApi(Resource):
     def get(self):
         args = gather_status_parser.parse_args()
         job_id = args['job_id']
+        positive_types = args['positive_types']
 
-        return gather_status(job_id)            
+        print "POSITIVE TYPES"
+        print positive_types
+        return gather_status(job_id, positive_types)            
 
 
 class RetrainExtractorApi(Resource):
     def get(self):
         args = retrain_parser.parse_args()
         job_id = args['job_id']
-
+        positive_types = args['positive_types']
+        
         job = Job.objects.get(id = job_id)
         job.num_training_examples_in_model = -1
         job.save()
         
-        retrain.delay(job_id)            
-
+        retrain.delay(job_id, positive_types)
         return True
 
 
