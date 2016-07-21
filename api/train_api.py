@@ -39,6 +39,7 @@ retrain_parser.add_argument('job_id', type=str, required=True)
 
 retrain_status_parser = reqparse.RequestParser()
 retrain_status_parser.add_argument('job_id', type=str, required=True)
+retrain_status_parser.add_argument('positive_type', type=int, required=True)
 
 
 class GatherExtractorApi(Resource):
@@ -76,7 +77,7 @@ class GatherExtractorApi(Resource):
         job.save()
         job_id = str(job.id)
         
-        gather.delay(task_information, budget, app.config, job_id)
+        gather.delay(task_information, budget, job_id)
             
         return redirect(url_for(
             'status',  
@@ -97,7 +98,7 @@ class RestartApi(Resource):
         args = restart_parser.parse_args()
         job_id = args['job_id']
         
-        restart.delay(job_id, app.config)
+        restart.delay(job_id)
             
         return True
 
@@ -107,7 +108,7 @@ class GatherStatusApi(Resource):
         args = gather_status_parser.parse_args()
         job_id = args['job_id']
 
-        return gather_status(job_id, app.config)            
+        return gather_status(job_id)            
 
 
 class RetrainExtractorApi(Resource):
@@ -119,7 +120,7 @@ class RetrainExtractorApi(Resource):
         job.num_training_examples_in_model = -1
         job.save()
         
-        retrain.delay(job_id, app.config)            
+        retrain.delay(job_id)            
 
         return True
 

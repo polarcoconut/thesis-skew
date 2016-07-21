@@ -2,10 +2,10 @@
 from random import sample
 import pickle
 import sys
+from app import app
 
 def greedy_controller(task_categories, training_examples,
-                      training_labels, task_information,
-                      config):
+                      training_labels, task_information):
 
 
     print "Greedy Controller activated."
@@ -18,7 +18,7 @@ def greedy_controller(task_categories, training_examples,
         print "choosing the RECALL category"
         sys.stdout.flush()
     
-        next_category = config['EXAMPLE_CATEGORIES'][0]
+        next_category = app.config['EXAMPLE_CATEGORIES'][0]
         (event_name, event_definition,
          event_good_example_1,
          event_good_example_1_trigger,
@@ -40,30 +40,30 @@ def greedy_controller(task_categories, training_examples,
             'question_name': 'Recall Question',
             'question_description': 'Batch %d' % (len(task_categories) + 1),
             'question_data': question_data,
-            'requester_id' : config['CROWDJS_REQUESTER_ID'],
-            'answers_per_question' : (config['CONTROLLER_BATCH_SIZE'] *
-                                      config['CONTROLLER_APQ']),
+            'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
+            'answers_per_question' : (app.config['CONTROLLER_BATCH_SIZE'] *
+                                      app.config['CONTROLLER_APQ']),
             'unique_workers' : False}
         questions.append(question)
 
         task = {'task_name': next_category['task_name'],
                 'task_description': next_category['task_description'],
-                'requester_id' : config['CROWDJS_REQUESTER_ID'],
+                'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
                 'data' : pickle.dumps({event_good_example_1_trigger:
-                                       config['TABOO_THRESHOLD'] + 1,
+                                       app.config['TABOO_THRESHOLD'] + 1,
                                        event_good_example_2_trigger:
-                                       config['TABOO_THRESHOLD'] + 1}),
-                'assignment_duration' : config['ASSIGNMENT_DURATION'],
+                                       app.config['TABOO_THRESHOLD'] + 1}),
+                'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 
-        num_hits = config['CONTROLLER_BATCH_SIZE']
+        num_hits = app.config['CONTROLLER_BATCH_SIZE']
         return next_category, task, num_hits
 
     #If task_categories has one element in it, pick a category that
     #can use previous training data
     if len(task_categories) % 2 == 1:
 
-        next_category = config['EXAMPLE_CATEGORIES'][1]
+        next_category = app.config['EXAMPLE_CATEGORIES'][1]
 
         (event_name, event_definition,
          event_good_example_1,
@@ -88,16 +88,16 @@ def greedy_controller(task_categories, training_examples,
                 'question_name': 'Precision Question %d' % i,
                 'question_description': 'Batch %d' % (len(task_categories) + 1),
                 'question_data': new_question_data,
-                'requester_id' : config['CROWDJS_REQUESTER_ID'],
-                'answers_per_question' : config['CONTROLLER_APQ']}
+                'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
+                'answers_per_question' : app.config['CONTROLLER_APQ']}
             questions.append(question)
 
 
         task = {'task_name': next_category['task_name'],
                 'task_description': next_category['task_description'],
-                'requester_id' : config['CROWDJS_REQUESTER_ID'],
+                'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
                 'data' : pickle.dumps({'not':config['TABOO_THRESHOLD'] + 1}),
-                'assignment_duration' : config['ASSIGNMENT_DURATION'],
+                'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 
         return next_category, task, len(last_batch)

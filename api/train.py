@@ -10,15 +10,15 @@ from ml.extractors.cnn_core.test import test_cnn
 from schema.job import Job
 from mturk_util import delete_hits, create_hits
 
-def upload_questions(task, config):
-    headers = {'Authentication-Token': config['CROWDJS_API_KEY'],
+def upload_questions(task):
+    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY'],
                'content_type' : 'application/json'}
 
-    r = requests.put(config['CROWDJS_PUT_TASK_URL'],
+    r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
                      headers=headers,
                      json=task)
     print "Here is the response"
-    print config['CROWDJS_API_KEY']
+    print app.config['CROWDJS_API_KEY']
     print r.text
     sys.stdout.flush()
     
@@ -29,7 +29,7 @@ def upload_questions(task, config):
 
 
 
-def getLatestCheckpoint(job_id, config):
+def getLatestCheckpoint(job_id):
     #read the latest checkpoint
     job = Job.objects.get(id = job_id)
 
@@ -46,15 +46,15 @@ def getLatestCheckpoint(job_id, config):
 
 
 @app.celery.task(name='restart')
-def restart(job_id, config):
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
-    gather(task_information, budget, config, job_id, checkpoint)
+def restart(job_id):
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+    gather(task_information, budget, job_id, checkpoint)
 
-def split_examples(task_ids, task_categories, config):
+def split_examples(task_ids, task_categories):
     positive_examples = []
     negative_examples = []
     for task_id, task_category in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category, config, False)
+        answers = parse_answers(task_id, task_category, False)
         print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
@@ -66,29 +66,27 @@ def split_examples(task_ids, task_categories, config):
     print negative_examples
     return positive_examples, negative_examples
 
-def gather_status(job_id, config):
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
+def gather_status(job_id):
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
     positive_examples, negative_examples = split_examples(task_ids,
-                                                          task_categories,
-                                                          config)
+                                                          task_categories)
     num_examples = len(positive_examples) + len(negative_examples)
 
     return [num_examples, positive_examples, negative_examples]
 
 @app.celery.task(name='retrain')
-def retrain(job_id, config):
+def retrain(job_id):
     print "Training a CNN"
     sys.stdout.flush()
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
 
     training_positive_examples, training_negative_examples = split_examples(
         task_ids[0:-2],
-        task_categories[0:-2],
-        config)
+        task_categories[0:-2])
 
     
     model_file_name, vocabulary = trainCNN(
@@ -134,7 +132,7 @@ def retrain(job_id, config):
 
 
 @app.celery.task(name='gather')
-def gather(task_information, budget, config, job_id, checkpoint = None):
+def gather(task_information, budget, job_id, checkpoint = None):
 
     training_examples = []
     training_labels = []
@@ -153,7 +151,7 @@ def gather(task_information, budget, config, job_id, checkpoint = None):
             print "loading task_id %s" % task_id
             sys.stdout.flush()
             
-            answers = parse_answers(task_id, task_category, config)
+            answers = parse_answers(task_id, task_category)
             new_examples, new_labels = answers
             training_examples.append(new_examples)
             training_labels.append(new_labels)
@@ -183,7 +181,7 @@ def gather(task_information, budget, config, job_id, checkpoint = None):
 
                 time.sleep(10)
                 #Check if the task is complete
-                answers = parse_answers(task_id, category, config)
+                answers = parse_answers(task_id, category)
 
                 if answers:
                     new_examples, new_labels = answers
@@ -208,7 +206,7 @@ def gather(task_information, budget, config, job_id, checkpoint = None):
         #Decide which category of task to do.
         category, task_object, num_hits  = get_next_batch(
             task_categories, training_examples, training_labels,
-            task_information, config)
+            task_information)
 
         
         print "hit type to do next: %s" % category['task_name']
@@ -216,7 +214,7 @@ def gather(task_information, budget, config, job_id, checkpoint = None):
         sys.stdout.flush()
 
         #Upload task to CrowdJS
-        task_id = upload_questions(task_object, config)
+        task_id = upload_questions(task_object)
         task_ids.append(task_id)
         task_categories.append(category)
 
@@ -238,34 +236,35 @@ def gather(task_information, budget, config, job_id, checkpoint = None):
 
         #update the cost
         print "Updating the Cost so far"
-        costSoFar += (config['CONTROLLER_BATCH_SIZE'] *
-                      config['CONTROLLER_APQ'])
+        costSoFar += (app.config['CONTROLLER_BATCH_SIZE'] *
+                      app.config['CONTROLLER_APQ'])
         
 
 
 
 
-def get_answers(task_id, category, config):
-    headers = {'Authentication-Token': config['CROWDJS_API_KEY']}
-    answers_crowdjs_url = config['CROWDJS_GET_ANSWERS_URL']
+def get_answers(task_id, category):
+    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
+    answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_URL']
     answers_crowdjs_url += '?task_id=%s' % task_id
-    answers_crowdjs_url += '&requester_id=%s' % config['CROWDJS_REQUESTER_ID']
+    answers_crowdjs_url += '&requester_id=%s' % app.config[
+        'CROWDJS_REQUESTER_ID']
     r = requests.get(answers_crowdjs_url, headers=headers)
 
     answers = r.json()
 
     return answers
 
-def parse_answers(task_id, category, config, wait_until_batch_finished=True):
+def parse_answers(task_id, category, wait_until_batch_finished=True):
 
-    answers = get_answers(task_id, category, config)
+    answers = get_answers(task_id, category)
 
     print "Number of answers"
     print len(answers)
     sys.stdout.flush()
             
     if wait_until_batch_finished and (len(answers) <
-        config['CONTROLLER_BATCH_SIZE'] * config['CONTROLLER_APQ']):
+        app.config['CONTROLLER_BATCH_SIZE'] * app.config['CONTROLLER_APQ']):
         return None
 
     examples = []
@@ -298,12 +297,12 @@ def parse_answers(task_id, category, config, wait_until_batch_finished=True):
         
             
 def get_next_batch(task_categories, training_examples, training_labels,
-                   task_information, config):
+                   task_information):
                       
 
     print "Using the controller:"
-    print config['CONTROLLER']
-    if config['CONTROLLER'] == 'greedy':
+    print app.config['CONTROLLER']
+    if app.config['CONTROLLER'] == 'greedy':
         return greedy_controller(task_categories, training_examples,
                                  training_labels,
-                                 task_information, config)
+                                 task_information)
