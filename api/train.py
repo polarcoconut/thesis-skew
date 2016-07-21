@@ -48,7 +48,7 @@ def getLatestCheckpoint(job_id, config):
 @app.celery.task(name='restart')
 def restart(job_id, config):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
-    train(task_information, budget, config, job_id, checkpoint)
+    gather(task_information, budget, config, job_id, checkpoint)
 
 def split_examples(task_ids, task_categories, config):
     positive_examples = []
@@ -79,7 +79,7 @@ def gather_status(job_id, config):
 
 @app.celery.task(name='retrain')
 def retrain(job_id, config):
-    print "Retraining a CNN"
+    print "Training a CNN"
     sys.stdout.flush()
     task_information, budget, checkpoint = getLatestCheckpoint(job_id, config)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
@@ -133,8 +133,8 @@ def retrain(job_id, config):
     return True
 
 
-@app.celery.task(name='train')
-def train(task_information, budget, config, job_id, checkpoint = None):
+@app.celery.task(name='gather')
+def gather(task_information, budget, config, job_id, checkpoint = None):
 
     training_examples = []
     training_labels = []

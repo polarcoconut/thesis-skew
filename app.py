@@ -86,8 +86,8 @@ def status(event_name, event_definition, event_pos_example_1,
 from api.taboo_api import ComputeTabooApi
 api.add_resource(ComputeTabooApi, '/taboo') 
 
-from api.train_api import TrainExtractorApi
-api.add_resource(TrainExtractorApi, '/train')
+from api.train_api import GatherExtractorApi
+api.add_resource(GatherExtractorApi, '/gather')
 
 from api.train_api import RestartApi
 api.add_resource(RestartApi, '/restart')

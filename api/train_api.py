@@ -4,7 +4,7 @@ import json
 import string
 import pickle
 from app import app
-from train import train, restart, gather_status, retrain
+from train import gather, restart, gather_status, retrain
 import sys
 import uuid
 from schema.job import Job
@@ -41,7 +41,7 @@ retrain_status_parser = reqparse.RequestParser()
 retrain_status_parser.add_argument('job_id', type=str, required=True)
 
 
-class TrainExtractorApi(Resource):
+class GatherExtractorApi(Resource):
     def post(self):
         args = train_parser.parse_args()
         event_name = args['event_name']
@@ -76,7 +76,7 @@ class TrainExtractorApi(Resource):
         job.save()
         job_id = str(job.id)
         
-        train.delay(task_information, budget, app.config, job_id)
+        gather.delay(task_information, budget, app.config, job_id)
             
         return redirect(url_for(
             'status',  
