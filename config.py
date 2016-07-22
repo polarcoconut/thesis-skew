@@ -80,7 +80,14 @@ class Config(object):
     CELERY_IMPORTS = ['api.util', 'api.train']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
     BROKER_POOL_LIMIT = 0
-    
+
+    CELERYBEAT_SCHEDULE = {
+        'run_gather_every_15_seconds': {
+            'task': 'run_gather',
+            'schedule': timedelta(seconds=15),
+            'args': ()
+        },
+    }
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True

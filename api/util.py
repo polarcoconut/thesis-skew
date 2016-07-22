@@ -72,9 +72,6 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
 
 def write_model_to_file(job_id):
     job = Job.objects.get(id = job_id)
-
-        
-    
     
     temp_model_file_handle = open('temp_model_file', 'wb')
     temp_model_file_handle.write(job.model_file)
@@ -88,3 +85,14 @@ def write_model_to_file(job_id):
 
     return 'temp_model_file'
 
+
+@app.celery.task(name='run_gather')
+def run_gather():
+
+    print "Running Gather"
+    
+    jobs = Job.objects(status='Running')
+    for job in jobs:
+        restart(job.id)
+
+    return True

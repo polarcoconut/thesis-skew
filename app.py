@@ -92,6 +92,9 @@ api.add_resource(GatherExtractorApi, '/gather')
 from api.train_api import RestartApi
 api.add_resource(RestartApi, '/restart')
 
+from api.train_api import PauseApi
+api.add_resource(PauseApi, '/pause')
+
 from api.train_api import GatherStatusApi
 api.add_resource(GatherStatusApi, '/gather_status')
 
@@ -100,6 +103,7 @@ api.add_resource(RetrainExtractorApi, '/retrain')
 
 from api.train_api import RetrainStatusApi
 api.add_resource(RetrainStatusApi, '/retrain_status')
+
 
 from api.test_api import TestExtractorApi
 api.add_resource(TestExtractorApi, '/test')

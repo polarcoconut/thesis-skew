@@ -15,7 +15,7 @@
   </head>
   <body>
     <div class="container">
-    <h1> Master Algorithm v0.1</h1>
+    <h1> Master Algorithm v0.2</h1>
     <h2> Your event is now being learned! </h2>
     <b>Event:</b> {{ event_name }}
     <br/>
@@ -59,14 +59,17 @@
     <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
     </textarea><br/>
 
-
+    
     <hr/>
+
+    <!--
     <h2> <b> Restart a crashed job (Don't push this unless you know what you're doing!): </b> </h2>
     <form action="/restart" method="post" target="dummyframe">
       <input type="hidden" name="job_id" size="100" value="{{job_id}}" /><br/>
       <input type="submit" value="Restart Training">
     </form>
     <hr/>
+    -->
     <h2><b> Current CNN Model: </b></h2>
     Model currently trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
 

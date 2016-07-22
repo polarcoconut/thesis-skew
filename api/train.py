@@ -158,43 +158,39 @@ def gather(task_information, budget, job_id, checkpoint = None):
             training_labels.append(new_labels)
 
             
-    
-    while costSoFar < budget:
+    job = Job.objects.get(id = job_id)
+
+    if costSoFar >= budget:
+        job.status = 'Finished'
+        job.save()
+    else:
         print "Cost so far: %d" % costSoFar
         print "Number of training example batches and label batches: %d, %d" % (
             len(training_examples), len(training_labels))
         print training_examples
 
-        #make a checkpoint
-        checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
-        job = Job.objects.get(id = job_id)
-        job.checkpoints[str(int(time.time()))] = checkpoint
-        job.save()
 
         #If we have task_ids, wait for the last one to complete.
         if len(task_ids) > 0:
             task_id = task_ids[-1]
             category = task_categories[-1]
-            #Wait for the task to complete.
-            while True:
-                print "Sleeping"
+
+            #Check if the task is complete
+            answers = parse_answers(task_id, category)
+
+            if answers:
+                new_examples, new_labels = answers
+                print "New examples"
+                print new_examples
                 sys.stdout.flush()
-
-                time.sleep(10)
-                #Check if the task is complete
-                answers = parse_answers(task_id, category)
-
-                if answers:
-                    new_examples, new_labels = answers
-                    print "New examples"
-                    print new_examples
-                    sys.stdout.flush()
-                    
-                    training_examples.append(new_examples)
-                    training_labels.append(new_labels)
-                    break
+                
+                training_examples.append(new_examples)
+                training_labels.append(new_labels)
+                break
+            else:
                 print "Task not complete yet"
                 sys.stdout.flush()
+                return False
 
         print "Delete any existing leftover hits from turk"
         if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
@@ -240,6 +236,10 @@ def gather(task_information, budget, job_id, checkpoint = None):
         costSoFar += (app.config['CONTROLLER_BATCH_SIZE'] *
                       app.config['CONTROLLER_APQ'])
         
+        #make a checkpoint
+        checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
+        job.checkpoints[str(int(time.time()))] = checkpoint
+        job.save()
 
 
 

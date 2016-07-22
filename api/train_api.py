@@ -30,6 +30,9 @@ train_parser.add_argument('budget', type=str, required=True)
 restart_parser = reqparse.RequestParser()
 restart_parser.add_argument('job_id', type=str, required=True)
 
+pause_parser = reqparse.RequestParser()
+pause_parser.add_argument('job_id', type=str, required=True)
+
 
 gather_status_parser = reqparse.RequestParser()
 gather_status_parser.add_argument('job_id', type=str, required=True)
@@ -76,7 +79,8 @@ class GatherExtractorApi(Resource):
         job = Job(task_information = pickle.dumps((task_information, budget)),
                   num_training_examples_in_model = -1,
                   current_hit_ids = [],
-                  checkpoints = {})
+                  checkpoints = {},
+                  status = 'Running')
         job.save()
         job_id = str(job.id)
         
@@ -100,11 +104,26 @@ class RestartApi(Resource):
     def post(self):
         args = restart_parser.parse_args()
         job_id = args['job_id']
+
+        job = Job.objects.get(id = job_id)
+        job.status = 'Running'
+        job.save()
+
+        print "Job %s restarted" % job_id
         
-        restart.delay(job_id)
-            
         return True
 
+class PauseApi(Resource):
+    def get(self):
+        args = pause_parser.parse_args()
+        job_id = args['job_id']
+
+        job = Job.objects.get(id = job_id)
+        job.status = 'Paused'
+        job.save()
+
+        print "Job %s paused" % job_id
+        return True
     
 class GatherStatusApi(Resource):
     def get(self):
