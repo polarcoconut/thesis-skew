@@ -349,7 +349,11 @@
 	retrain_url += '?job_id={{job_id}}';
     
 	retrain_url += '&positive_types=dummytype';
-	
+
+	if (document.getElementById('train_types_all').checked) {
+	    retrain_url += '&positive_types=';
+	    retrain_url += document.getElementById('train_types_all').value;
+	}
 	if (document.getElementById('train_types_past').checked) {
 	    retrain_url += '&positive_types=';
 	    retrain_url += document.getElementById('train_types_past').value;
