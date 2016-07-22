@@ -3,6 +3,7 @@ from boto.mturk.qualification import Qualifications
 from boto.mturk.qualification import PercentAssignmentsApprovedRequirement
 from boto.mturk.qualification import NumberHitsApprovedRequirement
 from boto.mturk.qualification import LocaleRequirement
+from datetime import timedelta
 
 class Config(object):
     DEBUG = False
@@ -81,13 +82,7 @@ class Config(object):
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
     BROKER_POOL_LIMIT = 0
 
-    CELERYBEAT_SCHEDULE = {
-        'run_gather_every_15_seconds': {
-            'task': 'run_gather',
-            'schedule': timedelta(seconds=15),
-            'args': ()
-        },
-    }
+
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
@@ -97,6 +92,13 @@ class DevelopmentConfig(Config):
     #CELERY_REDIS_MAX_CONNECTIONS = 5
     QUALIFICATIONS = Qualifications([LocaleRequirement('EqualTo', 'US')])
 
+    CELERYBEAT_SCHEDULE = {
+        'run_gather': {
+            'task': 'run_gather',
+            'schedule': timedelta(seconds=10),
+            'args': ()
+        },
+    }
 class Production(Config):
     DEBUG = False
     DEVELOPMENT = False
@@ -107,3 +109,11 @@ class Production(Config):
         [NumberHitsApprovedRequirement('GreaterThan', 500),
          PercentAssignmentsApprovedRequirement('GreaterThan', 95),
          LocaleRequirement('EqualTo', 'US')])
+
+    CELERYBEAT_SCHEDULE = {
+        'run_gather': {
+            'task': 'run_gather',
+            'schedule': timedelta(seconds=60),
+            'args': ()
+        },
+    }

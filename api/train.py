@@ -53,8 +53,9 @@ def restart(job_id):
 def split_examples(task_ids, task_categories, positive_types = []):
     positive_examples = []
     negative_examples = []
-    for task_id, task_category in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category, False, positive_types)
+    for task_id, task_category_id in zip(task_ids,task_categories):
+        answers = parse_answers(task_id, task_category_id,
+                                False, positive_types)
         print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
@@ -147,12 +148,12 @@ def gather(task_information, budget, job_id, checkpoint = None):
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
         print "loading checkpoint..."
-        for task_id, task_category in zip(task_ids[0:-1],
+        for task_id, task_category_id in zip(task_ids[0:-1],
                                           task_categories[0:-1]):
-            print "loading task_id %s" % task_id
-            sys.stdout.flush()
+            #print "loading task_id %s" % task_id
+            #sys.stdout.flush()
             
-            answers = parse_answers(task_id, task_category)
+            answers = parse_answers(task_id, task_category_id)
             new_examples, new_labels = answers
             training_examples.append(new_examples)
             training_labels.append(new_labels)
@@ -161,32 +162,40 @@ def gather(task_information, budget, job_id, checkpoint = None):
     job = Job.objects.get(id = job_id)
 
     if costSoFar >= budget:
-        job.status = 'Finished'
-        job.save()
+        task_id = task_ids[-1]
+        category_id = task_categories[-1]
+        
+        #Check if the task is complete
+        answers = parse_answers(task_id, category_id)
+
+        if answers:
+            print "Delete any existing leftover hits from turk"
+            if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
+                delete_hits(job.current_hit_ids)
+            job.status = 'Finished'
+            job.save()
+        return True
+            
     else:
         print "Cost so far: %d" % costSoFar
         print "Number of training example batches and label batches: %d, %d" % (
             len(training_examples), len(training_labels))
-        print training_examples
 
 
         #If we have task_ids, wait for the last one to complete.
         if len(task_ids) > 0:
             task_id = task_ids[-1]
-            category = task_categories[-1]
+            category_id = task_categories[-1]
 
             #Check if the task is complete
-            answers = parse_answers(task_id, category)
+            answers = parse_answers(task_id, category_id)
 
             if answers:
                 new_examples, new_labels = answers
-                print "New examples"
-                print new_examples
                 sys.stdout.flush()
                 
                 training_examples.append(new_examples)
                 training_labels.append(new_labels)
-                break
             else:
                 print "Task not complete yet"
                 sys.stdout.flush()
@@ -197,23 +206,21 @@ def gather(task_information, budget, job_id, checkpoint = None):
             delete_hits(job.current_hit_ids)
         
         print "Deciding which category to do next"
-        print "Task categories so far:"
-        print task_categories
         sys.stdout.flush()
         #Decide which category of task to do.
-        category, task_object, num_hits  = get_next_batch(
+        category_id, task_object, num_hits  = get_next_batch(
             task_categories, training_examples, training_labels,
             task_information)
 
         
-        print "hit type to do next: %s" % category['task_name']
+        print "hit type to do next: %s" % category_id
         print "Uploading task to CrowdJS"
         sys.stdout.flush()
 
         #Upload task to CrowdJS
         task_id = upload_questions(task_object)
         task_ids.append(task_id)
-        task_categories.append(category)
+        task_categories.append(category_id)
 
         print "Task Ids:"
         print task_ids
@@ -222,7 +229,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
         #Upload assignments onto MTurk
         #number of workers per question is set in mturk layout
-        hit_ids = create_hits(category, task_id,
+        hit_ids = create_hits(category_id, task_id,
                               num_hits)
         job.current_hit_ids = hit_ids
         job.save()
@@ -244,7 +251,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
 
 
-def get_answers(task_id, category):
+def get_answers(task_id):
     headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
     answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_URL']
     answers_crowdjs_url += '?task_id=%s' % task_id
@@ -256,15 +263,17 @@ def get_answers(task_id, category):
 
     return answers
 
-def parse_answers(task_id, category, wait_until_batch_finished=True,
+#because of old data structures, category_id might be a category structure
+def parse_answers(task_id, category_id, wait_until_batch_finished=True,
                   positive_types = []):
 
-    answers = get_answers(task_id, category)
+    answers = get_answers(task_id)
 
-    print "Number of answers"
-    print len(answers)
-    sys.stdout.flush()
-            
+    if not isinstance(category_id, dict):        
+        category = app.config['EXAMPLE_CATEGORIES'][category_id]
+    else:
+        category = category_id
+        
     if wait_until_batch_finished and (len(answers) <
         app.config['CONTROLLER_BATCH_SIZE'] * app.config['CONTROLLER_APQ']):
         return None
@@ -282,10 +291,6 @@ def parse_answers(task_id, category, wait_until_batch_finished=True,
             value = value.split('\t')
             sentence = value[0]
             trigger = value[1]
-
-            print sentence
-            print value[4]
-            print 'general' in positive_types
             
             if len(value) > 2:
                 if value[2] == 'Yes':                
@@ -343,7 +348,6 @@ def parse_answers(task_id, category, wait_until_batch_finished=True,
                 labels.append(0)
             examples.append(sentence)
 
-    print (examples, labels)
     return examples, labels
         
             

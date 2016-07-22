@@ -33,7 +33,7 @@ def delete_hits(hits_to_delete):
     return True
 
 #task_id is the crowd_js assigned task id.
-def create_hits(category, task_id, num_hits):
+def create_hits(category_id, task_id, num_hits):
 
     print "Connecting to Turk host at"
     print app.config['MTURK_HOST']
@@ -92,7 +92,8 @@ def create_hits(category, task_id, num_hits):
         #    hit_layout = hit_layout_id,
         #    layout_params = layout_params)[0]
         """
-        
+
+        category = app.config['EXAMPLE_CATEGORIES'][category_id]
         hit_html = category['hit_html']
         hit_html = hit_html.replace('${task_id}', task_id)
         hit_html = hit_html.replace('${requester_id}',

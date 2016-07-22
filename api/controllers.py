@@ -57,7 +57,7 @@ def greedy_controller(task_categories, training_examples,
                 'questions' : questions}
 
         num_hits = app.config['CONTROLLER_BATCH_SIZE']
-        return next_category, task, num_hits
+        return next_category['id'], task, num_hits
 
     #If task_categories has one element in it, pick a category that
     #can use previous training data
@@ -101,4 +101,4 @@ def greedy_controller(task_categories, training_examples,
                 'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 
-        return next_category, task, len(last_batch)
+        return next_category['id'], task, len(last_batch)

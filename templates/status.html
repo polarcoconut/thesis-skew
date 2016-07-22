@@ -39,9 +39,14 @@
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
     </iframe>
 
-    <hr>
-    <h2> <b>Current Examples:</b> </h2>
+    <hr/>
+    <h2> <b>Current Status:</b> <span id="job_status">...</span> </h2>
     <b> Job Id (save this somewhere!): </b> {{job_id}} <br/><br/>
+    <button id="pause">Pause the job</button>
+    <button id="restart">Restart the job</button>
+
+    <hr/>
+    <h2> <b>Current Examples:</b></h2>
     Label the following event types as positive examples, and all other types as negative:
     <br/>
     <input type="checkbox" id="view_types_past" value="past" checked> Past events </input>
@@ -122,7 +127,7 @@
   
   <script type="text/javascript">
     //
-    //STATUS CODE
+    //GATHER STATUS CODE
     //
 
     var xmlhttp_refresh = new XMLHttpRequest();
@@ -405,7 +410,106 @@
     }
 
 
-    window.onload = check_retrain_status;
+    /*
+     * JOB STATUS CODE
+     */
+    var xmlhttp_job_status = new XMLHttpRequest();
+    var job_status_url = '/status';
+    job_status_url += '?job_id={{job_id}}';
+
+    function check_job_status() {
+	xmlhttp_job_status.open("GET", job_status_url, true);
+	xmlhttp_job_status.send();
+
+    }
+
+    xmlhttp_job_status.onreadystatechange = function() {
+	if (xmlhttp_job_status.readyState == 4 &&
+	    xmlhttp_job_status.status == 200) {
+	    var response = JSON.parse(xmlhttp_job_status.responseText);
+	    console.log(response);
+	    if (response == 'Running') {
+		document.getElementById('pause').disabled = false;
+		document.getElementById('restart').disabled = true;
+
+		document.getElementById('job_status').innerHTML = '<font color="green">Running</font>';
+	    } else if (response == 'Paused') {
+		document.getElementById('pause').disabled = true;
+		document.getElementById('restart').disabled = false;
+
+		document.getElementById('job_status').innerHTML = '<font color="red">Paused</font>';
+	    } else {
+		document.getElementById('job_status').innerHTML = '<font color="red">No Status</font>';
+	    }
+
+	}
+    };
+
+
+    var xmlhttp_pause = new XMLHttpRequest();
+    var pause_url = '/pause';
+    pause_url += '?job_id={{job_id}}';
+
+    document.getElementById("pause").onclick = pause;
+    function pause() {
+	document.getElementById('pause').disabled = true;
+	document.getElementById('restart').disabled = false;
+	xmlhttp_pause.open("GET", pause_url, true);
+	xmlhttp_pause.send();
+
+    }
+
+    xmlhttp_pause.onreadystatechange = function() {
+	if (xmlhttp_pause.readyState == 4 && xmlhttp_pause.status == 200) {
+	    var response = JSON.parse(xmlhttp_pause.responseText);
+	    console.log(response);
+	    if (response == 1) {
+		document.getElementById('job_status').innerHTML = '<font color="red">Paused</font>';
+	    } else {
+		alert('Could not pause.');
+		document.getElementById('pause').disabled = false;
+		document.getElementById('restart').disabled = true;
+	    }
+	    
+	}
+    };
+
+
+
+    var xmlhttp_restart = new XMLHttpRequest();
+    var restart_url = '/restart';
+    restart_url += '?job_id={{job_id}}';
+
+    document.getElementById("restart").onclick = restart;
+    function restart() {
+	document.getElementById('pause').disabled = false;
+	document.getElementById('restart').disabled = true;
+	xmlhttp_restart.open("GET", restart_url, true);
+	xmlhttp_restart.send();
+    }
+
+    xmlhttp_restart.onreadystatechange = function() {
+	if (xmlhttp_restart.readyState == 4 && xmlhttp_restart.status == 200) {
+	    var response = JSON.parse(xmlhttp_restart.responseText);
+	    console.log(response);
+	    if (response == 1) {
+		document.getElementById('job_status').innerHTML = '<font color="green">Running</font>';
+	    } else {
+		alert('Could not restart.');
+		document.getElementById('pause').disabled = true;
+		document.getElementById('restart').disabled = false;
+	    }
+	    
+	}
+    };
+
+
+    function on_window_load() {
+	check_retrain_status();
+	check_job_status();
+    }
+
+    window.onload = on_window_load;
 
   </script>
 </html>

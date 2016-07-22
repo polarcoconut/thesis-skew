@@ -33,6 +33,9 @@ restart_parser.add_argument('job_id', type=str, required=True)
 pause_parser = reqparse.RequestParser()
 pause_parser.add_argument('job_id', type=str, required=True)
 
+job_status_parser = reqparse.RequestParser()
+job_status_parser.add_argument('job_id', type=str, required=True)
+
 
 gather_status_parser = reqparse.RequestParser()
 gather_status_parser.add_argument('job_id', type=str, required=True)
@@ -101,7 +104,7 @@ class GatherExtractorApi(Resource):
 
 
 class RestartApi(Resource):
-    def post(self):
+    def get(self):
         args = restart_parser.parse_args()
         job_id = args['job_id']
 
@@ -111,7 +114,7 @@ class RestartApi(Resource):
 
         print "Job %s restarted" % job_id
         
-        return True
+        return 1
 
 class PauseApi(Resource):
     def get(self):
@@ -123,8 +126,23 @@ class PauseApi(Resource):
         job.save()
 
         print "Job %s paused" % job_id
-        return True
-    
+        return 1
+
+class JobStatusApi(Resource):
+    def get(self):
+        args = job_status_parser.parse_args()
+        job_id = args['job_id']
+
+        job = Job.objects.get(id = job_id)
+
+        try:
+            return job.status
+        except AttributeError:
+            job.status = 'Paused'
+            job.save()
+            return job.status
+
+        
 class GatherStatusApi(Resource):
     def get(self):
         args = gather_status_parser.parse_args()

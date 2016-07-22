@@ -5,6 +5,7 @@ import json
 import requests
 from app import app
 from schema.job import Job
+from train import restart
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -89,10 +90,13 @@ def write_model_to_file(job_id):
 @app.celery.task(name='run_gather')
 def run_gather():
 
-    print "Running Gather"
-    
+    jobs_checked = 0
     jobs = Job.objects(status='Running')
     for job in jobs:
+        jobs_checked += 1
+        print "Running Gather for job %s" % job.id
         restart(job.id)
 
+    print "%d jobs restarted" % jobs_checked
+    
     return True

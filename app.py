@@ -95,6 +95,9 @@ api.add_resource(RestartApi, '/restart')
 from api.train_api import PauseApi
 api.add_resource(PauseApi, '/pause')
 
+from api.train_api import JobStatusApi
+api.add_resource(JobStatusApi, '/status')
+
 from api.train_api import GatherStatusApi
 api.add_resource(GatherStatusApi, '/gather_status')
 
