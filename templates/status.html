@@ -15,7 +15,7 @@
   </head>
   <body>
     <div class="container">
-    <h1> Extremest Extraction v0.1</h1>
+    <h1> Master Algorithm v0.1</h1>
     <h2> Your event is now being learned! </h2>
     <b>Event:</b> {{ event_name }}
     <br/>
@@ -46,8 +46,8 @@
     <br/>
     <input type="checkbox" id="view_types_past" value="past" checked> Past events </input>
     <input type="checkbox" id="view_types_future" value="future"> Future events </input>
-    <input type="checkbox" id="view_types_general" value="general"> General events </input>
-    <input type="checkbox" id="view_types_failing" value="failing"> Hypothetical/Failed events </input><br/>
+    <input type="checkbox" id="view_types_general" value="general"> General/Hypothetical/Failing events </input>
+    <br/>
     <button id="refresh">View current examples</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
     <br/><br/>
@@ -72,10 +72,11 @@
 
     Train using the following event types as positive examples, and all other types as negative:
     <br/>
-    <input type="checkbox" name="train_types" value="past"> Past events </input>
-    <input type="checkbox" name="train_types" value="future"> Future events </input>
-    <input type="checkbox" name="train_types" value="general"> General events </input>
-    <input type="checkbox" name="train_types" value="hypothetical"> Hypothetical/Failed events </input>
+
+    <input type="checkbox" id="train_types_past" value="past" checked> Past events </input>
+    <input type="checkbox" id="train_types_future" value="future"> Future events </input>
+    <input type="checkbox" id="train_types_general" value="general"> General/Hypothetical/Failing events </input>
+    <br/>
 
     <span id="retrain_status"></span><br/>
     <button id="retrain">Train the model</button>
@@ -142,10 +143,6 @@
 	    refresh_url += document.getElementById('view_types_general').value;
 	}
 	
-	if (document.getElementById('view_types_failing').checked) {
-	    refresh_url += '&positive_types=';
-	    refresh_url += document.getElementById('view_types_failing').value;
-	}
 
 	console.log(refresh_url);
 	document.getElementById(
@@ -232,11 +229,28 @@
     // Cross validation Code
     //
     var xmlhttp_cv = new XMLHttpRequest();
-    var cv_url = '/cv';
-    cv_url += '?job_id={{job_id}}';
 
     document.getElementById("cv").onclick = cv;
     function cv() {
+	var cv_url = '/cv';
+	cv_url += '?job_id={{job_id}}';
+	
+	cv_url += '&positive_types=dummytype';
+	
+	if (document.getElementById('train_types_past').checked) {
+	    cv_url += '&positive_types=';
+	    cv_url += document.getElementById('train_types_past').value;
+	}
+	if (document.getElementById('train_types_future').checked) {
+	    cv_url += '&positive_types=';
+	    cv_url += document.getElementById('train_types_future').value;
+	}
+	
+	if (document.getElementById('train_types_general').checked) {
+	    cv_url += '&positive_types=';
+	    cv_url += document.getElementById('train_types_general').value;
+	}
+
 	document.getElementById(
 	    'submitting-indicator-cv').style.visibility = 'visible';
 	xmlhttp_cv.open("GET", cv_url, true);
@@ -310,11 +324,31 @@
     //RETRAIN CODE
     //
     var xmlhttp_retrain = new XMLHttpRequest();
-    var retrain_url = '/retrain';
-    retrain_url += '?job_id={{job_id}}';
     
     document.getElementById("retrain").onclick = retrain;
     function retrain() {
+
+	var retrain_url = '/retrain';
+	retrain_url += '?job_id={{job_id}}';
+    
+	retrain_url += '&positive_types=dummytype';
+	
+	if (document.getElementById('train_types_past').checked) {
+	    retrain_url += '&positive_types=';
+	    retrain_url += document.getElementById('train_types_past').value;
+	}
+	if (document.getElementById('train_types_future').checked) {
+	    retrain_url += '&positive_types=';
+	    retrain_url += document.getElementById('train_types_future').value;
+	}
+	
+	if (document.getElementById('train_types_general').checked) {
+	    retrain_url += '&positive_types=';
+	    retrain_url += document.getElementById('train_types_general').value;
+	}
+	
+
+
 	document.getElementById(
 	    'submitting-indicator-retrain').style.visibility = 'visible';
 	document.getElementById(
@@ -366,5 +400,9 @@
 	xmlhttp_retrain_status.open("GET", retrain_status_url, true);
 	xmlhttp_retrain_status.send();
     }
+
+
+    window.onload = check_retrain_status;
+
   </script>
 </html>

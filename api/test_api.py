@@ -15,9 +15,13 @@ from schema.job import Job
 test_parser = reqparse.RequestParser()
 test_parser.add_argument('job_id', type=str, required=True)
 test_parser.add_argument('test_sentence', type=str, required=True)
+#test_parser.add_argument('positive_types', required=True,
+#                            action='append')
 
 cv_parser = reqparse.RequestParser()
 cv_parser.add_argument('job_id', type=str, required=True)
+cv_parser.add_argument('positive_types', required=True,
+                            action='append')
 
 class TestExtractorApi(Resource):
     def get(self):
@@ -25,6 +29,7 @@ class TestExtractorApi(Resource):
         args = test_parser.parse_args()
         job_id = args['job_id']
         test_sentence = args['test_sentence']
+        #positive_types = args['positive_types']
 
         print "Extracting event from sentence:"
         print test_sentence
@@ -47,21 +52,25 @@ class CrossValidationExtractorApi(Resource):
 
         args = cv_parser.parse_args()
         job_id = args['job_id']
+        positive_types = args['positive_types']
 
         print "Doing cross validation"
         sys.stdout.flush()
 
         task_information, budget, checkpoint = getLatestCheckpoint(
-            job_id, app.config)
+            job_id)
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
         test_positive_examples, test_negative_examples = split_examples(
             task_ids[-2:],
-            task_categories[-2:],
-            app.config)
+            task_categories[-2:], positive_types)
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
 
+        print "cv examples"
+        print test_positive_examples
+        print test_negative_examples
+        
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
 

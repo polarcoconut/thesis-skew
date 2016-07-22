@@ -96,7 +96,8 @@ def greedy_controller(task_categories, training_examples,
         task = {'task_name': next_category['task_name'],
                 'task_description': next_category['task_description'],
                 'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
-                'data' : pickle.dumps({'not':config['TABOO_THRESHOLD'] + 1}),
+                'data' : pickle.dumps(
+                    {'not':app.config['TABOO_THRESHOLD'] + 1}),
                 'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
                 'questions' : questions}
 

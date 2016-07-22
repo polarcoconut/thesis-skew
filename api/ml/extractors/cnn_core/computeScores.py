@@ -139,8 +139,15 @@ def computeScores(predictedLabels, trueLabels):
         else:
             recalls.append('X')
 
-    precision = precisionNumerator / precisionDenominator
-    recall = recallNumerator / recallDenominator
+    if precisionDenominator > 0:
+        precision = precisionNumerator / precisionDenominator
+    else:
+        precision = 1.0
+
+    if recallDenominator > 0:
+        recall = recallNumerator / recallDenominator
+    else:
+        recall = 1.0
 
     if precision + recall == 0:
         return (0, 0, 0)

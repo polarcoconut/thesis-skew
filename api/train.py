@@ -50,7 +50,7 @@ def restart(job_id):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     gather(task_information, budget, job_id, checkpoint)
 
-def split_examples(task_ids, task_categories, positive_types = None):
+def split_examples(task_ids, task_categories, positive_types = []):
     positive_examples = []
     negative_examples = []
     for task_id, task_category in zip(task_ids,task_categories):
@@ -257,7 +257,7 @@ def get_answers(task_id, category):
     return answers
 
 def parse_answers(task_id, category, wait_until_batch_finished=True,
-                  positive_types = None):
+                  positive_types = []):
 
     answers = get_answers(task_id, category)
 
@@ -283,6 +283,10 @@ def parse_answers(task_id, category, wait_until_batch_finished=True,
             sentence = value[0]
             trigger = value[1]
 
+            print sentence
+            print value[4]
+            print 'general' in positive_types
+            
             if len(value) > 2:
                 if value[2] == 'Yes':                
                     past = True
@@ -300,26 +304,20 @@ def parse_answers(task_id, category, wait_until_batch_finished=True,
                     general = False
             
             
-            examples.append(sentence)
 
-            if 'past' in positive_types:
-                if past:
-                    labels.append(1)
-                else:
-                    labels.append(0)
-            elif 'future' in positive_types:
-                if future:
-                    labels.append(1)
-                else:
-                    labels.append(0)
-            elif 'general' in positive_types:
-                if general:
-                    labels.append(1)
+                if 'past' in positive_types and past:
+                        labels.append(1)                
+                elif 'future' in positive_types and future:
+                        labels.append(1)
+                elif 'general' in positive_types and general:
+                        labels.append(1)
                 else:
                     labels.append(0)
             else:
-                labels.append(0)
-                
+                labels.append(1)
+
+            examples.append(sentence)
+
     elif (('id' in category and category['id'] == 1) or
           category['task_name'] == 'Event Negation'):
         for answer in answers:
@@ -334,18 +332,18 @@ def parse_answers(task_id, category, wait_until_batch_finished=True,
                 else:
                     failing = False
             
-            examples.append(sentence)
-
-            if 'failing' in positive_types:
-                if failing:
-                    labels.append(1)
+                if 'general' in positive_types:
+                    if failing:
+                        labels.append(1)
+                    else:
+                        labels.append(0)
                 else:
                     labels.append(0)
             else:
                 labels.append(0)
-                
             examples.append(sentence)
 
+    print (examples, labels)
     return examples, labels
         
             
