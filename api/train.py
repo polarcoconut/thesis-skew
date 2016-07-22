@@ -310,8 +310,9 @@ def parse_answers(task_id, category_id, wait_until_batch_finished=True,
                     general = False
             
             
-
-                if 'past' in positive_types and past:
+                if 'all' in positive_types:
+                    labels.append(1)
+                elif 'past' in positive_types and past:
                         labels.append(1)                
                 elif 'future' in positive_types and future:
                         labels.append(1)
@@ -341,8 +342,10 @@ def parse_answers(task_id, category_id, wait_until_batch_finished=True,
                     failing = True
                 else:
                     failing = False
-            
-                if 'general' in positive_types:
+
+                if 'all' in positive_types:
+                    labels.append(0)
+                elif 'general' in positive_types:
                     if failing:
                         labels.append(1)
                     else:

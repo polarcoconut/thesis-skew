@@ -49,7 +49,8 @@
     <h2> <b>Current Examples:</b></h2>
     Label the following event types as positive examples, and all other types as negative:
     <br/>
-    <input type="checkbox" id="view_types_past" value="past" checked> Past events </input>
+    <input type="checkbox" id="view_types_all" value="all" checked> All events </input>
+    <input type="checkbox" id="view_types_past" value="past"> Past events </input>
     <input type="checkbox" id="view_types_future" value="future"> Future events </input>
     <input type="checkbox" id="view_types_general" value="general"> General/Hypothetical/Failing events </input>
     <br/>
@@ -80,8 +81,8 @@
 
     Train using the following event types as positive examples, and all other types as negative:
     <br/>
-
-    <input type="checkbox" id="train_types_past" value="past" checked> Past events </input>
+    <input type="checkbox" id="train_types_all" value="all" checked> All events </input>
+    <input type="checkbox" id="train_types_past" value="past"> Past events </input>
     <input type="checkbox" id="train_types_future" value="future"> Future events </input>
     <input type="checkbox" id="train_types_general" value="general"> General/Hypothetical/Failing events </input>
     <br/>
@@ -136,7 +137,11 @@
 	var refresh_url = '/gather_status';
 	refresh_url += '?job_id={{job_id}}';
 	refresh_url += '&positive_types=dummytype';
-	
+
+	if (document.getElementById('view_types_all').checked) {
+	    refresh_url += '&positive_types=';
+	    refresh_url += document.getElementById('view_types_all').value;
+	}
 	if (document.getElementById('view_types_past').checked) {
 	    refresh_url += '&positive_types=';
 	    refresh_url += document.getElementById('view_types_past').value;
@@ -244,7 +249,11 @@
 	cv_url += '?job_id={{job_id}}';
 	
 	cv_url += '&positive_types=dummytype';
-	
+
+	if (document.getElementById('train_types_all').checked) {
+	    cv_url += '&positive_types=';
+	    cv_url += document.getElementById('train_types_all').value;
+	}
 	if (document.getElementById('train_types_past').checked) {
 	    cv_url += '&positive_types=';
 	    cv_url += document.getElementById('train_types_past').value;
