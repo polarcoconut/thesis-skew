@@ -50,12 +50,13 @@ def restart(job_id):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     gather(task_information, budget, job_id, checkpoint)
 
-def split_examples(task_ids, task_categories, positive_types = []):
+def split_examples(task_ids, task_categories, positive_types = [],
+                   only_sentence=True):
     positive_examples = []
     negative_examples = []
     for task_id, task_category_id in zip(task_ids,task_categories):
         answers = parse_answers(task_id, task_category_id,
-                                False, positive_types)
+                                False, positive_types, only_sentence)
         print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
@@ -72,7 +73,7 @@ def gather_status(job_id, positive_types):
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
     positive_examples, negative_examples = split_examples(
-        task_ids, task_categories, positive_types)
+        task_ids, task_categories, positive_types, False)
     
     num_examples = len(positive_examples) + len(negative_examples)
 
@@ -265,7 +266,7 @@ def get_answers(task_id):
 
 #because of old data structures, category_id might be a category structure
 def parse_answers(task_id, category_id, wait_until_batch_finished=True,
-                  positive_types = []):
+                  positive_types = [], only_sentence = True):
 
     answers = get_answers(task_id)
 
@@ -321,7 +322,11 @@ def parse_answers(task_id, category_id, wait_until_batch_finished=True,
             else:
                 labels.append(1)
 
-            examples.append(sentence)
+
+            if only_sentence:
+                examples.append(sentence)
+            else:
+                examples.append(answer['value'])
 
     elif (('id' in category and category['id'] == 1) or
           category['task_name'] == 'Event Negation'):
@@ -346,7 +351,12 @@ def parse_answers(task_id, category_id, wait_until_batch_finished=True,
                     labels.append(0)
             else:
                 labels.append(0)
-            examples.append(sentence)
+
+            if only_sentence:
+                examples.append(sentence)
+            else:
+                examples.append(answer['value'])
+
 
     return examples, labels
         
