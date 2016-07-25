@@ -418,11 +418,19 @@ z-index: 1;
 	      if (taboo_word == "") {
 		  continue;
 	      }
+
 	      taboo_word = " " + list_of_taboo_words[i] + " ";
 
+
+	      
 	      if (x.toUpperCase().indexOf(taboo_word.toUpperCase()) > -1) {
-		  alert("The new sentence must not contain: " + taboo_word);
-		  return false;
+		  if (old_sentence.toUpperCase().indexOf(
+		      taboo_word.toUpperCase()) > -1) {
+		      continue
+		  } else {
+		      alert("The new sentence must not contain: " + taboo_word);
+		      return false;
+		  }
 	      }	
 	  }
 
