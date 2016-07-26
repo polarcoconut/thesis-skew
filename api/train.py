@@ -5,8 +5,11 @@ import requests
 import pickle
 import json
 import sys
-from ml.train_cnn import trainCNN
+from ml.extractors.cnn_core.parse import parse_training_data
+from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
+from ml.extractors.cnn_core.computeScores import computeScores
+
 from schema.job import Job
 from mturk_util import delete_hits, create_hits
 
@@ -92,10 +95,11 @@ def retrain(job_id, positive_types):
         task_categories[0:-2],
         positive_types)
     
-    model_file_name, vocabulary = trainCNN(
-        training_positive_examples, training_negative_examples)
+    model_file_name, vocabulary = train_cnn(
+        training_positive_examples + training_negative_examples,
+        ([1 for e in training_positive_examples] +
+         [0 for e in training_negative_examples]))
 
-    
 
     model_file_handle = open(model_file_name, 'rb')
     model_binary = model_file_handle.read()

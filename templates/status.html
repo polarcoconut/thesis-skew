@@ -15,7 +15,9 @@
   </head>
   <body>
     <div class="container">
-    <h1> Master Algorithm v0.2</h1>
+      <h1> Master Algorithm v0.2</h1>
+      <h4> Supported Browsers: Chrome </h4>
+      <hr/>
     <h2> Your event is now being learned! </h2>
     <b>Event:</b> {{ event_name }}
     <br/>
@@ -91,7 +93,19 @@
     <button id="retrain">Train the model (can take some time)</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
     <br/><br/>
-    <button id="cv">Test on Held-out examples:</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
+
+    <hr/>
+    <h2><b>Test Current CNN Model:</b></h2>
+    Test using the following examples:
+    <select id="test_menu">
+      <option value="1">Held-out set</option>
+      <option value="0">Nationality Test Set</option>
+      <option value="1">Birth Test Set</option>
+      <option value="2">LivedIn Test Set</option>
+      <option value="3">Death Test Set</option>
+      <option value="4">Movement of a Person Test set</option>
+    </select><br/>
+    <button id="cv">Test!</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
     F1: <span id="f1"></span> <br/>
     Precision: <span id="precision"></span> <br/>
     Recall: <span id="recall"></span> <br/>
@@ -245,11 +259,13 @@
 
     document.getElementById("cv").onclick = cv;
     function cv() {
+	var test_menu = document.getElementById("test_menu");
 	var cv_url = '/cv';
 	cv_url += '?job_id={{job_id}}';
+	cv_url += '&test_set=';
+	cv_url += (test_menu.selectedIndex-1);
 	
 	cv_url += '&positive_types=dummytype';
-
 	if (document.getElementById('train_types_all').checked) {
 	    cv_url += '&positive_types=';
 	    cv_url += document.getElementById('train_types_all').value;

@@ -8,7 +8,8 @@ from train import getLatestCheckpoint, split_examples
 import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn
-from ml.computeScores import computeScores
+from ml.extractors.cnn_core.computeScores import computeScores
+from ml.extractors.cnn_core.parse import parse_test_data
 from util import write_model_to_file
 from schema.job import Job
 
@@ -20,6 +21,7 @@ test_parser.add_argument('test_sentence', type=str, required=True)
 
 cv_parser = reqparse.RequestParser()
 cv_parser.add_argument('job_id', type=str, required=True)
+cv_parser.add_argument('test_set', required=True)
 cv_parser.add_argument('positive_types', required=True,
                             action='append')
 
@@ -50,32 +52,40 @@ class TestExtractorApi(Resource):
 class CrossValidationExtractorApi(Resource):
     def get(self):
 
+
         args = cv_parser.parse_args()
         job_id = args['job_id']
         positive_types = args['positive_types']
-
-        print "Doing cross validation"
+        test_set = int(args['test_set'])
+        
+        print "Testing on  held-out set %d" % test_set
         sys.stdout.flush()
 
         task_information, budget, checkpoint = getLatestCheckpoint(
             job_id)
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-        test_positive_examples, test_negative_examples = split_examples(
-            task_ids[-2:],
-            task_categories[-2:], positive_types)
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-
-        print "cv examples"
-        print test_positive_examples
-        print test_negative_examples
+        if test_set == -1:
+            test_positive_examples, test_negative_examples = split_examples(
+                task_ids[-2:],
+                task_categories[-2:], positive_types)
+            test_examples = test_positive_examples + test_negative_examples
+            test_labels = ([1 for e in test_positive_examples] +
+                           [0 for e in test_negative_examples])
+        else:
+            relations = ['nationality', 'born', 'lived', 'died', 'travel']
+            amount_of_data = [1898, 496, 3897, 1493, 1992]
+            testfile_name = 'data/test_data/test_strict_new_feature'
+            (test_labels, test_features, test_examples,
+             test_positive_examples, test_negative_examples) = parse_test_data(
+                testfile_name, [], test_set)
+        
         
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
 
         predicted_labels = test_cnn(
-            test_positive_examples + test_negative_examples,
+            test_examples,
             test_labels,
             write_model_to_file(job_id),
             vocabulary)
