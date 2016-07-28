@@ -118,7 +118,7 @@
     <hr/>
     <h2><b> Try a sentence: </b></h2>
       <input id="test_sentence" type="text" size="100" placeholder="Enter a test sentence here."/> <br/>
-      <button id="test">{{event_name}}??</button>
+      <button id="test"></button>
       <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-test" style="visibility:hidden;"/>
 
       <br/>
@@ -162,6 +162,8 @@
 
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
+	    document.getElementById(
+		'test').innerHTML = task_information[0] + "??";
 	    document.getElementById(
 		'event_definition').innerHTML = task_information[1];
 	    document.getElementById(
