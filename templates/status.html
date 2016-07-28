@@ -55,6 +55,8 @@
     <input type="checkbox" id="view_types_future" value="future"> Future events </input>
     <input type="checkbox" id="view_types_general" value="general"> General/Hypothetical/Failing events </input>
     <br/>
+    <input type="checkbox" id="view_details" value="general"> View Sentence Details (Trigger, Past Tense, etc...) </input>
+    <br/>
     <button id="refresh">View current examples</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
     <br/><br/>
@@ -69,14 +71,6 @@
     
     <hr/>
 
-    <!--
-    <h2> <b> Restart a crashed job (Don't push this unless you know what you're doing!): </b> </h2>
-    <form action="/restart" method="post" target="dummyframe">
-      <input type="hidden" name="job_id" size="100" value="{{job_id}}" /><br/>
-      <input type="submit" value="Restart Training">
-    </form>
-    <hr/>
-    -->
     <h2><b> Current CNN Model: </b></h2>
     Model currently trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
 
@@ -237,11 +231,22 @@
 	    var negative_examples_string = "";
 
 	    for (var i=0; i < positive_examples.length; i++) {
-		positive_examples_string += positive_examples[i];
+		if (document.getElementById('view_details').checked) {
+		    positive_examples_string += positive_examples[i];
+		} else {
+		    positive_examples_string += positive_examples[i].split(
+			"\t")[0];
+		}
 		positive_examples_string += "\r\n";
+
 	    }
 	    for (var i=0; i < negative_examples.length; i++) {
-		negative_examples_string += negative_examples[i];
+		if (document.getElementById('view_details').checked) {
+		    negative_examples_string += negative_examples[i];
+		} else {
+		    negative_examples_string += negative_examples[i].split(
+			"\t")[0];
+		}
 		negative_examples_string += "\r\n";
 	    }
 	    
