@@ -2,7 +2,6 @@ import numpy as np
 import re
 import itertools
 from collections import Counter
-from parse import parse_test_data
 from random import shuffle
 import pickle
 from app import app
@@ -31,9 +30,6 @@ relations = ['nationality', 'born', 'lived', 'died', 'travel']
 
 def load_test_data_and_labels(test_sentences, test_labels):
 
-    #relation = relations[relInd]
-    #test_labels, test_examples, test_sentences = parse_test_data(
-    #    testfile_name, [], relInd)
     
     test_sentences = [s.strip() for s in test_sentences]
     # Split by words

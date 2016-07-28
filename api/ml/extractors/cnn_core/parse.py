@@ -1,7 +1,7 @@
 import os
 import numpy as np
-import os
-import numpy as np
+
+#Modification of code written by Angli Liu
 
 # relation-wise training data collection
 def parse_training_data(trainingFile, relInd, allFeatures):
@@ -11,19 +11,34 @@ def parse_training_data(trainingFile, relInd, allFeatures):
         with open(trainingFile) as f:
                 for row in f:
                         row = row.split('\t')
-                        print row
                         sentence = row[0]
                         label = int(row[1])
                         sentences.append(sentence)
                         y.append(label)
-                return y, [], sentences
+        return y, [], sentences
         
 
+def parse_tackbp_test_data(testFile, relation):
+        positive_sentences = []
+        negative_sentences = []
+        
+        with open(testFile) as f:
+                for row in f:
+                        row = row.split(':')
+                        label = row[0]
+                        sentence = row[1]
+                        if label == relation:
+                                positive_sentences.append(sentence)
+                        else:
+                                negative_sentences.append(sentence)
+
+        return positive_sentences, negative_sentences
+                        
 # express the test data in the feature space
 # allow multiple positive relations in one sentence
 # return: y_gold, sparse_matrix
 # return: X_test, sparse_matrix
-def parse_test_data(testFile, allFeatures, relId):
+def parse_angli_test_data(testFile, allFeatures, relId):
 	lenFeatures = len(allFeatures)
 
 	num = getLen(testFile)

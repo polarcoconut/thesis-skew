@@ -9,7 +9,7 @@ import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
-from ml.extractors.cnn_core.parse import parse_test_data
+from ml.extractors.cnn_core.parse import parse_angli_test_data, parse_tackbp_test_data
 from util import write_model_to_file
 from schema.job import Job
 
@@ -72,15 +72,39 @@ class CrossValidationExtractorApi(Resource):
             test_examples = test_positive_examples + test_negative_examples
             test_labels = ([1 for e in test_positive_examples] +
                            [0 for e in test_negative_examples])
-        else:
+        elif test_set >= 0 and test_set <= 4:
             relations = ['nationality', 'born', 'lived', 'died', 'travel']
             amount_of_data = [1898, 496, 3897, 1493, 1992]
             testfile_name = 'data/test_data/test_strict_new_feature'
             (test_labels, test_features, test_examples,
-             test_positive_examples, test_negative_examples) = parse_test_data(
-                testfile_name, [], test_set)
-        
-        
+             test_positive_examples,
+             test_negative_examples) = parse_angli_test_data(
+                 testfile_name, [], test_set)
+        elif test_set >= 5 and test_set <= 9:
+            relations = ['transfermoney', 'broadcast', 'attack', 'contact',
+                         'transferownership']
+            testfile_name = 'data/test_data/testEvents'
+            relation = relations[test_set-5]
+            test_positive_examples, test_negative_examples = parse_tackbp_test_data(testfile_name, relation)
+            test_examples = test_positive_examples + test_negative_examples
+            test_labels = ([1 for e in test_positive_examples] +
+                           [0 for e in test_negative_examples])
+        else:
+            test_positive_examples = []
+            test_negative_examples = []
+            pos_testfile_name = 'data/test_data/self_generated/death_pos'
+            neg_testfile_name = 'data/test_data/self_generated/death_neg'
+            with open(pos_testfile_name, 'r') as pos_testfile:
+                for line in pos_testfile:
+                    test_positive_examples.append(line)
+            with open(neg_testfile_name, 'r') as neg_testfile:
+                for line in neg_testfile:
+                    test_negative_examples.append(line)
+            test_examples = test_positive_examples + test_negative_examples
+            test_labels = ([1 for e in test_positive_examples] +
+                           [0 for e in test_negative_examples])
+
+            
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
 

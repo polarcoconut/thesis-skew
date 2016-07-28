@@ -15,12 +15,12 @@
   </head>
   <body>
     <div class="container">
-      <h1> Master Algorithm v0.2</h1>
+      <h1> Master Algorithm v0.5</h1>
       <h4> Supported Browsers: Chrome </h4>
       <hr/>
     <h2> Your event is now being learned! </h2>
-    <b>Event:</b> <span id="event_name">...</span>
-    <br/>
+    <h4><b>Event:</b> <font color="blue">
+	<span id="event_name">...</span></font> </h4>
     <b>Event Definition:</b> <span id="event_definition">...</span> 
     <br/>
     <b>Event Positive Example 1: </b> <span id="event_pos_example_1">...</span>
@@ -92,11 +92,18 @@
     Test using the following examples:
     <select id="test_menu">
       <option value="-1">Held-out set</option>
-      <option value="0">Nationality Test Set</option>
-      <option value="1">Birth Test Set</option>
-      <option value="2">LivedIn Test Set</option>
-      <option value="3">Death Test Set</option>
-      <option value="4">Movement of a Person Test set</option>
+      <option value="0">Nationality Test Set (Liu et al., 2016)</option>
+      <option value="1">Birth Test Set (Liu et al., 2016)</option>
+      <option value="2">LivedIn Test Set (Liu et al., 2016)</option>
+      <option value="3">Death Test Set (Liu et al., 2016)</option>
+      <option value="4">Movement of a Person Test set (Liu et al., 2016)</option>
+      <option value="5">Transfer of Money Test Set (TACKBP 2016)</option>
+      <option value="6">Broadcast Test Set (TACKBP 2016)</option>
+      <option value="7">Attack Test Set (TACKBP 2016)</option>
+      <option value="8">Contact Test Set (TACKBP 2016)</option>
+      <option value="9">Transfer of Ownership Test Set (TACKBP 2016)</option>
+      <option value="10">Death Test Set (From a different run of this system)</option>
+
     </select><br/>
     <button id="cv">Test!</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
     F1: <span id="f1"></span> <br/>
@@ -368,7 +375,7 @@
 	    document.getElementById(
 		'false_negatives').innerHTML = '';
 	    
-	    if (test_menu.selectedIndex == 0) {
+	    if (test_menu.selectedIndex == 0 || test_menu.selectedIndex>5) {
 		var true_positives_string = "";
 		var false_positives_string = "";
 		var true_negatives_string = "";
