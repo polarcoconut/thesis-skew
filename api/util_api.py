@@ -52,3 +52,18 @@ class MoveJobsFromRedisToMongoApi(Resource):
         job.save()
         
         return str(job.id)
+
+
+
+class GetJobInfoApi(Resource):
+
+    def get(self):
+        args = arg_parser.parse_args()
+        job_id = args['job_id']
+
+
+        job = Job.objects.get(id = job_id)
+
+        (task_information, budget) = pickle.loads(job.task_information)
+        
+        return [task_information, budget]

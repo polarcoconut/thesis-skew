@@ -64,22 +64,10 @@ sys.stdout.flush()
 def hello():
     return render_template('index.html')
 
-@app.route('/status/<event_name>/<event_definition>/<event_pos_example_1>/<event_pos_example_1_trigger>/<event_pos_example_2>/<event_pos_example_2_trigger>/<event_pos_example_nearmiss>/<event_neg_example>/<event_neg_example_nearmiss>/<job_id>')
-def status(event_name, event_definition, event_pos_example_1,
-           event_pos_example_1_trigger, event_pos_example_2,
-           event_pos_example_2_trigger, event_pos_example_nearmiss,
-           event_neg_example, event_neg_example_nearmiss, job_id):
+@app.route('/status/<job_id>')
+def status(job_id):
     return render_template(
         'status.html',
-        event_name = event_name,
-        event_definition = event_definition,
-        event_pos_example_1 = event_pos_example_1,
-        event_pos_example_1_trigger = event_pos_example_1_trigger,
-        event_pos_example_2 = event_pos_example_2,
-        event_pos_example_2_trigger = event_pos_example_2_trigger,
-        event_pos_example_nearmiss = event_pos_example_nearmiss,
-        event_neg_example = event_neg_example,
-        event_neg_example_nearmiss = event_neg_example_nearmiss,
         job_id = job_id)
 
 
@@ -116,3 +104,7 @@ api.add_resource(CrossValidationExtractorApi, '/cv')
 
 from api.util_api import MoveJobsFromRedisToMongoApi
 api.add_resource(MoveJobsFromRedisToMongoApi, '/move')
+
+
+from api.util_api import GetJobInfoApi
+api.add_resource(GetJobInfoApi, '/get_job_info')

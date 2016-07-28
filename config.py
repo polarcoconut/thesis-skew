@@ -69,7 +69,7 @@ class Config(object):
         'id' : 0,
         'needs_data' : False,
         'label' : 1,
-        'price' : 0.10,
+        'price' : 0.15,
         'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
         'task_description' : 'Provide a sentence that is an example of a given event.'}

@@ -91,15 +91,6 @@ class GatherExtractorApi(Resource):
             
         return redirect(url_for(
             'status',  
-            event_name = event_name,
-            event_definition = event_definition,
-            event_pos_example_1 = event_pos_example_1,
-            event_pos_example_1_trigger = event_pos_example_1_trigger,
-            event_pos_example_2 = event_pos_example_2,
-            event_pos_example_2_trigger = event_pos_example_2_trigger,
-            event_pos_example_nearmiss = event_pos_example_nearmiss,
-            event_neg_example = event_neg_example,
-            event_neg_example_nearmiss = event_neg_example_nearmiss,
             job_id = job_id))
 
 

@@ -19,23 +19,22 @@
       <h4> Supported Browsers: Chrome </h4>
       <hr/>
     <h2> Your event is now being learned! </h2>
-    <b>Event:</b> {{ event_name }}
+    <b>Event:</b> <span id="event_name">...</span>
     <br/>
-    <b>Event Definition:</b> {{ event_definition }}
+    <b>Event Definition:</b> <span id="event_definition">...</span> 
     <br/>
-    <b>Event Positive Example 1: </b> {{ event_pos_example_1 }}
+    <b>Event Positive Example 1: </b> <span id="event_pos_example_1">...</span>
     <br/>
-    <b>Event Positive Example 1 Trigger: </b> {{ event_pos_example_1_trigger }}
+    <b>Event Positive Example 1 Trigger: </b> <span id="event_pos_example_1_trigger">...</span>
     <br/>
-    <b>Event Positive Example 2: </b> {{ event_pos_example_2 }}
+    <b>Event Positive Example 2: </b> <span id="event_pos_example_2">...</span>
     <br/>
-    <b>Event Positive Example 2 Trigger: </b> {{ event_pos_example_2_trigger }}
+    <b>Event Positive Example 2 Trigger: </b> <span id="event_pos_example_2_trigger">...</span>
     <br/>
-    <b>Event Positive Example Near-miss: </b> {{ event_pos_example_nearmiss }}
+    <b>Event Positive Example Near-miss: </b> <span id="event_pos_example_nearmiss">...</span>
     <br/>
-    <b>Event Negative Example </b> {{ event_neg_example }}
-    <br/>
-    <b>Event Negative Example Near-Miss </b> {{event_neg_example_nearmiss}}
+    <b>Event Negative Example </b> <span id="event_neg_example">...</span>    <br/>
+    <b>Event Negative Example Near-Miss </b> <span id="event_neg_example_nearmiss">...</span>
     <br/>
 
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
@@ -139,8 +138,56 @@
 
 
 
-  
+  <script src=" {{ url_for('static', filename='pickle.js') }}"></script>
   <script type="text/javascript">
+
+ 
+
+    //GET JOB INFO CODE
+
+    var xmlhttp_get_job_info = new XMLHttpRequest();
+
+    function get_job_info() {
+	var get_job_info_url = '/get_job_info?job_id=';
+	get_job_info_url = get_job_info_url +  '{{ job_id }}';
+	xmlhttp_get_job_info.open("GET", get_job_info_url, true);
+	xmlhttp_get_job_info.send();
+
+    }
+
+    xmlhttp_get_job_info.onreadystatechange = function() {
+	if (xmlhttp_get_job_info.readyState == 4 &&
+	    xmlhttp_get_job_info.status == 200) {
+	    console.log(xmlhttp_get_job_info.responseText);
+	    console.log(JSON.parse(xmlhttp_get_job_info.responseText));
+	    var job_information  = JSON.parse(
+		xmlhttp_get_job_info.responseText);
+	    //job_information = pickle.loads(job_information_pickle);
+	    var task_information = job_information[0]
+	    var budget = job_information[1]
+
+	    document.getElementById(
+		'event_name').innerHTML = task_information[0];
+	    document.getElementById(
+		'event_definition').innerHTML = task_information[1];
+	    document.getElementById(
+		'event_pos_example_1').innerHTML = task_information[2];
+	    document.getElementById(
+		'event_pos_example_1_trigger').innerHTML = task_information[3];
+	    document.getElementById(
+		'event_pos_example_2').innerHTML = task_information[4];
+	    document.getElementById(
+		'event_pos_example_2_trigger').innerHTML = task_information[5];
+	    document.getElementById(
+		'event_pos_example_nearmiss').innerHTML = task_information[6];
+	    document.getElementById(
+		'event_neg_example').innerHTML = task_information[7];
+	    document.getElementById(
+		'event_neg_example_nearmiss').innerHTML = task_information[8];
+
+	}
+    };
+
     //
     //GATHER STATUS CODE
     //
@@ -534,11 +581,21 @@
 
 
     function on_window_load() {
+	get_job_info();
 	check_retrain_status();
 	check_job_status();
     }
 
     window.onload = on_window_load;
+
+
+
+
+
+
+
+
+
 
   </script>
 </html>
