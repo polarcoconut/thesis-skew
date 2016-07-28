@@ -97,7 +97,7 @@
     <h2><b>Test Current CNN Model:</b></h2>
     Test using the following examples:
     <select id="test_menu">
-      <option value="1">Held-out set</option>
+      <option value="-1">Held-out set</option>
       <option value="0">Nationality Test Set</option>
       <option value="1">Birth Test Set</option>
       <option value="2">LivedIn Test Set</option>
@@ -351,27 +351,49 @@
 	    var recall = stats[1]
 	    var f1 = stats[2]
 
-	    var true_positives_string = "";
-	    var false_positives_string = "";
-	    var true_negatives_string = "";
-	    var false_negatives_string = "";
+	    var test_menu = document.getElementById("test_menu");
+	    document.getElementById(
+		'true_positives').innerHTML = '';
+	    document.getElementById(
+		'false_positives').innerHTML = '';
+	    document.getElementById(
+		'true_negatives').innerHTML = '';
+	    document.getElementById(
+		'false_negatives').innerHTML = '';
 	    
-	    for (var i=0; i < true_positives.length; i++) {
-		true_positives_string += true_positives[i];
-		true_positives_string += "\r\n";
+	    if (test_menu.selectedIndex == 0) {
+		var true_positives_string = "";
+		var false_positives_string = "";
+		var true_negatives_string = "";
+		var false_negatives_string = "";
+		
+		for (var i=0; i < true_positives.length; i++) {
+		    true_positives_string += true_positives[i];
+		    true_positives_string += "\r\n";
+		}
+		for (var i=0; i < false_positives.length; i++) {
+		    false_positives_string += false_positives[i];
+		    false_positives_string += "\r\n";
+		}
+		for (var i=0; i < false_negatives.length; i++) {
+		    false_negatives_string += false_negatives[i];
+		    false_negatives_string += "\r\n";
+		}
+		for (var i=0; i < true_negatives.length; i++) {
+		    true_negatives_string += true_negatives[i];
+		    true_negatives_string += "\r\n";
+		}
+		document.getElementById(
+		    'true_positives').innerHTML = true_positives_string;
+		document.getElementById(
+		    'false_positives').innerHTML = false_positives_string;
+		document.getElementById(
+		    'true_negatives').innerHTML = true_negatives_string;
+		document.getElementById(
+		    'false_negatives').innerHTML = false_negatives_string;
+
 	    }
-	    for (var i=0; i < false_positives.length; i++) {
-		false_positives_string += false_positives[i];
-		false_positives_string += "\r\n";
-	    }
-	    for (var i=0; i < false_negatives.length; i++) {
-		false_negatives_string += false_negatives[i];
-		false_negatives_string += "\r\n";
-	    }
-	    for (var i=0; i < true_negatives.length; i++) {
-		true_negatives_string += true_negatives[i];
-		true_negatives_string += "\r\n";
-	    }
+
 	    
 	    
 	    
@@ -380,14 +402,6 @@
 	    document.getElementById(
 	      'submitting-indicator-cv').style.visibility = 'hidden';
 
-	    document.getElementById(
-		'true_positives').innerHTML = true_positives_string;
-	    document.getElementById(
-		'false_positives').innerHTML = false_positives_string;
-	    document.getElementById(
-		'true_negatives').innerHTML = true_negatives_string;
-	    document.getElementById(
-		'false_negatives').innerHTML = false_negatives_string;
 
 	    document.getElementById(
 		'precision').innerHTML = precision;
