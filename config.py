@@ -53,6 +53,8 @@ class Config(object):
     CONTROLLER = os.environ['CONTROLLER']
     CONTROLLER_BATCH_SIZE = int(os.environ['CONTROLLER_BATCH_SIZE'])
     CONTROLLER_APQ = int(os.environ['CONTROLLER_APQ'])
+    CONTROLLER_LABELS_PER_QUESTION = int(
+        os.environ['CONTROLLER_LABELS_PER_QUESTION'])
     TABOO_THRESHOLD = int(os.environ['TABOO_THRESHOLD'])
     ASSIGNMENT_DURATION = int(os.environ['ASSIGNMENT_DURATION'])
 
@@ -60,7 +62,6 @@ class Config(object):
     PRECISION_EXAMPLE_TASK = {
         'id' : 1,
         'needs_data': True,
-        'label': 0,
         'price' : 0.10,
         'hit_html' : open('tasks/negateevent.html').read(),
         'task_name' : 'Event Modification',
@@ -68,17 +69,26 @@ class Config(object):
     RECALL_EXAMPLE_TASK = {
         'id' : 0,
         'needs_data' : False,
-        'label' : 1,
         'price' : 0.15,
         'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
         'task_description' : 'Provide a sentence that is an example of a given event.'}
 
+    LABEL_EXAMPLE_TASK = {
+        'id' : 2,
+        'needs_data' : False,
+        'price' : 0.01,
+        'hit_html' : open('tasks/label.html').read(),
+        'task_name' : 'Event Labeling',
+        'task_description' : 'Determine whether a sentence is an example of a given event.'
+    }
+
     
-    EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK]
+    EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK,
+                          LABEL_EXAMPLE_TASK]
 
     CELERY_TIMEZONE = 'UTC'
-    CELERY_IMPORTS = ['api.util', 'api.train']
+    CELERY_IMPORTS = ['api.util', 'api.train', 'periodic_tasks']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
     BROKER_POOL_LIMIT = 0
 

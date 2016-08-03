@@ -21,7 +21,7 @@
       <br/>
       <br/>
       
-    <form action="/gather" method="post">
+    <form id="theform" action="/gather" method="post">
       <label>Event:</label>
       <input name="event_name" id="event_name" type="text"
 	     size="100" value="Movement of a Person"/><br/>
@@ -50,15 +50,38 @@
       <label>Total Budget: </label>
       <input name="budget" type="text" size="100" value="100"/><br/>
 
+      <hr/>
+      <h2> Test the UI:</h2>
+      <input type="button" id="generate-button" value="Test Generate UI"/>
+      <input type="button" id="modify-button" value="Test Modify UI"/>
+      <input type="button" id="label-button" value="Test Label UI"/>
 
-      <h2>DO NOT CLICK. THIS IS A LIVE BUTTON</h2>
+      <hr/>
+      <h2>WARNING! THIS IS A LIVE BUTTON</h2>
       <input type="submit" value="Train an extractor!">
+
+
     </form>
 
     </div>
 
 
     <script type="text/javascript">
+
+      var form  = document.getElementById('theform');
+
+      document.getElementById('generate-button').onclick = function () {
+	  form.target = '/test_generate_ui';
+	  form.submit();
+      }
+      document.getElementById('modify-button').onclick = function () {
+	  form.target = '/test_modify_ui';
+	  form.submit();
+      }
+      document.getElementById('label-button').onclick = function () {
+	  form.target = '/test_label_ui';
+	  form.submit();
+      }
 
       var event_0 = ["Movement of a Person", "Any event in which a person goes somewhere, for instance due to travel.", "The Vermont senator flew to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night.", "flew", "The Israeli Prime Minister greeted Kerry after he arrived last night.", "arrived", "'We received the king crabs yesterday from Japan,' said the waitress.", "The Vermont senator talked about Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night.", "The Vermont senator thought about traveling to Rome after debating his Democratic rival Hillary Clinton in Brooklyn on Thursday night."];
       var event_1 = ["A Physical Attack", "Any event that is a physical, non-verbal attack, for instance, a bombing, or an assault.", "A 75-year-old man was beaten unconscious in Greenwich Village", "beaten", "Three terrorists armed with bombs and guns killed at least 36 people at Istanbul Ataturk Airport in Turkey.", "killed", "Donald Trump said he loves to drink Jager bombs.", "A 75-year-old man talked about his love for Greenwich Village.", "Three terrorists armed with bombs and guns were unable to kill anyone yesterday."];

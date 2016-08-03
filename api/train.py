@@ -1,7 +1,6 @@
 import time
 from app import app
 from controllers import greedy_controller
-import requests
 import pickle
 import json
 import sys
@@ -12,40 +11,8 @@ from ml.extractors.cnn_core.computeScores import computeScores
 
 from schema.job import Job
 from mturk_util import delete_hits, create_hits
-
-def upload_questions(task):
-    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY'],
-               'content_type' : 'application/json'}
-
-    r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
-                     headers=headers,
-                     json=task)
-    print "Here is the response"
-    print app.config['CROWDJS_API_KEY']
-    print r.text
-    sys.stdout.flush()
-    
-    response_content = r.json()
-    task_id = response_content['task_id']    
-        
-    return task_id
-
-
-
-def getLatestCheckpoint(job_id):
-    #read the latest checkpoint
-    job = Job.objects.get(id = job_id)
-
-
-    timestamps = job.checkpoints.keys()
-
-        
-    most_recent_timestamp = max([int(x) for x in timestamps])
-
-    checkpoint = job.checkpoints[str(most_recent_timestamp)]
-    (task_information, budget) = pickle.loads(job.task_information)
-
-    return (task_information, budget, checkpoint)
+from util import getLatestCheckpoint, split_examples, parse_answers
+from crowdjs_util import get_answers, upload_questions
 
 
 @app.celery.task(name='restart')
@@ -53,23 +20,13 @@ def restart(job_id):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     gather(task_information, budget, job_id, checkpoint)
 
-def split_examples(task_ids, task_categories, positive_types = [],
-                   only_sentence=True):
-    positive_examples = []
-    negative_examples = []
-    for task_id, task_category_id in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category_id,
-                                False, positive_types, only_sentence)
-        print answers
-        new_examples, new_labels = answers
-        for new_example, new_label in zip(new_examples, new_labels):
-            if new_label == 1:
-                positive_examples.append(new_example)
-            else:
-                negative_examples.append(new_example)
-    print positive_examples
-    print negative_examples
-    return positive_examples, negative_examples
+#
+#  Takes a set of task ids and gets all the answers from them 
+#  Unlike parse_answers, assumes that the tasks are all completed.
+#
+#  only_sentence : return only the sentence, not all the other crowdsourced
+#                  details
+#
 
 def gather_status(job_id, positive_types):
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
@@ -82,60 +39,6 @@ def gather_status(job_id, positive_types):
 
     return [num_examples, positive_examples, negative_examples]
 
-@app.celery.task(name='retrain')
-def retrain(job_id, positive_types):
-    print "Training a CNN"
-    sys.stdout.flush()
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
-    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
-
-
-    training_positive_examples, training_negative_examples = split_examples(
-        task_ids[0:-2],
-        task_categories[0:-2],
-        positive_types)
-    
-    model_file_name, vocabulary = train_cnn(
-        training_positive_examples + training_negative_examples,
-        ([1 for e in training_positive_examples] +
-         [0 for e in training_negative_examples]))
-
-
-    model_file_handle = open(model_file_name, 'rb')
-    model_binary = model_file_handle.read()
-
-    model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
-    model_meta_binary = model_meta_file_handle.read()
-
-    print "Saving the model"
-    print job_id
-    sys.stdout.flush()
-
-    job = Job.objects.get(id=job_id)
-    job.vocabulary = pickle.dumps(vocabulary)
-    job.model_file = model_binary
-    job.model_meta_file = model_meta_binary
-    print "Model saved"
-    sys.stdout.flush()
-
-    job.num_training_examples_in_model = (
-        len(training_positive_examples) + len(training_negative_examples))
-
-    print "training saved"
-    sys.stdout.flush()
-
-    job.save()
-
-    print "Job modified"
-    sys.stdout.flush()
-
-    model_file_handle.close()
-    model_meta_file_handle.close()
-
-    print "file handles closed"
-    sys.stdout.flush()
-    
-    return True
 
 
 @app.celery.task(name='gather')
@@ -215,7 +118,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
         #Decide which category of task to do.
         category_id, task_object, num_hits  = get_next_batch(
             task_categories, training_examples, training_labels,
-            task_information)
+            task_information, costSoFar, budget, job_id)
 
         
         print "hit type to do next: %s" % category_id
@@ -256,125 +159,16 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
 
 
-def get_answers(task_id):
-    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
-    answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_URL']
-    answers_crowdjs_url += '?task_id=%s' % task_id
-    answers_crowdjs_url += '&requester_id=%s' % app.config[
-        'CROWDJS_REQUESTER_ID']
-    r = requests.get(answers_crowdjs_url, headers=headers)
 
-    answers = r.json()
-
-    return answers
-
-#because of old data structures, category_id might be a category structure
-def parse_answers(task_id, category_id, wait_until_batch_finished=True,
-                  positive_types = [], only_sentence = True):
-
-    answers = get_answers(task_id)
-
-    if not isinstance(category_id, dict):        
-        category = app.config['EXAMPLE_CATEGORIES'][category_id]
-    else:
-        category = category_id
-        
-    if wait_until_batch_finished and (len(answers) <
-        app.config['CONTROLLER_BATCH_SIZE'] * app.config['CONTROLLER_APQ']):
-        return None
-
-    examples = []
-    labels = []
-    
-    #Data structure of checkpoints were updated so old checkpoints may not have
-    #an id in them.
-    if (('id' in category and category['id'] == 0) or
-        category['task_name'] == 'Event Generation'):
-        for answer in answers:
-            value = answer['value']
-                
-            value = value.split('\t')
-            sentence = value[0]
-            trigger = value[1]
-            
-            if len(value) > 2:
-                if value[2] == 'Yes':                
-                    past = True
-                else:
-                    past = False
-                    
-                if value[3] == 'Yes':
-                    future = True
-                else:
-                    future = False
-                    
-                if value[4] == 'Yes':
-                    general = True
-                else:
-                    general = False
-            
-            
-                if 'all' in positive_types:
-                    labels.append(1)
-                elif 'past' in positive_types and past:
-                        labels.append(1)                
-                elif 'future' in positive_types and future:
-                        labels.append(1)
-                elif 'general' in positive_types and general:
-                        labels.append(1)
-                else:
-                    labels.append(0)
-            else:
-                labels.append(1)
-
-
-            if only_sentence:
-                examples.append(sentence)
-            else:
-                examples.append(answer['value'])
-
-    elif (('id' in category and category['id'] == 1) or
-          category['task_name'] == 'Event Negation'):
-        for answer in answers:
-            value = answer['value']
-            value = value.split('\t')
-            sentence = value[0]
-            previous_sentence_not_example_of_event = value[1]
-
-            if len(value) > 2:
-                if value[2] == 'failing':                
-                    failing = True
-                else:
-                    failing = False
-
-                if 'all' in positive_types:
-                    labels.append(0)
-                elif 'general' in positive_types:
-                    if failing:
-                        labels.append(1)
-                    else:
-                        labels.append(0)
-                else:
-                    labels.append(0)
-            else:
-                labels.append(0)
-
-            if only_sentence:
-                examples.append(sentence)
-            else:
-                examples.append(answer['value'])
-
-
-    return examples, labels
         
             
 def get_next_batch(task_categories, training_examples, training_labels,
-                   task_information):
+                   task_information, costSoFar, budget, job_id):
                       
 
     print "Using the controller:"
     print app.config['CONTROLLER']
     if app.config['CONTROLLER'] == 'greedy':
         return greedy_controller(task_categories, training_examples,
-                                 training_labels,
-                                 task_information)
+                                 training_labels, task_information,
+                                 costSoFar, budget, job_id)

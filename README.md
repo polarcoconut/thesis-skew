@@ -32,7 +32,10 @@ To set up Heroku environment, add the following buildpacks, using the toolbelt c
 ## Testing instructions (No test framework yet)
 - Use `heroku local -f Procfile.test` (if using Heroku) or
 - Be sure to run both `./run_tests.sh .env` AND `./run_tests.sh .production-env` to test both dev and production environments.
-- The `test/` folder also contains folders with more tests that include end-to-end workflow tests as well as more unit tests. To run these, read the README inside the desired `*_workflow/` folder.
 
 ## Usage
 - Go to `/index.html` to define an event.
+
+
+## Test Sets
+- Inside `/data/test_data` are test sets. `test_strict_new_feature` is from Liu et al. (NAACL 2016). `testEvents` is from TAC-KBP dry run 2016. `self_generated` contains data sets created using this system. 

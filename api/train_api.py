@@ -4,10 +4,11 @@ import json
 import string
 import pickle
 from app import app
-from train import gather, restart, gather_status, retrain
+from train import gather, restart, gather_status
 import sys
 import uuid
 from schema.job import Job
+from util import parse_task_information, retrain
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -54,27 +55,8 @@ retrain_status_parser.add_argument('job_id', type=str, required=True)
 class GatherExtractorApi(Resource):
     def post(self):
         args = train_parser.parse_args()
-        event_name = args['event_name']
-        event_definition = args['event_definition']
-        event_pos_example_1 = args['event_pos_example_1']
-        event_pos_example_1_trigger = args['event_pos_example_1_trigger']
-        event_pos_example_2 = args['event_pos_example_2']
-        event_pos_example_2_trigger = args['event_pos_example_2_trigger']
-        event_pos_example_nearmiss = args['event_pos_example_nearmiss']
-        
-        event_neg_example = args['event_neg_example']
-        event_neg_example_nearmiss = args['event_neg_example_nearmiss']
-
-
-        task_information = (event_name, event_definition,
-                            event_pos_example_1,
-                            event_pos_example_1_trigger,
-                            event_pos_example_2,
-                            event_pos_example_2_trigger,
-                            event_pos_example_nearmiss,
-                            event_neg_example,
-                            event_neg_example_nearmiss)
-        
+        task_information = parse_task_information(args)
+                
         #task_information = args['task_information']
         budget = int(args['budget'])
 

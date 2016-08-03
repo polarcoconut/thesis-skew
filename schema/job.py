@@ -12,3 +12,7 @@ class Job(db.DynamicDocument):
     checkpoints = db.DictField()
 
     current_hit_ids = db.ListField()
+
+    status = db.StringField()
+
+    lock = db.BooleanField()

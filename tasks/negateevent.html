@@ -406,12 +406,19 @@ z-index: 1;
 	  var old_sentence = document.getElementById('old_sentence').innerHTML;
 	  var checked = document.getElementById('notevent').checked;
 	  var realis= document.querySelector(
-	      'input[name=realis]:checked').value;
+	      'input[name=realis]:checked');
 
 	  if (x == null || x == "") {
 	      alert("Your new sentence must not be empty");
 	      return false;
 	  }
+	  if (realis == null) {
+	      alert("You must answer the followup question");
+	      return false;
+	  } else {
+	      realis = realis.value;
+	  }
+	  
 	  list_of_taboo_words = taboo_words_string.split(';');
 	  for (var i=0; i< list_of_taboo_words.length; i++) {
 	      taboo_word = list_of_taboo_words[i];
@@ -499,7 +506,7 @@ z-index: 1;
 		      compute_taboo_xmlhttp.send(
 			  JSON.stringify(compute_taboo_request));
 		  }
-	      } else if (compute_taboo_xmlhttp.readyState == 500) {
+	      } else if (submit_answer_xmlhttp.readyState == 500) {
 		  console.log(submit_answer_xmlhttp.responseText);
 		  console.log("Submission Failed. Please try again");
 		  document.getElementById(

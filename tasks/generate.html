@@ -419,14 +419,27 @@ Does your sentence express a: <br/>
       try {
 	  var x = document.getElementById('new_sentence').value;
 	  var new_trigger = document.getElementById('new_trigger').value;
-	  var past = document.querySelector('input[name=past]:checked').value;
-	  var future = document.querySelector('input[name=future]:checked').value;
+
+	  var past = document.querySelector('input[name=past]:checked');
+	  var future = document.querySelector('input[name=future]:checked');
 	  var general = document.querySelector(
-	      'input[name=general]:checked').value;
+	      'input[name=general]:checked');
 
 	  if (x == null || x == "") {
 	      alert("Your new sentence must not be empty");
 	      return false;
+	  }
+	  if (new_trigger == null || new_trigger == "") {
+	      alert("You must provide a trigger");
+	      return false;
+	  }
+	  if (past == null || future == null || general == null) {
+	      alert("You must answer the followup questions");
+	      return false;
+	  } else {
+	      past = past.value;
+	      future = future.value;
+	      general = general.value;
 	  }
 	  list_of_taboo_words = taboo_words_string.split(';');
 	  for (var i=0; i< list_of_taboo_words.length; i++) {
@@ -508,7 +521,7 @@ Does your sentence express a: <br/>
 			  JSON.stringify(compute_taboo_request));
 		  }
 
-	      } else if (compute_taboo_xmlhttp.readyState == 500) {
+	      } else if (submit_answer_xmlhttp.readyState == 500) {
 		  console.log(submit_answer_xmlhttp.responseText);
 		  console.log("Submission Failed. Please try again");
 		  document.getElementById(

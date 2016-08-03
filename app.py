@@ -102,9 +102,18 @@ api.add_resource(TestExtractorApi, '/test')
 from api.test_api import CrossValidationExtractorApi
 api.add_resource(CrossValidationExtractorApi, '/cv')
 
+
 from api.util_api import MoveJobsFromRedisToMongoApi
 api.add_resource(MoveJobsFromRedisToMongoApi, '/move')
 
-
 from api.util_api import GetJobInfoApi
 api.add_resource(GetJobInfoApi, '/get_job_info')
+
+from api.util_api import TestGenerateUIApi
+api.add_resource(TestGenerateUIApi, '/test_generate_ui')
+
+from api.util_api import TestModifyUIApi
+api.add_resource(TestModifyUIApi, '/test_modify_ui')
+
+from api.util_api import TestLabelUIApi
+api.add_resource(TestLabelUIApi, '/test_label_ui')

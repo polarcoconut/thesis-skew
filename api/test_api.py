@@ -4,13 +4,12 @@ import json
 import string
 import pickle
 from app import app
-from train import getLatestCheckpoint, split_examples
 import sys
 import pickle
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 from ml.extractors.cnn_core.parse import parse_angli_test_data, parse_tackbp_test_data
-from util import write_model_to_file
+from util import write_model_to_file, getLatestCheckpoint, split_examples
 from schema.job import Job
 
 test_parser = reqparse.RequestParser()
@@ -67,8 +66,8 @@ class CrossValidationExtractorApi(Resource):
 
         if test_set == -1:
             test_positive_examples, test_negative_examples = split_examples(
-                task_ids[-2:],
-                task_categories[-2:], positive_types)
+                task_ids[0:2],
+                task_categories[0:2], positive_types)
             test_examples = test_positive_examples + test_negative_examples
             test_labels = ([1 for e in test_positive_examples] +
                            [0 for e in test_negative_examples])

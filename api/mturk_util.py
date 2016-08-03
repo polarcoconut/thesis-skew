@@ -49,49 +49,6 @@ def create_hits(category_id, task_id, num_hits):
 
     for hit_num in range(num_hits):
 
-        """
-        layout_params = LayoutParameters()
-
-        #layout_params.add(
-        #    LayoutParameter('questionNumber', '%s' % hit_num))
-        layout_params.add(
-            LayoutParameter('task_id', '%s' % task_id))
-        layout_params.add(
-            LayoutParameter('requester_id', '%s'%
-                            app.config['CROWDJS_REQUESTER_ID']))
-        layout_params.add(
-            LayoutParameter(
-                'task_data_url', '%s'%
-                app.config['CROWDJS_GET_TASK_DATA_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'submit_answer_url', '%s'%
-                app.config['CROWDJS_SUBMIT_ANSWER_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'compute_taboo_url', '%s'%
-                app.config['SUBMIT_TABOO_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'return_hit_url', '%s'%
-                app.config['CROWDJS_RETURN_HIT_URL']))
-        layout_params.add(
-            LayoutParameter(
-                'assign_url', '%s'%
-                app.config['CROWDJS_ASSIGN_URL']))
-
-        layout_params.add(
-            LayoutParameter(
-                'taboo_threshold', '%s'%
-                app.config['TABOO_THRESHOLD']))        
-        print layout_params
-        sys.stdout.flush()
-        
-        #hit = mturk.create_hit(
-        #    hit_type= hit_type_id,
-        #    hit_layout = hit_layout_id,
-        #    layout_params = layout_params)[0]
-        """
 
         category = app.config['EXAMPLE_CATEGORIES'][category_id]
         hit_html = category['hit_html']

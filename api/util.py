@@ -5,7 +5,7 @@ import json
 import requests
 from app import app
 from schema.job import Job
-from train import restart
+from crowdjs_util import get_answers
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -87,16 +87,259 @@ def write_model_to_file(job_id):
     return 'temp_model_file'
 
 
-@app.celery.task(name='run_gather')
-def run_gather():
 
-    jobs_checked = 0
-    jobs = Job.objects(status='Running')
-    for job in jobs:
-        jobs_checked += 1
-        print "Running Gather for job %s" % job.id
-        restart(job.id)
 
-    print "%d jobs restarted" % jobs_checked
+def parse_task_information(args):
+    event_name = args['event_name']
+    event_definition = args['event_definition']
+    event_pos_example_1 = args['event_pos_example_1']
+    event_pos_example_1_trigger = args['event_pos_example_1_trigger']
+    event_pos_example_2 = args['event_pos_example_2']
+    event_pos_example_2_trigger = args['event_pos_example_2_trigger']
+    event_pos_example_nearmiss = args['event_pos_example_nearmiss']
+    
+    event_neg_example = args['event_neg_example']
+    event_neg_example_nearmiss = args['event_neg_example_nearmiss']
+    
+
+    task_information = (event_name, event_definition,
+                        event_pos_example_1,
+                        event_pos_example_1_trigger,
+                        event_pos_example_2,
+                        event_pos_example_2_trigger,
+                        event_pos_example_nearmiss,
+                        event_neg_example,
+                        event_neg_example_nearmiss)
+
+    
+    return task_information
+
+def upload_questions(task):
+    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY'],
+               'content_type' : 'application/json'}
+
+    r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
+                     headers=headers,
+                     json=task)
+    print "Here is the response"
+    print app.config['CROWDJS_API_KEY']
+    print r.text
+    sys.stdout.flush()
+    
+    response_content = r.json()
+    task_id = response_content['task_id']    
+        
+    return task_id
+
+
+def getLatestCheckpoint(job_id):
+    #read the latest checkpoint
+    job = Job.objects.get(id = job_id)
+
+
+    timestamps = job.checkpoints.keys()
+
+        
+    most_recent_timestamp = max([int(x) for x in timestamps])
+
+    checkpoint = job.checkpoints[str(most_recent_timestamp)]
+    (task_information, budget) = pickle.loads(job.task_information)
+
+    return (task_information, budget, checkpoint)
+
+def split_examples(task_ids, task_categories, positive_types = [],
+                   only_sentence=True):
+    positive_examples = []
+    negative_examples = []
+    for task_id, task_category_id in zip(task_ids,task_categories):
+        answers = parse_answers(task_id, task_category_id,
+                                False, positive_types, only_sentence)
+        print answers
+        new_examples, new_labels = answers
+        for new_example, new_label in zip(new_examples, new_labels):
+            if new_label == 1:
+                positive_examples.append(new_example)
+            else:
+                negative_examples.append(new_example)
+    print positive_examples
+    print negative_examples
+    return positive_examples, negative_examples
+
+#because of old data structures, category_id might be a category structure
+#
+#  only_sentence : return only the sentence, not all the other crowdsourced
+#                  details
+#
+def parse_answers(task_id, category_id, wait_until_batch_finished=True,
+                  positive_types = [], only_sentence = True):
+
+    answers = get_answers(task_id)
+
+    if not isinstance(category_id, dict):        
+        category = app.config['EXAMPLE_CATEGORIES'][category_id]
+    else:
+        category = category_id
+        
+    if wait_until_batch_finished and (len(answers) <
+        app.config['CONTROLLER_BATCH_SIZE'] * app.config['CONTROLLER_APQ']):
+        return None
+
+    examples = []
+    labels = []
+    
+    #Data structure of checkpoints were updated so old checkpoints may not have
+    #an id in them.
+    if (('id' in category and category['id'] == 0) or
+        category['task_name'] == 'Event Generation'):
+        for answer in answers:
+            value = answer['value']
+                
+            value = value.split('\t')
+            sentence = value[0]
+            trigger = value[1]
+            
+            if len(value) > 2:
+                if value[2] == 'Yes':                
+                    past = True
+                else:
+                    past = False
+                    
+                if value[3] == 'Yes':
+                    future = True
+                else:
+                    future = False
+                    
+                if value[4] == 'Yes':
+                    general = True
+                else:
+                    general = False
+            
+            
+                if 'all' in positive_types:
+                    labels.append(1)
+                elif 'past' in positive_types and past:
+                        labels.append(1)                
+                elif 'future' in positive_types and future:
+                        labels.append(1)
+                elif 'general' in positive_types and general:
+                        labels.append(1)
+                else:
+                    labels.append(0)
+            else:
+                labels.append(1)
+
+
+            if only_sentence:
+                examples.append(sentence)
+            else:
+                examples.append(answer['value'])
+
+    elif (('id' in category and category['id'] == 1) or
+          category['task_name'] == 'Event Negation'):
+        for answer in answers:
+            value = answer['value']
+            value = value.split('\t')
+            sentence = value[0]
+            previous_sentence_not_example_of_event = value[1]
+
+            if len(value) > 2:
+                if value[2] == 'failing':                
+                    failing = True
+                else:
+                    failing = False
+
+                if 'all' in positive_types:
+                    labels.append(0)
+                elif 'general' in positive_types:
+                    if failing:
+                        labels.append(1)
+                    else:
+                        labels.append(0)
+                else:
+                    labels.append(0)
+            else:
+                labels.append(0)
+
+            if only_sentence:
+                examples.append(sentence)
+            else:
+                examples.append(answer['value'])
+    elif (('id' in category and category['id'] == 2) or
+          category['task_name'] == 'Event Labeling'):
+        for answer in answers:
+            value = answer['value']
+            value = value.split('\t')
+            sentence = value[0]
+            previous_sentence_not_example_of_event = value[1]
+
+            if len(value) > 2:
+                if value[2] == 'failing':                
+                    failing = True
+                else:
+                    failing = False
+
+
+
+    return examples, labels
+
+#Trains a CNN
+@app.celery.task(name='retrain')
+def retrain(job_id, positive_types):
+    print "Training a CNN"
+    sys.stdout.flush()
+    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+
+    #Collect all the task_ids, leaving some out for the purposes of
+    #cross validation
+    #training_task_ids = []
+    #training_task_categories = []
+    
+    
+    training_positive_examples, training_negative_examples = split_examples(
+        task_ids[2:],
+        task_categories[2:],
+        positive_types)
+    
+    model_file_name, vocabulary = train_cnn(
+        training_positive_examples + training_negative_examples,
+        ([1 for e in training_positive_examples] +
+         [0 for e in training_negative_examples]))
+
+
+    model_file_handle = open(model_file_name, 'rb')
+    model_binary = model_file_handle.read()
+
+    model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
+    model_meta_binary = model_meta_file_handle.read()
+
+    print "Saving the model"
+    print job_id
+    sys.stdout.flush()
+
+    job = Job.objects.get(id=job_id)
+    job.vocabulary = pickle.dumps(vocabulary)
+    job.model_file = model_binary
+    job.model_meta_file = model_meta_binary
+    print "Model saved"
+    sys.stdout.flush()
+
+    job.num_training_examples_in_model = (
+        len(training_positive_examples) + len(training_negative_examples))
+
+    print "training saved"
+    sys.stdout.flush()
+
+    job.save()
+
+    print "Job modified"
+    sys.stdout.flush()
+
+    model_file_handle.close()
+    model_meta_file_handle.close()
+
+    print "file handles closed"
+    sys.stdout.flush()
     
     return True

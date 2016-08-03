@@ -8,6 +8,9 @@ import sys
 import uuid
 import redis
 from schema.job import Job
+from controllers import test_controller
+from util import parse_task_information
+from crowdjs_util import upload_questions
 
 arg_parser = reqparse.RequestParser()
 arg_parser.add_argument('job_id', type=str, required=True)
@@ -67,3 +70,41 @@ class GetJobInfoApi(Resource):
         (task_information, budget) = pickle.loads(job.task_information)
         
         return [task_information, budget]
+
+
+testui_arg_parser = reqparse.RequestParser()
+testui_arg_parser.add_argument('event_name', type=str, required=True)
+testui_arg_parser.add_argument('event_definition', type=str, required=True)
+testui_arg_parser.add_argument('event_pos_example_1', type=str, required=True)
+testui_arg_parser.add_argument('event_pos_example_1_trigger',
+                          type=str, required=True)
+testui_arg_parser.add_argument('event_pos_example_2', type=str, required=True)
+testui_arg_parser.add_argument('event_pos_example_2_trigger',
+                          type=str, required=True)
+testui_arg_parser.add_argument('event_pos_example_nearmiss', type=str, required=True)
+testui_arg_parser.add_argument('event_neg_example',
+                          type=str, required=True)
+testui_arg_parser.add_argument('event_neg_example_nearmiss',
+                          type=str, required=True)
+
+
+class TestGenerateUIApi(Resource):
+    def post(self):
+        args = testui_arg_parser.parse_args()
+        task_information = parse_task_information(args)
+        task = test_controller(task_information, 0)
+        upload_question(task)
+        
+class TestModifyUIApi(Resource):
+    def post(self):
+        args = testui_arg_parser.parse_args()
+        task_information = parse_task_information(args)
+        task = test_controller(task_information, 1)
+        upload_question(task)
+        
+class TestLabelUIApi(Resource):
+    def post(self):
+        args = testui_arg_parser.parse_args()
+        task_information = parse_task_information(args)
+        task = test_controller(task_information, 2)
+        upload_question(task)
