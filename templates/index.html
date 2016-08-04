@@ -71,15 +71,15 @@
       var form  = document.getElementById('theform');
 
       document.getElementById('generate-button').onclick = function () {
-	  form.target = '/test_generate_ui';
+	  form.action = '/test_generate_ui';
 	  form.submit();
       }
       document.getElementById('modify-button').onclick = function () {
-	  form.target = '/test_modify_ui';
+	  form.action = '/test_modify_ui';
 	  form.submit();
       }
       document.getElementById('label-button').onclick = function () {
-	  form.target = '/test_label_ui';
+	  form.action = '/test_label_ui';
 	  form.submit();
       }
 

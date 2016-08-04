@@ -11,6 +11,7 @@ from schema.job import Job
 from controllers import test_controller
 from util import parse_task_information
 from crowdjs_util import upload_questions
+from mturk_util import create_hits
 
 arg_parser = reqparse.RequestParser()
 arg_parser.add_argument('job_id', type=str, required=True)
@@ -92,19 +93,33 @@ class TestGenerateUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task = test_controller(task_information, 0)
-        upload_question(task)
-        
+        task_category_id, task, num_hits = test_controller(task_information, 0)
+        task_id = upload_questions(task)
+        hit_ids = create_hits(task_category_id, task_id,
+                              num_hits)
+
+        return "Testing Generate UI. Task id: %s" % task_id
+    
 class TestModifyUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task = test_controller(task_information, 1)
-        upload_question(task)
+        task_category_id, task, num_hits = test_controller(task_information, 1)
+        task_id = upload_questions(task)
+        hit_ids = create_hits(task_category_id, task_id,
+                              num_hits)
+
+        
+        return "Testing Modify UI. Task id: %s" % task_id
         
 class TestLabelUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task = test_controller(task_information, 2)
-        upload_question(task)
+        task_category_id, task, num_hits = test_controller(task_information, 2)
+        task_id = upload_questions(task)
+        hit_ids = create_hits(task_category_id, task_id,
+                              num_hits)
+
+
+        return "Testing Labeling UI. Task id: %s" % task_id

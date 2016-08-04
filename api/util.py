@@ -114,22 +114,6 @@ def parse_task_information(args):
     
     return task_information
 
-def upload_questions(task):
-    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY'],
-               'content_type' : 'application/json'}
-
-    r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
-                     headers=headers,
-                     json=task)
-    print "Here is the response"
-    print app.config['CROWDJS_API_KEY']
-    print r.text
-    sys.stdout.flush()
-    
-    response_content = r.json()
-    task_id = response_content['task_id']    
-        
-    return task_id
 
 
 def getLatestCheckpoint(job_id):

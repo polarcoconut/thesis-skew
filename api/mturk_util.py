@@ -83,7 +83,7 @@ def create_hits(category_id, task_id, num_hits):
             max_assignments = app.config['CONTROLLER_APQ'],
             approval_delay = 3600,
             qualifications = qualifications)[0]
-
+            
         hits.append(hit.HITId)
         
     return hits

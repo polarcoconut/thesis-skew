@@ -14,11 +14,13 @@ def test_controller(task_information, task_category_id):
     with open('data/test_data/self_generated/death_pos', 'r') as f:
         for example in f:
             some_examples_to_test_with.append(example)
+
+    some_examples_to_test_with = some_examples_to_test_with[0:10]
             
     if task_category_id == 2:
         task = make_labeling_crowdjs_task(some_examples_to_test_with,
                                           task_information)
-        return 2, task, len(some_examples_to_test_with)
+        return 2, task, len(some_examples_to_test_with) * app.config['CONTROLLER_LABELS_PER_QUESTION']
 
     elif task_category_id == 0:
         task = make_recall_crowdjs_task(task_information)
@@ -98,7 +100,7 @@ def greedy_controller(task_categories, training_examples,
         shuffle(selected_examples)
 
         task = make_labeling_crowdjs_task(selected_examples, task_information)
-        return next_category['id'], task, len(selected_examples)
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION']
 
     if len(task_categories) % 2 == 0:
         print "choosing the RECALL category"

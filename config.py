@@ -80,8 +80,7 @@ class Config(object):
         'price' : 0.01,
         'hit_html' : open('tasks/label.html').read(),
         'task_name' : 'Event Labeling',
-        'task_description' : 'Determine whether a sentence is an example of a given event.'
-    }
+        'task_description' : 'Determine whether a sentence is an example of a given event.'}
 
     
     EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK,
