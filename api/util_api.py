@@ -72,6 +72,25 @@ class GetJobInfoApi(Resource):
         
         return [task_information, budget]
 
+change_budget_arg_parser = reqparse.RequestParser()
+change_budget_arg_parser.add_argument('job_id', type=str, required=True)
+change_budget_arg_parser.add_argument('new_budget', type=int, required=True)
+
+class ChangeBudgetApi(Resource):
+    def post(self):
+        args = change_budget_arg_parser.parse_args()
+        job_id = args['job_id']
+        new_budget = args['new_budget']
+        
+        job = Job.objects.get(id = job_id)
+        (task_information, budget) = pickle.loads(job.task_information)
+        job.task_information = pickle.dumps((task_information, new_budget))
+        job.save()
+
+        return True
+        
+        
+    
 
 testui_arg_parser = reqparse.RequestParser()
 testui_arg_parser.add_argument('event_name', type=str, required=True)
@@ -93,7 +112,7 @@ class TestGenerateUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task_category_id, task, num_hits = test_controller(task_information, 0)
+        task_category_id, task, num_hits, cost = test_controller(task_information, 0)
         task_id = upload_questions(task)
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
@@ -104,7 +123,7 @@ class TestModifyUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task_category_id, task, num_hits = test_controller(task_information, 1)
+        task_category_id, task, num_hits, cost = test_controller(task_information, 1)
         task_id = upload_questions(task)
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
@@ -116,10 +135,13 @@ class TestLabelUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
         task_information = parse_task_information(args)
-        task_category_id, task, num_hits = test_controller(task_information, 2)
+        task_category_id, task, num_hits, cost = test_controller(task_information, 2)
         task_id = upload_questions(task)
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
 
         return "Testing Labeling UI. Task id: %s" % task_id
+
+
+    

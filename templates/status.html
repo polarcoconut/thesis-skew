@@ -15,7 +15,7 @@
   </head>
   <body>
     <div class="container">
-      <h1> Master Algorithm v0.5</h1>
+      <h1> Master Algorithm v1.0</h1>
       <h4> Supported Browsers: Chrome </h4>
       <hr/>
     <h2> Your event is now being learned! </h2>
@@ -39,6 +39,14 @@
 
     <b>Event Budget: </b> <span id="event_budget">...</span>
     <br/>
+    <form id="change_budget_form" action="/change_budget" method="post"
+	  onsubmit="setTimeout(function() {window.location.reload();}, 20)">
+      <input type="submit" id="change_budget_button" value="Change Budget To:"/>
+      <input type="text" name="new_budget" id="new_budget"/>
+      <input type="hidden" name="job_id" id="job_id" value="{{job_id}}"/>
+
+    </form>
+    <br/>
 
 
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
@@ -46,7 +54,7 @@
 
     <hr/>
     <h2> <b>Current Status:</b> <span id="job_status">...</span> </h2>
-    <b> Job Id (save this somewhere!): </b> {{job_id}} <br/><br/>
+    <b> Job Id (save this somewhere!): </b> {{job_id}} <br/>
     <b> Cost So Far: </b> <span id="costSoFar">...</span> <br/><br/>
 
     <button id="pause">Pause the job</button>

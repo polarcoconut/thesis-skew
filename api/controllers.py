@@ -6,6 +6,7 @@ from app import app
 from ml.extractors.cnn_core.test import test_cnn
 from util import write_model_to_file, retrain
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
+import urllib2
 
 def test_controller(task_information, task_category_id):
 
@@ -20,16 +21,16 @@ def test_controller(task_information, task_category_id):
     if task_category_id == 2:
         task = make_labeling_crowdjs_task(some_examples_to_test_with,
                                           task_information)
-        return 2, task, len(some_examples_to_test_with) * app.config['CONTROLLER_LABELS_PER_QUESTION']
+        return 2, task, len(some_examples_to_test_with) * app.config['CONTROLLER_LABELS_PER_QUESTION'], 0
 
     elif task_category_id == 0:
         task = make_recall_crowdjs_task(task_information)
-        return 0, task, app.config['CONTROLLER_BATCH_SIZE']
+        return 0, task, app.config['CONTROLLER_BATCH_SIZE'], 0
 
     elif task_category_id == 1:
         task = make_recall_crowdjs_task(some_examples_to_test_with,
                                         task_information)
-        return 1, task, len(some_examples_to_test_with)
+        return 1, task, len(some_examples_to_test_with), 0
 
     
 #Alternate back and forth between precision and recall categories.
@@ -57,16 +58,20 @@ def greedy_controller(task_categories, training_examples,
         sys.stdout.flush()
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
-
+        budget_left_over = budget - costSoFar
+        num_positive_examples_to_label = int(budget_left_over / 2)
+        num_negative_examples_to_label = (budget_left_over -
+                                          num_positive_examples_to_label)
+        
         retrain(job_id, ['all'])
 
         test_examples = []
         test_labels = []
-        tackbp_newswire_corpus_file = ''
-        with open(tackbp_newswire_corpus_file, 'r') as tackbp_newswire_corpus:
-            for sentence in tackbp_newswire_corpus:
-                test_examples.append(sentence)
-                test_labels.append(1)
+
+        tackbp_newswire_corpus = urllib2.urlopen('https://s3-us-west-2.amazonaws.com/tac-kbp-2009/SENTTEXTINFORMATION_UNNUMBERED_270k')
+        for sentence in tackbp_newswire_corpus:
+            test_examples.append(sentence)
+            test_labels.append(0)
             
         job = Job.objects.get(id = job_id)
         vocabulary = pickle.loads(job.vocabulary)
@@ -88,19 +93,21 @@ def greedy_controller(task_categories, training_examples,
                 negative_examples.append(example)
 
         selected_examples = []
-        if positive_examples < int(budget/4):
+        if positive_examples < num_positive_examples_to_label:
             selected_examples += positive_examples
-            sample(negative_examples, int(budget/2) - len(positive_examples))
-        elif negative_example < int(budget/4):
+            sample(negative_examples, budget_left_over - len(positive_examples))
+        elif negative_example < num_negative_examples_to_label:
             selected_examples += negative_examples
-            sample(positive_examples, int(budget/2) - len(negative_examples))
+            sample(positive_examples, budget_left_over- len(negative_examples))
         else:
-            selected_examples += sample(positive_examples,int(budget / 4))
-            selected_examples += sample(negative_examples, int(budget/4))
+            selected_examples += sample(positive_examples,
+                                        num_positive_examples_to_label)
+            selected_examples += sample(negative_examples,
+                                        num_negative_examples_to_label)
         shuffle(selected_examples)
 
         task = make_labeling_crowdjs_task(selected_examples, task_information)
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION']
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     if len(task_categories) % 2 == 0:
         print "choosing the RECALL category"
@@ -111,7 +118,7 @@ def greedy_controller(task_categories, training_examples,
         task = make_recall_crowdjs_task(task_information)
                                         
         num_hits = app.config['CONTROLLER_BATCH_SIZE']
-        return next_category['id'], task, num_hits
+        return next_category['id'], task, num_hits, num_hits * next_category['price']
 
     #If task_categories has one element in it, pick a category that
     #can use previous training data
@@ -122,4 +129,4 @@ def greedy_controller(task_categories, training_examples,
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        return next_category['id'], task, len(last_batch)
+        return next_category['id'], task, len(last_batch), len(last_batch)*next_category['price']

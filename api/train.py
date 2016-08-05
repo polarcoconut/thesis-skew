@@ -112,7 +112,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
         print "Deciding which category to do next"
         sys.stdout.flush()
         #Decide which category of task to do.
-        category_id, task_object, num_hits  = get_next_batch(
+        category_id, task_object, num_hits, cost_of_next_task  = get_next_batch(
             task_categories, training_examples, training_labels,
             task_information, costSoFar, budget, job_id)
 
@@ -144,8 +144,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
         #update the cost
         print "Updating the Cost so far"
-        costSoFar += (app.config['CONTROLLER_BATCH_SIZE'] *
-                      app.config['CONTROLLER_APQ'])
+        costSoFar += cost_of_next_task
         
         #make a checkpoint
         checkpoint = pickle.dumps((task_ids, task_categories, costSoFar))
