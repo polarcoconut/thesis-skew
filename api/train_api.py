@@ -8,7 +8,7 @@ from train import gather, restart, gather_status
 import sys
 import uuid
 from schema.job import Job
-from util import parse_task_information, retrain
+from util import parse_task_information, retrain, getLatestCheckpoint
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -107,13 +107,14 @@ class JobStatusApi(Resource):
         job_id = args['job_id']
 
         job = Job.objects.get(id = job_id)
-
+        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+        (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
         try:
-            return job.status
+            return [job.status, costSoFar]
         except AttributeError:
             job.status = 'Paused'
             job.save()
-            return job.status
+            return [job.status, costSoFar]
 
         
 class GatherStatusApi(Resource):

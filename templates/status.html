@@ -37,12 +37,18 @@
     <b>Event Negative Example Near-Miss </b> <span id="event_neg_example_nearmiss">...</span>
     <br/>
 
+    <b>Event Budget: </b> <span id="event_budget">...</span>
+    <br/>
+
+
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
     </iframe>
 
     <hr/>
     <h2> <b>Current Status:</b> <span id="job_status">...</span> </h2>
     <b> Job Id (save this somewhere!): </b> {{job_id}} <br/><br/>
+    <b> Cost So Far: </b> <span id="costSoFar">...</span> <br/><br/>
+
     <button id="pause">Pause the job</button>
     <button id="restart">Restart the job</button>
 
@@ -188,6 +194,9 @@
 	    document.getElementById(
 		'event_neg_example_nearmiss').innerHTML = task_information[8];
 
+	    document.getElementById(
+		'event_budget').innerHTML = budget;
+
 	}
     };
 
@@ -301,10 +310,10 @@
 	    console.log(test_result);
 	    if (test_result == 0){
 		document.getElementById(
-		    'test_result').innerHTML = "NO";
+		    'test_result').innerHTML = "<font color='red'>NO</font>";
 	    } else {
 		document.getElementById(
-		    'test_result').innerHTML = "YES";
+		    'test_result').innerHTML = "<font color='green'>YES</font>";
 	    }
 	    document.getElementById(
 	      'submitting-indicator-test').style.visibility = 'hidden';
@@ -531,6 +540,8 @@
 	if (xmlhttp_job_status.readyState == 4 &&
 	    xmlhttp_job_status.status == 200) {
 	    var response = JSON.parse(xmlhttp_job_status.responseText);
+	    var costSoFar = response[1];
+	    response = response[0];
 	    console.log(response);
 	    if (response == 'Running') {
 		document.getElementById('pause').disabled = false;
@@ -545,6 +556,7 @@
 	    } else {
 		document.getElementById('job_status').innerHTML = '<font color="red">' + response + '</font>';
 	    }
+	    document.getElementById('costSoFar').innerHTML = '<font color="red">' + costSoFar + '</font>';
 
 	}
     };

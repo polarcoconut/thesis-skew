@@ -4,10 +4,6 @@ from controllers import greedy_controller
 import pickle
 import json
 import sys
-from ml.extractors.cnn_core.parse import parse_training_data
-from ml.extractors.cnn_core.train import train_cnn
-from ml.extractors.cnn_core.test import test_cnn
-from ml.extractors.cnn_core.computeScores import computeScores
 
 from schema.job import Job
 from mturk_util import delete_hits, create_hits

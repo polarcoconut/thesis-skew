@@ -6,6 +6,8 @@ import requests
 from app import app
 from schema.job import Job
 from crowdjs_util import get_answers
+from ml.extractors.cnn_core.train import train_cnn
+
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -120,10 +122,15 @@ def getLatestCheckpoint(job_id):
     #read the latest checkpoint
     job = Job.objects.get(id = job_id)
 
-
+    print "GETTING LATEST CHECKPOINT"
+    print job_id
+    
     timestamps = job.checkpoints.keys()
 
-        
+    print timestamps
+    sys.stdout.flush()
+    
+    
     most_recent_timestamp = max([int(x) for x in timestamps])
 
     checkpoint = job.checkpoints[str(most_recent_timestamp)]

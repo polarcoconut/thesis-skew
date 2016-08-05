@@ -19,10 +19,7 @@ def run_gather():
         print "Running Gather for job %s" % job.id
         job.lock = True
         job.save()
-        try:
-            restart(job.id)
-        except:
-            print "Restart threw an exception"
+        restart(job.id)
         job.lock = False
         job.save()
         

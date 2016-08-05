@@ -104,7 +104,7 @@ class DevelopmentConfig(Config):
     CELERYBEAT_SCHEDULE = {
         'run_gather': {
             'task': 'run_gather',
-            'schedule': timedelta(seconds=10),
+            'schedule': timedelta(seconds=20),
             'args': ()
         },
     }
