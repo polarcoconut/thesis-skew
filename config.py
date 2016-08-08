@@ -77,7 +77,7 @@ class Config(object):
     LABEL_EXAMPLE_TASK = {
         'id' : 2,
         'needs_data' : False,
-        'price' : 0.01,
+        'price' : 0.10,
         'hit_html' : open('tasks/label.html').read(),
         'task_name' : 'Event Labeling',
         'task_description' : 'Determine whether a sentence is an example of a given event.'}

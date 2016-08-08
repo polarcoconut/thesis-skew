@@ -12,11 +12,9 @@ def test_controller(task_information, task_category_id):
 
 
     some_examples_to_test_with = []
-    with open('data/test_data/self_generated/death_pos', 'r') as f:
+    with open('data/test_data/general_events_death', 'r') as f:
         for example in f:
             some_examples_to_test_with.append(example)
-
-    some_examples_to_test_with = some_examples_to_test_with[0:10]
             
     if task_category_id == 2:
         task = make_labeling_crowdjs_task(some_examples_to_test_with,
