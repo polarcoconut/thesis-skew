@@ -312,13 +312,13 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
                 examples.append(sentence)
             else:
                 if past > 0:
-                    sentence = sentence + '\tPAST'
+                    sentence = sentence + '\tPAST(%d)' % past
                 if future > 0:
-                    sentence = sentence + '\tFUTURE'
+                    sentence = sentence + '\tFUTURE(%d)' % future
                 if general > 0:
-                    sentence = sentence + '\tGENERAL'
+                    sentence = sentence + '\tGENERAL(%d)' % general
                 if hypothetical > 0:
-                    sentence = sentence + '\tHYPOTHETICAL'
+                    sentence = sentence + '\tHYPOTHETICAL(%d)' % hypothetical
                 examples.append(sentence)
 
             if label > 0:
