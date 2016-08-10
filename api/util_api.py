@@ -117,8 +117,10 @@ class TestGenerateUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
-        return "Testing Generate UI. Task id: %s" % task_id
-    
+        return redirect(url_for('test', task_id = task_id,
+                                task_category_id = task_category_id))
+ 
+        
 class TestModifyUIApi(Resource):
     def post(self):
         args = testui_arg_parser.parse_args()
@@ -128,8 +130,10 @@ class TestModifyUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
+        return redirect(url_for('test', task_id = task_id,
+                                task_category_id = task_category_id))
+ 
         
-        return "Testing Modify UI. Task id: %s" % task_id
         
 class TestLabelUIApi(Resource):
     def post(self):
@@ -140,8 +144,8 @@ class TestLabelUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
-
-        return "Testing Labeling UI. Task id: %s" % task_id
-
+        return redirect(url_for('test', task_id = task_id,
+                                task_category_id = task_category_id))
+ 
 
     

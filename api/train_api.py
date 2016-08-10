@@ -8,7 +8,7 @@ from train import gather, restart, gather_status
 import sys
 import uuid
 from schema.job import Job
-from util import parse_task_information, retrain, getLatestCheckpoint
+from util import parse_task_information, retrain, getLatestCheckpoint, split_examples, parse_answers
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -38,10 +38,6 @@ job_status_parser = reqparse.RequestParser()
 job_status_parser.add_argument('job_id', type=str, required=True)
 
 
-gather_status_parser = reqparse.RequestParser()
-gather_status_parser.add_argument('job_id', type=str, required=True)
-gather_status_parser.add_argument('positive_types', required=True,
-                                  action='append')
 
 retrain_parser = reqparse.RequestParser()
 retrain_parser.add_argument('job_id', type=str, required=True)
@@ -116,17 +112,29 @@ class JobStatusApi(Resource):
             job.save()
             return [job.status, costSoFar]
 
-        
+gather_status_parser = reqparse.RequestParser()
+gather_status_parser.add_argument('job_id', type=str, required=False)
+gather_status_parser.add_argument('positive_types', required=False,
+                                  action='append')
+gather_status_parser.add_argument('task_id', type=str, required=False)
+gather_status_parser.add_argument('task_category', type=int, required=False)
+
 class GatherStatusApi(Resource):
     def get(self):
         args = gather_status_parser.parse_args()
-        job_id = args['job_id']
-        positive_types = args['positive_types']
-
-        print "POSITIVE TYPES"
-        print positive_types
-        return gather_status(job_id, positive_types)            
-
+        if args['job_id']:
+            job_id = args['job_id']
+            positive_types = args['positive_types']
+            return gather_status(job_id, positive_types)            
+        else:
+            task_id = args['task_id']
+            task_category = args['task_category']
+            positive_examples, negative_examples = split_examples(
+                [task_id], [task_category], [], False)
+            return [len(positive_examples) + len(negative_examples),
+                    positive_examples,
+                    negative_examples]
+        
 
 class RetrainExtractorApi(Resource):
     def get(self):

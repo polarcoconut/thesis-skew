@@ -5,7 +5,7 @@ import json
 import requests
 from app import app
 from schema.job import Job
-from crowdjs_util import get_answers
+from crowdjs_util import get_answers, get_questions, get_answers_for_question
 from ml.extractors.cnn_core.train import train_cnn
 
 
@@ -161,18 +161,18 @@ def split_examples(task_ids, task_categories, positive_types = [],
 #  only_sentence : return only the sentence, not all the other crowdsourced
 #                  details
 #
-def parse_answers(task_id, category_id, wait_until_batch_finished=True,
+def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
                   positive_types = [], only_sentence = True):
 
-    answers = get_answers(task_id)
 
     if not isinstance(category_id, dict):        
         category = app.config['EXAMPLE_CATEGORIES'][category_id]
     else:
         category = category_id
-        
-    if wait_until_batch_finished and (len(answers) <
-        app.config['CONTROLLER_BATCH_SIZE'] * app.config['CONTROLLER_APQ']):
+
+            
+    answers = get_answers(task_id)
+    if (len(answers) < wait_until_batch_finished):
         return None
 
     examples = []
@@ -257,19 +257,71 @@ def parse_answers(task_id, category_id, wait_until_batch_finished=True,
                 examples.append(answer['value'])
     elif (('id' in category and category['id'] == 2) or
           category['task_name'] == 'Event Labeling'):
-        for answer in answers:
-            value = answer['value']
-            value = value.split('\t')
-            sentence = value[0]
-            previous_sentence_not_example_of_event = value[1]
+        questions = get_questions(task_id)
+        for question in questions:
+            print question
+            sys.stdout.flush()
+            question_id = question['_id']['$oid']
+            question_data = question['data'].split('\t')
+            sentence = question_data[len(question_data)-1]
+            sentence = sentence.strip()
+            answers = get_answers_for_question(question_id)
 
-            if len(value) > 2:
-                if value[2] == 'failing':                
-                    failing = True
+            label = 0
+            past = 0
+            future = 0
+            general = 0
+            hypothetical = 0
+            
+            for answer in answers:
+                print answer
+                sys.stdout.flush()
+
+                if 'value' not in answer:
+                    continue
+                
+                value = answer['value']
+                value = value.split('\t')
+                
+                if len(value) > 2:
+                    label += 1
+                    if value[2] == 'Yes':
+                        past += 1
+                    else:
+                        past -= 1
+                    if value[3] == 'Yes':
+                        future += 1
+                    else:
+                        future -= 1
+                    if value[4] == 'Yes':
+                        general += 1
+                    else:
+                        general -= 1
+                    if value[5] == 'Yes':
+                        hypothetical += 1
+                    else:
+                        hypothetical -= 1
                 else:
-                    failing = False
-
-
+                    label -= 1
+                    if value[1] == 'Yes':
+                        hypothetical += 1
+                    else:
+                        hypothetical -= 1
+                    
+            if only_sentence:
+                examples.append(sentence)
+            else:
+                if past > 0:
+                    sentence = sentence + '\tPAST'
+                if future > 0:
+                    sentence = sentence + '\tFUTURE'
+                if general > 0:
+                    sentence = sentence + '\tGENERAL'
+                if hypothetical > 0:
+                    sentence = sentence + '\tHYPOTHETICAL'
+                examples.append(sentence)
+                
+            labels.append(label)
 
     return examples, labels
 

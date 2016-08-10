@@ -9,11 +9,29 @@ def get_answers(task_id):
     answers_crowdjs_url += '?task_id=%s' % task_id
     answers_crowdjs_url += '&requester_id=%s' % app.config[
         'CROWDJS_REQUESTER_ID']
+    answers_crowdjs_url += '&completed=True'
+
     r = requests.get(answers_crowdjs_url, headers=headers)
 
     answers = r.json()
 
     return answers
+
+def get_questions(task_id):
+    #headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
+    questions_crowdjs_url = app.config['CROWDJS_GET_QUESTIONS_URL'] % task_id
+    r = requests.get(questions_crowdjs_url)
+    questions = r.json()
+    return questions
+
+def get_answers_for_question(question_id):
+    answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_FOR_QUESTION_URL'] % question_id
+    answers_crowdjs_url += '?completed=True'
+    
+    r = requests.get(answers_crowdjs_url)
+    answers = r.json()
+    return answers
+    
 
 def upload_questions(task):
     headers = {'Authentication-Token': app.config['CROWDJS_API_KEY'],

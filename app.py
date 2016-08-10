@@ -70,6 +70,13 @@ def status(job_id):
         'status.html',
         job_id = job_id)
 
+@app.route('/test/<task_id>/<task_category_id>')
+def test(task_id, task_category_id):
+    return render_template(
+        'test.html',
+        task_id = task_id,
+        task_category_id = task_category_id)
+
 
 from api.taboo_api import ComputeTabooApi
 api.add_resource(ComputeTabooApi, '/taboo') 

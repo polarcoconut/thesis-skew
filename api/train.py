@@ -70,7 +70,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
         category_id = task_categories[-1]
         
         #Check if the task is complete
-        answers = parse_answers(task_id, category_id)
+        answers = parse_answers(task_id, category_id, wait_until_batch_finished = len(job.current_hit_ids))
 
         if answers:
             print "Delete any existing leftover hits from turk"
@@ -92,7 +92,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
             category_id = task_categories[-1]
 
             #Check if the task is complete
-            answers = parse_answers(task_id, category_id)
+            answers = parse_answers(task_id, category_id, wait_until_batch_finished = len(job.current_hit_ids))
 
             if answers:
                 new_examples, new_labels = answers
