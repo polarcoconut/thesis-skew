@@ -320,8 +320,11 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
                 if hypothetical > 0:
                     sentence = sentence + '\tHYPOTHETICAL'
                 examples.append(sentence)
-                
-            labels.append(label)
+
+            if label > 0:
+                labels.append(1)
+            else:
+                labels.append(0)
 
     return examples, labels
 
