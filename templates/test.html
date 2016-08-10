@@ -1,0 +1,92 @@
+<html>
+  <head>
+    <title>Extremest Extraction></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+  </head>
+  <body>
+    <div class="container">
+      <h1>Master Algorithm v1.0 UI Test Page</h1>
+
+      <b> Task Id (save this somewhere!): </b> {{task_id}} <br/>
+
+      <button id="get_answers">Get Answers</button>
+      <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
+
+      <br/><br/>
+          Positive examples <span id=view_num_pos>(0) </span> : <br/>
+      <textarea id="positive_examples" rows="10" cols="100" wrap="soft">
+      </textarea><br/>
+      Negative examples <span id=view_num_neg>(0) </span> :<br/>
+      <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
+      </textarea><br/>
+      
+
+  </body>
+
+  <script type="text/javascript">
+    //
+    //GATHER STATUS CODE
+    //
+
+    var xmlhttp_refresh = new XMLHttpRequest();
+    document.getElementById("get_answers").onclick = refresh;
+    function refresh() {
+	var refresh_url = '/gather_status';
+	refresh_url += '?task_id={{task_id}}&task_category={{task_category_id}}';
+
+	console.log(refresh_url);
+	document.getElementById(
+	    'submitting-indicator-refresh').style.visibility = 'visible';
+	xmlhttp_refresh.open("GET", refresh_url, true);
+	xmlhttp_refresh.send();
+
+    }
+
+    xmlhttp_refresh.onreadystatechange = function() {
+	if (xmlhttp_refresh.readyState == 4 && xmlhttp_refresh.status == 200) {
+	    var status  = JSON.parse(xmlhttp_refresh.responseText);
+	    var num_training_examples = status[0]
+	    var positive_examples = status[1]
+	    var negative_examples = status[2]
+
+	    var positive_examples_string = "";
+	    var negative_examples_string = "";
+
+	    for (var i=0; i < positive_examples.length; i++) {
+		//if (document.getElementById('view_details').checked) {
+		    positive_examples_string += positive_examples[i];
+		//} else {
+		//positive_examples_string += positive_examples[i].split(
+		//    "\t")[0];
+		//}
+		positive_examples_string += "\r\n";
+
+	    }
+	    for (var i=0; i < negative_examples.length; i++) {
+		//if (document.getElementById('view_details').checked) {
+		    negative_examples_string += negative_examples[i];
+		//} else {
+		//    negative_examples_string += negative_examples[i].split(
+		//	"\t")[0];
+		//}
+		negative_examples_string += "\r\n";
+	    }
+	    
+	    console.log(num_training_examples);
+	    //document.getElementById(
+		//'num_training_examples').innerHTML = num_training_examples;
+	    document.getElementById(
+		'positive_examples').innerHTML = positive_examples_string;
+	    document.getElementById('view_num_pos').innerHTML = '(' + positive_examples.length + ')';
+	    document.getElementById(
+		'negative_examples').innerHTML = negative_examples_string;
+	    document.getElementById('view_num_neg').innerHTML = '(' + negative_examples.length + ')';
+	    document.getElementById(
+	      'submitting-indicator-refresh').style.visibility = 'hidden';
+
+	}
+    };
+
+  </script>
+</html>
