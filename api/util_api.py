@@ -8,10 +8,11 @@ import sys
 import uuid
 import redis
 from schema.job import Job
+from schema.ui_test import UI_Test
 from controllers import test_controller
 from util import parse_task_information
 from crowdjs_util import upload_questions
-from mturk_util import create_hits
+from mturk_util import create_hits, delete_hits
 
 arg_parser = reqparse.RequestParser()
 arg_parser.add_argument('job_id', type=str, required=True)
@@ -117,6 +118,12 @@ class TestGenerateUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
+        ui_test = UI_Test(task_id = task_id,
+                          task_category_id = str(task_category_id),
+                          current_hit_ids = hit_ids)
+        ui_test.save()
+        
+
         return redirect(url_for('test', task_id = task_id,
                                 task_category_id = task_category_id))
  
@@ -130,6 +137,11 @@ class TestModifyUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
+        ui_test = UI_Test(task_id = task_id,
+                          task_category_id = str(task_category_id),
+                          current_hit_ids = hit_ids)
+        ui_test.save()
+        
         return redirect(url_for('test', task_id = task_id,
                                 task_category_id = task_category_id))
  
@@ -144,8 +156,31 @@ class TestLabelUIApi(Resource):
         hit_ids = create_hits(task_category_id, task_id,
                               num_hits)
 
+        ui_test = UI_Test(task_id = task_id,
+                          task_category_id = str(task_category_id),
+                          current_hit_ids = hit_ids)
+        ui_test.save()
+        
+                          
         return redirect(url_for('test', task_id = task_id,
                                 task_category_id = task_category_id))
  
 
-    
+cleanup_arg_parser = reqparse.RequestParser()
+cleanup_arg_parser.add_argument('task_id', type=str, required=True)
+
+class CleanUpApi(Resource):
+    def get(self):
+        args = cleanup_arg_parser.parse_args()
+        task_id = args['task_id']
+        
+        ui_test = UI_Test.objects.get(task_id = task_id)
+        
+        delete_hits(ui_test.current_hit_ids)
+
+        ui_test.delete()
+
+        return True
+        
+
+        

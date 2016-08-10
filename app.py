@@ -127,3 +127,6 @@ api.add_resource(TestLabelUIApi, '/test_label_ui')
 
 from api.util_api import ChangeBudgetApi
 api.add_resource(ChangeBudgetApi, '/change_budget')
+
+from api.util_api import CleanUpApi
+api.add_resource(CleanUpApi, '/cleanup')
