@@ -14,12 +14,17 @@ def run_gather():
                 continue
         except AttributeError:
             print "job doesn't have lock property"
-            
+
+        if len(job.checkpoints.keys()) == 0:
+            continue
         jobs_checked += 1
         print "Running Gather for job %s" % job.id
         job.lock = True
         job.save()
+        #try:
         restart(job.id)
+        #except Exception as e:
+        #    print e
         job.lock = False
         job.save()
         

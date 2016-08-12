@@ -79,8 +79,7 @@ def make_labeling_crowdjs_task(examples, task_information):
     task = {'task_name': category['task_name'],
             'task_description': category['task_description'],
             'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
-            'data' : pickle.dumps(
-                {'not':app.config['TABOO_THRESHOLD'] + 1}),
+            'data' : 'no_data',
             'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
             'questions' : questions}
     
@@ -119,10 +118,8 @@ def make_recall_crowdjs_task(task_information):
     task = {'task_name': category['task_name'],
             'task_description': category['task_description'],
             'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
-            'data' : pickle.dumps({event_good_example_1_trigger:
-                                   app.config['TABOO_THRESHOLD'] + 1,
-                                   event_good_example_2_trigger:
-                                   app.config['TABOO_THRESHOLD'] + 1}),
+            'data' : pickle.dumps({event_good_example_1_trigger:1,
+                                   event_good_example_2_trigger:1}),
             'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
             'questions' : questions}
 
@@ -155,7 +152,7 @@ def make_precision_crowdjs_task(examples, task_information):
             'task_description': category['task_description'],
             'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
             'data' : pickle.dumps(
-                {'not':app.config['TABOO_THRESHOLD'] + 1}),
+                {'not': 1}),
             'assignment_duration' : app.config['ASSIGNMENT_DURATION'],
             'questions' : questions}
 

@@ -7,6 +7,9 @@ from ml.extractors.cnn_core.test import test_cnn
 from util import write_model_to_file, retrain
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
+from schema.job import Job
+from math import floor
+
 
 def test_controller(task_information, task_category_id):
 
@@ -57,10 +60,18 @@ def greedy_controller(task_categories, training_examples,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
         budget_left_over = budget - costSoFar
+        cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        budget_left_over = int(floor(budget_left_over / cost_of_one_example))
         num_positive_examples_to_label = int(budget_left_over / 2)
         num_negative_examples_to_label = (budget_left_over -
                                           num_positive_examples_to_label)
-        
+
+        print "Numbers:"
+        print budget_left_over
+        print num_positive_examples_to_label
+        print num_negative_examples_to_label
+        sys.stdout.flush()
+
         retrain(job_id, ['all'])
 
         test_examples = []
@@ -90,21 +101,45 @@ def greedy_controller(task_categories, training_examples,
             else:
                 negative_examples.append(example)
 
+        print "Sampling examples from the corpus"
+        sys.stdout.flush()
+
         selected_examples = []
         if positive_examples < num_positive_examples_to_label:
             selected_examples += positive_examples
-            sample(negative_examples, budget_left_over - len(positive_examples))
-        elif negative_example < num_negative_examples_to_label:
+            selected_examples += sample(
+                negative_examples,
+                budget_left_over - len(positive_examples))
+        elif negative_examples < num_negative_examples_to_label:
             selected_examples += negative_examples
-            sample(positive_examples, budget_left_over- len(negative_examples))
+            selected_examples += sample(
+                positive_examples,
+                budget_left_over- len(negative_examples))
         else:
             selected_examples += sample(positive_examples,
                                         num_positive_examples_to_label)
             selected_examples += sample(negative_examples,
                                         num_negative_examples_to_label)
+
+        print "Shuffling examples from the corpus"
+        sys.stdout.flush()
+
         shuffle(selected_examples)
 
         task = make_labeling_crowdjs_task(selected_examples, task_information)
+
+        print "Number of hits:"
+        print len(selected_examples)
+        print app.config['CONTROLLER_LABELS_PER_QUESTION']
+        print next_category['price']
+        sys.stdout.flush()
+        print len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION']
+
+
+        print "Price:"
+        len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        sys.stdout.flush()
+ 
         return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     if len(task_categories) % 2 == 0:

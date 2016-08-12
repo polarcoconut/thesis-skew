@@ -126,7 +126,7 @@ def getLatestCheckpoint(job_id):
     print job_id
     
     timestamps = job.checkpoints.keys()
-
+        
     print timestamps
     sys.stdout.flush()
     
@@ -172,6 +172,12 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
 
             
     answers = get_answers(task_id)
+    print "Getting answers from crowd_js for task %s" % task_id
+    print len(answers)
+    print "Expected number of answers"
+    print wait_until_batch_finished
+    sys.stdout.flush()
+    
     if (len(answers) < wait_until_batch_finished):
         return None
 
