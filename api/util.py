@@ -272,6 +272,8 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
             sentence = question_data[len(question_data)-1]
             sentence = sentence.strip()
             answers = get_answers_for_question(question_id)
+            if len(answers) == 0:
+                continue
 
             label = 0
             past = 0

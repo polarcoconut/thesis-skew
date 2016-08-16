@@ -25,8 +25,8 @@ def get_questions(task_id):
     return questions
 
 def get_answers_for_question(question_id):
-    answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_FOR_QUESTION_URL'] % question_id
-    answers_crowdjs_url += '?completed=True'
+    answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_FOR_QUESTION_URL']
+    answers_crowdjs_url += '?question_id=%s&completed=True' % question_id
     
     r = requests.get(answers_crowdjs_url)
     answers = r.json()
