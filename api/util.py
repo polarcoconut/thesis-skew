@@ -145,15 +145,12 @@ def split_examples(task_ids, task_categories, positive_types = [],
     for task_id, task_category_id in zip(task_ids,task_categories):
         answers = parse_answers(task_id, task_category_id,
                                 False, positive_types, only_sentence)
-        print answers
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
             if new_label == 1:
                 positive_examples.append(new_example)
             else:
                 negative_examples.append(new_example)
-    print positive_examples
-    print negative_examples
     return positive_examples, negative_examples
 
 #because of old data structures, category_id might be a category structure
@@ -265,8 +262,6 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
           category['task_name'] == 'Event Labeling'):
         questions = get_questions(task_id)
         for question in questions:
-            print question
-            sys.stdout.flush()
             question_id = question['_id']['$oid']
             question_data = question['data'].split('\t')
             sentence = question_data[len(question_data)-1]
@@ -282,8 +277,6 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
             hypothetical = 0
             
             for answer in answers:
-                print answer
-                sys.stdout.flush()
 
                 if 'value' not in answer:
                     continue
