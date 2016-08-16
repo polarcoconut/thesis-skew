@@ -10,7 +10,7 @@ import redis
 from schema.job import Job
 from schema.ui_test import UI_Test
 from controllers import test_controller
-from util import parse_task_information
+from util import parse_task_information, getLatestCheckpoint
 from crowdjs_util import upload_questions
 from mturk_util import create_hits, delete_hits
 
@@ -67,11 +67,13 @@ class GetJobInfoApi(Resource):
         job_id = args['job_id']
 
 
-        job = Job.objects.get(id = job_id)
-
-        (task_information, budget) = pickle.loads(job.task_information)
+        #job = Job.objects.get(id = job_id)
+        #(task_information, budget) = pickle.loads(job.task_information)
         
-        return [task_information, budget]
+        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+        (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+        return [task_information, budget, task_ids, task_categories]
 
 change_budget_arg_parser = reqparse.RequestParser()
 change_budget_arg_parser.add_argument('job_id', type=str, required=True)

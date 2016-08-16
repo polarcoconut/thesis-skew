@@ -331,22 +331,24 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
 
 #Trains a CNN
 @app.celery.task(name='retrain')
-def retrain(job_id, positive_types):
+def retrain(job_id, positive_types, task_ids_to_train = []):
     print "Training a CNN"
     sys.stdout.flush()
     task_information, budget, checkpoint = getLatestCheckpoint(job_id)
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-
-    #Collect all the task_ids, leaving some out for the purposes of
-    #cross validation
-    #training_task_ids = []
-    #training_task_categories = []
-    
-    
+    if task_ids_to_train == []:
+        task_ids_to_train = task_ids[2:]
+        task_categories_to_train = task_categories[2:]
+    else:
+        task_categories_to_train = []
+        for task_id, task_category in zip(task_ids, task_categories):
+            if task_id in task_ids_to_train:
+                task_categories_to_train.append(task_category)
+        
     training_positive_examples, training_negative_examples = split_examples(
-        task_ids[2:],
-        task_categories[2:],
+        task_ids_to_train,
+        task_categories_to_train,
         positive_types)
     
     model_file_name, vocabulary = train_cnn(

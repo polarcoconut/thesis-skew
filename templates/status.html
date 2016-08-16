@@ -96,6 +96,12 @@
     <input type="checkbox" id="train_types_general" value="general"> General/Hypothetical/Failing events </input>
     <br/>
 
+    Train using the results from the following tasks:
+    <br/>
+    <select id="train_task_ids" multiple size="10">
+    </select>
+    <br/>
+    
     <span id="retrain_status"></span><br/>
     <button id="retrain">Train the model (can take some time)</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
@@ -180,6 +186,8 @@
 	    //job_information = pickle.loads(job_information_pickle);
 	    var task_information = job_information[0]
 	    var budget = job_information[1]
+	    var task_ids = job_information[2]
+	    var task_categories = job_information[3]
 
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
@@ -204,6 +212,12 @@
 
 	    document.getElementById(
 		'event_budget').innerHTML = budget;
+
+	    select_html = ''
+	    for (i = 0; i < task_ids.length; i++) {
+		select_html +=  '<option value="' + task_ids[i] + '">' + task_ids[i] + " " + task_categories[i] + '</option>';
+	    }
+	    document.getElementById('train_task_ids').innerHTML = select_html;
 
 	}
     };
@@ -477,11 +491,20 @@
 	}
 	
 
+	train_task_ids = document.getElementById('train_task_ids').options;
+	for (var i=0; i < train_task_ids.length; i++) {
+	    option = train_task_ids[i];
+	    if (option.selected) {
+		retrain_url += '&task_ids_to_train=';
+		retrain_url += option.value;
+	    }
+	}
 
 	document.getElementById(
 	    'submitting-indicator-retrain').style.visibility = 'visible';
 	document.getElementById(
 	    'retrain').disabled = true;
+	console.log(retrain_url);
 	xmlhttp_retrain.open("GET", retrain_url, true);
 	xmlhttp_retrain.send();
 
