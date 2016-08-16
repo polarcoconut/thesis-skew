@@ -8,7 +8,7 @@ from util import write_model_to_file, retrain
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
-from math import floor
+from math import floor, ceil
 
 
 def test_controller(task_information, task_category_id):
@@ -61,7 +61,7 @@ def greedy_controller(task_categories, training_examples,
 
         budget_left_over = budget - costSoFar
         cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-        budget_left_over = int(floor(budget_left_over / cost_of_one_example))
+        budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
         num_positive_examples_to_label = int(budget_left_over / 2)
         num_negative_examples_to_label = (budget_left_over -
                                           num_positive_examples_to_label)
