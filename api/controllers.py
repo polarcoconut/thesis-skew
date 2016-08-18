@@ -12,7 +12,7 @@ from math import floor, ceil
 
 import boto
 import boto.s3
-
+from boto.s3.key import Key
 
 def test_controller(task_information, task_category_id):
 
