@@ -8,12 +8,13 @@ def run_gather():
     jobs_checked = 0
     jobs = Job.objects(status='Running')
 
-    #FOR DEBUGGING PURPOSES
-    job.lock = False
-    job.save()
-    raise Exception
     
     for job in jobs:
+        #FOR DEBUGGING PURPOSES
+        job.lock = False
+        job.save()
+        raise Exception
+
         try:
             if job.lock:
                 print"job is locked. go to next job"
