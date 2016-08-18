@@ -8,12 +8,12 @@ def run_gather():
     jobs_checked = 0
     jobs = Job.objects(status='Running')
     for job in jobs:
-        try:
-            if job.lock:
-                print"job is locked. go to next job"
-                continue
-        except AttributeError:
-            print "job doesn't have lock property"
+        #try:
+        #    if job.lock:
+        #        print"job is locked. go to next job"
+        #        continue
+        #except AttributeError:
+        #    print "job doesn't have lock property"
 
         if len(job.checkpoints.keys()) == 0:
             continue
