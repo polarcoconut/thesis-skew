@@ -11,9 +11,9 @@ def run_gather():
     
     for job in jobs:
         #FOR DEBUGGING PURPOSES
-        job.lock = False
-        job.save()
-        raise Exception
+        #job.lock = False
+        #job.save()
+        #raise Exception
 
         try:
             if job.lock:
