@@ -10,7 +10,7 @@ def run_gather():
 
     
     for job in jobs:
-        FOR DEBUGGING PURPOSES
+        #FOR DEBUGGING PURPOSES
         job.lock = False
         job.save()
         raise Exception
