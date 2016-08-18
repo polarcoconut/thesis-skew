@@ -10,6 +10,9 @@ import urllib2
 from schema.job import Job
 from math import floor, ceil
 
+import boto
+import boto.s3
+
 
 def test_controller(task_information, task_category_id):
 
@@ -72,12 +75,15 @@ def greedy_controller(task_categories, training_examples,
         print num_negative_examples_to_label
         sys.stdout.flush()
 
-        retrain(job_id, ['all'])
+        #retrain(job_id, ['all'])
+        retrain(job_id, ['all'], ["578ece469b032d0008f7de0c", "578f6d57a0e04d00090da921", "578f76cf80490500086bb557", "57929851e096b9000e36ef9a"]) #DELETE
 
         test_examples = []
         test_labels = []
 
-        tackbp_newswire_corpus = urllib2.urlopen('https://s3-us-west-2.amazonaws.com/tac-kbp-2009/SENTTEXTINFORMATION_UNNUMBERED_270k')
+        tackbp_newswire_corpus = urllib2.urlopen(
+            app.config['TACKBP_NW_09_CORPUS_URL'])
+        
         for sentence in tackbp_newswire_corpus:
             test_examples.append(sentence)
             test_labels.append(0)
@@ -91,6 +97,9 @@ def greedy_controller(task_categories, training_examples,
             write_model_to_file(job_id),
             vocabulary)
 
+        temp_pos = open('predicted_positive', 'w') #DELETE
+        temp_neg = open('predicted_negative', 'w') #DELETE
+        
         positive_examples = []
         negative_examples = []
         for i in range(len(predicted_labels)):
@@ -98,9 +107,29 @@ def greedy_controller(task_categories, training_examples,
             example = test_examples[i]
             if predicted_label == 1:
                 positive_examples.append(example)
+                temp_pos.write(example) #DELETE 
             else:
                 negative_examples.append(example)
+                temp_neg.write(example) #DELETE
 
+        bucket_name = 'temp' # DELETE
+        conn = boto.connect_s3(app.config['AWS_ACCESS_KEY_ID'],
+                               app.config['AWS_SECRET_ACCESS_KEY']) #DELETE
+        bucket = conn.create_bucket(
+            bucket_name,
+            location=boto.s3.connection.Location.DEFAULT) #DELETE
+        
+        k = Key(bucket) #DELETE
+        k.key = 'pos' #DELETE
+        k.set_contents_from_filename(temp_pos) #DELETE
+
+        
+        k = Key(bucket) #DELETE
+        k.key = 'neg' #DELETE
+        k.set_contents_from_filename(temp_neg) #DELETE
+        
+        raise Exception #DELETE
+    
         print "Sampling examples from the corpus"
         sys.stdout.flush()
 

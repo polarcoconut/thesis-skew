@@ -21,10 +21,10 @@ def run_gather():
         print "Running Gather for job %s" % job.id
         job.lock = True
         job.save()
-        #try:
-        restart(job.id)
-        #except Exception as e:
-        #    print e
+        try:
+            restart(job.id)
+        except Exception as e:
+            print e
         job.lock = False
         job.save()
         

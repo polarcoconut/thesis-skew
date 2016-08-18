@@ -95,6 +95,9 @@ class Config(object):
     BROKER_POOL_LIMIT = 0
 
 
+    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/SENTTEXTINFORMATION_UNNUMBERED_270k'
+
+    
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
