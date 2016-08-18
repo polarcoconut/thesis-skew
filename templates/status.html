@@ -40,7 +40,7 @@
     <b>Event Budget: </b> <span id="event_budget">...</span>
     <br/>
     <form id="change_budget_form" action="/change_budget" method="post"
-	  onsubmit="setTimeout(function() {window.location.reload();}, 20)">
+	  onsubmit="setTimeout(function() {window.location.reload();}, 100)">
       <input type="submit" id="change_budget_button" value="Change Budget To:"/>
       <input type="text" name="new_budget" id="new_budget"/>
       <input type="hidden" name="job_id" id="job_id" value="{{job_id}}"/>
