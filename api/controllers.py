@@ -115,17 +115,17 @@ def greedy_controller(task_categories, training_examples,
         bucket_name = 'tac-kbp-2009-temp' # DELETE
         conn = boto.connect_s3(app.config['AWS_ACCESS_KEY_ID'],
                                app.config['AWS_SECRET_ACCESS_KEY']) #DELETE
-        bucket = conn.create_bucket(
-            bucket_name,
-            location=boto.s3.connection.Location.DEFAULT) #DELETE
-        
-        k = Key(bucket) #DELETE
-        k.key = 'pos_temp' #DELETE
+        bucket = conn.get_bucket(bucket_name) #DELETE
+
+        print "dumping positive predictions"
+        sys.stdout.flush()        
+        k = Key(bucket, 'pos_temp') #DELETE
         k.set_contents_from_filename(temp_pos) #DELETE
 
-        
-        k = Key(bucket) #DELETE
-        k.key = 'neg_temp' #DELETE
+
+        print "dumping negative predictions"
+        sys.stdout.flush()
+        k = Key(bucket, 'neg_temp') #DELETE
         k.set_contents_from_filename(temp_neg) #DELETE
         
         raise Exception #DELETE
