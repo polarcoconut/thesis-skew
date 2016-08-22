@@ -51,19 +51,22 @@ def upload_questions(task):
         
     return task_id
 
-def make_labeling_crowdjs_task(examples, task_information):
+def make_labeling_crowdjs_task(examples, expected_labels,
+                               task_information):
 
     category = app.config['EXAMPLE_CATEGORIES'][2]
 
     question_data_format = ''
     for information in task_information:
         question_data_format += "%s\t"
+    question_data_format += "%d\t"
     question_data_format += "%s"
         
     questions = []
     
-    for i, example in zip(range(len(examples)), examples):
-        new_question_information = task_information + (example,)
+    for i, example, expected_label in zip(range(len(examples)), examples,
+                                          expected_labels):
+        new_question_information = task_information + (expected_label, example)
         new_question_data =  question_data_format % new_question_information
         question = {
             'question_name': 'Labeling Question %d' % i,
@@ -135,8 +138,7 @@ def make_precision_crowdjs_task(examples, task_information):
 
 
     questions = []
-    last_batch = examples
-    for i, training_example in zip(range(len(last_batch)), last_batch):
+    for i, training_example in zip(range(len(examples)), examples):
         new_question_information = task_information + (training_example,)
         new_question_data =  question_data % new_question_information
         question = {

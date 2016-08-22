@@ -113,7 +113,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
         sys.stdout.flush()
         #Decide which category of task to do.
         category_id, task_object, num_hits, cost_of_next_task  = get_next_batch(
-            task_categories, training_examples, training_labels,
+            task_ids, task_categories, training_examples, training_labels,
             task_information, costSoFar, budget, job_id)
 
         
@@ -157,13 +157,15 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
         
             
-def get_next_batch(task_categories, training_examples, training_labels,
+def get_next_batch(task_ids, task_categories,
+                   training_examples, training_labels,
                    task_information, costSoFar, budget, job_id):
                       
 
     print "Using the controller:"
     print app.config['CONTROLLER']
     if app.config['CONTROLLER'] == 'greedy':
-        return greedy_controller(task_categories, training_examples,
-                                 training_labels, task_information,
-                                 costSoFar, budget, job_id)
+        return round_robin_controller(task_ids,
+                                      task_categories, training_examples,
+                                      training_labels, task_information,
+                                      costSoFar, budget, job_id)

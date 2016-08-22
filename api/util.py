@@ -7,7 +7,10 @@ from app import app
 from schema.job import Job
 from crowdjs_util import get_answers, get_questions, get_answers_for_question
 from ml.extractors.cnn_core.train import train_cnn
-
+from ml.extractors.cnn_core.test import test_cnn
+from ml.extractors.cnn_core.computeScores import computeScores
+from random import sample, shuffle
+from math import floor, ceil
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -72,7 +75,8 @@ def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
     return taboo_words
     
 
-
+#Writes the model to a temporary file.
+#The purpose of this is so tensorflow can read the model
 def write_model_to_file(job_id):
     job = Job.objects.get(id = job_id)
     
@@ -143,8 +147,8 @@ def split_examples(task_ids, task_categories, positive_types = [],
     positive_examples = []
     negative_examples = []
     for task_id, task_category_id in zip(task_ids,task_categories):
-        answers = parse_answers(task_id, task_category_id,
-                                False, positive_types, only_sentence)
+        answers = parse_answers(task_id, task_category_id,-1,
+                                positive_types, only_sentence)
         new_examples, new_labels = answers
         for new_example, new_label in zip(new_examples, new_labels):
             if new_label == 1:
@@ -174,7 +178,10 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
     print "Expected number of answers"
     print wait_until_batch_finished
     sys.stdout.flush()
-    
+
+    # If the number of answers we have is less than what we expect,
+    # don't do anything. If we expect -1 or False, then
+    # give us the answers.
     if (len(answers) < wait_until_batch_finished):
         return None
 
@@ -332,26 +339,35 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
     return examples, labels
 
 #Trains a CNN
+#
+# If you provide the actual examples, it will train  using these examples
+# If you provide a list of task_ids, it will use the examples from these tasks
+# If you provide neither, it will use all available examples in the job
+#    and leave out the first two tasks as a validation set.
+#
 @app.celery.task(name='retrain')
-def retrain(job_id, positive_types, task_ids_to_train = []):
-    print "Training a CNN"
-    sys.stdout.flush()
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
-    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+def retrain(job_id, positive_types, task_ids_to_train = [],
+            training_positive_examples = [], training_negative_examples = []):
 
-    if task_ids_to_train == []:
-        task_ids_to_train = task_ids[2:]
-        task_categories_to_train = task_categories[2:]
-    else:
-        task_categories_to_train = []
-        for task_id, task_category in zip(task_ids, task_categories):
-            if task_id in task_ids_to_train:
-                task_categories_to_train.append(task_category)
+    if training_positive_examples == [] and training_negative_examples = []:
+        print "Training a CNN"
+        sys.stdout.flush()
+        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+        (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+        if task_ids_to_train == []:
+            task_ids_to_train = task_ids[2:]
+            task_categories_to_train = task_categories[2:]
+        else:
+            task_categories_to_train = []
+            for task_id, task_category in zip(task_ids, task_categories):
+                if task_id in task_ids_to_train:
+                    task_categories_to_train.append(task_category)
         
-    training_positive_examples, training_negative_examples = split_examples(
-        task_ids_to_train,
-        task_categories_to_train,
-        positive_types)
+        training_positive_examples, training_negative_examples = split_examples(
+            task_ids_to_train,
+            task_categories_to_train,
+            positive_types)
     
     model_file_name, vocabulary = train_cnn(
         training_positive_examples + training_negative_examples,
@@ -394,3 +410,105 @@ def retrain(job_id, positive_types, task_ids_to_train = []):
     sys.stdout.flush()
     
     return True
+
+
+
+def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
+                                       training_examples, training_labels,
+                                       task_information, costSoFar,
+                                       budget, job_id):
+    
+    print "choosing to find examples from TACKBP and label them"
+    sys.stdout.flush()
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+
+    budget_left_over = budget - costSoFar
+    cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+    budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
+    num_positive_examples_to_label = int(budget_left_over / 2)
+    num_negative_examples_to_label = (budget_left_over -
+                                      num_positive_examples_to_label)
+
+    print "Numbers:"
+    print budget_left_over
+    print num_positive_examples_to_label
+    print num_negative_examples_to_label
+    sys.stdout.flush()
+
+    retrain(job_id, ['all'])
+
+    test_examples = []
+    test_labels = []
+
+    tackbp_newswire_corpus = urllib2.urlopen(
+        app.config['TACKBP_NW_09_CORPUS_URL'])
+
+    #Get all the previous examples that we labeled already
+    used_examples = []
+    for i, task_category in zip(len(task_categories), task_categories):
+        #This check is because some data in the database is inconsistent
+        if isinstance(task_category, dict):
+            task_category_id = task_category['id']
+        else:
+            task_category_id = task_category
+        if task_category_id == 2:
+            used_examples += training_examples[i]
+
+    tackbp_newswire_corpus = set(tackbp_newswire_corpus)-set(used_examples)
+    for sentence in tackbp_newswire_corpus:
+        test_examples.append(sentence)
+        test_labels.append(0)
+
+
+
+    job = Job.objects.get(id = job_id)
+    vocabulary = pickle.loads(job.vocabulary)
+
+    predicted_labels = test_cnn(
+        test_examples,
+        test_labels,
+        write_model_to_file(job_id),
+        vocabulary)
+
+
+    positive_examples = []
+    negative_examples = []
+    for i in range(len(predicted_labels)):
+        predicted_label = predicted_labels[i]
+        example = test_examples[i]
+        if predicted_label == 1:
+            positive_examples.append(example)
+        else:
+            negative_examples.append(example)
+
+
+
+    print "Sampling examples from the corpus"
+    sys.stdout.flush()
+
+    selected_examples = []
+    expected_labels = []
+    if positive_examples < num_positive_examples_to_label:
+        selected_examples += positive_examples
+        selected_examples += sample(
+            negative_examples,
+            budget_left_over - len(positive_examples))
+    elif negative_examples < num_negative_examples_to_label:
+        selected_examples += negative_examples
+        selected_examples += sample(
+            positive_examples,
+            budget_left_over- len(negative_examples))
+    else:
+        selected_examples += sample(positive_examples,
+                                    num_positive_examples_to_label)
+        expected_labels.append(1)
+        selected_examples += sample(negative_examples,
+                                    num_negative_examples_to_label)
+        expected_labels.append(0)
+
+    print "Shuffling examples from the corpus"
+    sys.stdout.flush()
+
+    shuffle(selected_examples)
+
+    return selected_examples

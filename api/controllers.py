@@ -4,15 +4,14 @@ import pickle
 import sys
 from app import app
 from ml.extractors.cnn_core.test import test_cnn
-from util import write_model_to_file, retrain
+from ml.extractors.cnn_core.computeScores import computeScores
+
+from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
 from math import floor, ceil
 
-import boto
-import boto.s3
-from boto.s3.key import Key
 
 def test_controller(task_information, task_category_id):
 
@@ -40,137 +39,25 @@ def test_controller(task_information, task_category_id):
 #Alternate back and forth between precision and recall categories.
 #Then, use the other half of the budget and
 #select a bunch of examples from TACKBP corpus to label.
-def greedy_controller(task_categories, training_examples,
+def round_robin_controller(task_ids, task_categories, training_examples,
                       training_labels, task_information,
                       costSoFar, budget, job_id):
 
 
-    print "Greedy Controller activated."
+    print "Round-Robin Controller activated."
     sys.stdout.flush()
-    
-    (event_name, event_definition,
-     event_good_example_1,
-     event_good_example_1_trigger,
-     event_good_example_2,
-     event_good_example_2_trigger,
-     event_bad_example_1,
-     event_negative_good_example_1,
-     event_negative_bad_example_1) = task_information
-    
+        
     if costSoFar >= (budget / 2):
-        print "choosing to find examples from TACKBP and label them"
-        sys.stdout.flush()
-        next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
-        budget_left_over = budget - costSoFar
-        cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-        budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
-        num_positive_examples_to_label = int(budget_left_over / 2)
-        num_negative_examples_to_label = (budget_left_over -
-                                          num_positive_examples_to_label)
-
-        print "Numbers:"
-        print budget_left_over
-        print num_positive_examples_to_label
-        print num_negative_examples_to_label
-        sys.stdout.flush()
-
-        #retrain(job_id, ['all'])
-        retrain(job_id, ['all'], ["578ece469b032d0008f7de0c", "578f6d57a0e04d00090da921", "578f76cf80490500086bb557", "57929851e096b9000e36ef9a"]) #DELETE
-
-        test_examples = []
-        test_labels = []
-
-        tackbp_newswire_corpus = urllib2.urlopen(
-            app.config['TACKBP_NW_09_CORPUS_URL'])
+        selected_examples = get_unlabeled_examples_from_tackbp(
+            task_ids, task_categories,
+            training_examples, training_labels,
+            task_information, costSoFar,
+            budget, job_id)
         
-        for sentence in tackbp_newswire_corpus:
-            test_examples.append(sentence)
-            test_labels.append(0)
-            
-        job = Job.objects.get(id = job_id)
-        vocabulary = pickle.loads(job.vocabulary)
-
-        predicted_labels = test_cnn(
-            test_examples,
-            test_labels,
-            write_model_to_file(job_id),
-            vocabulary)
-
-        temp_pos = open('predicted_positive', 'w') #DELETE
-        temp_neg = open('predicted_negative', 'w') #DELETE
-        
-        positive_examples = []
-        negative_examples = []
-        for i in range(len(predicted_labels)):
-            predicted_label = predicted_labels[i]
-            example = test_examples[i]
-            if predicted_label == 1:
-                positive_examples.append(example)
-                temp_pos.write(example) #DELETE 
-            else:
-                negative_examples.append(example)
-                temp_neg.write(example) #DELETE
-
-        temp_pos.close()
-        temp_neg.close()
-        
-        bucket_name = 'tac-kbp-2009-temp' # DELETE
-        conn = boto.connect_s3(app.config['AWS_ACCESS_KEY_ID'],
-                               app.config['AWS_SECRET_ACCESS_KEY']) #DELETE
-        bucket = conn.get_bucket(bucket_name) #DELETE
-
-        print "dumping positive predictions"
-        sys.stdout.flush()        
-        k = Key(bucket, 'pos_temp') #DELETE
-        k.set_contents_from_filename('predicted_positive') #DELETE
-
-
-        print "dumping negative predictions"
-        sys.stdout.flush()
-        k = Key(bucket, 'neg_temp') #DELETE
-        k.set_contents_from_filename('predicted_negative') #DELETE
-        
-        raise Exception #DELETE
-    
-        print "Sampling examples from the corpus"
-        sys.stdout.flush()
-
-        selected_examples = []
-        if positive_examples < num_positive_examples_to_label:
-            selected_examples += positive_examples
-            selected_examples += sample(
-                negative_examples,
-                budget_left_over - len(positive_examples))
-        elif negative_examples < num_negative_examples_to_label:
-            selected_examples += negative_examples
-            selected_examples += sample(
-                positive_examples,
-                budget_left_over- len(negative_examples))
-        else:
-            selected_examples += sample(positive_examples,
-                                        num_positive_examples_to_label)
-            selected_examples += sample(negative_examples,
-                                        num_negative_examples_to_label)
-
-        print "Shuffling examples from the corpus"
-        sys.stdout.flush()
-
-        shuffle(selected_examples)
-
-        task = make_labeling_crowdjs_task(selected_examples, task_information)
-
-        print "Number of hits:"
-        print len(selected_examples)
-        print app.config['CONTROLLER_LABELS_PER_QUESTION']
-        print next_category['price']
-        sys.stdout.flush()
-        print len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION']
-
-
-        print "Price:"
-        len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-        sys.stdout.flush()
+        task = make_labeling_crowdjs_task(selected_examples,
+                                          expected_labels,
+                                          task_information)
  
         return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
@@ -195,3 +82,142 @@ def greedy_controller(task_categories, training_examples,
         task = make_precision_crowdjs_task(last_batch, task_information)
 
         return next_category['id'], task, len(last_batch), len(last_batch)*next_category['price']
+
+
+#Pick the action corresponding to the distributino that the extractor performs
+#most poorly on.
+def uncertainty_sampling_controller(task_ids, task_categories,
+                                    training_examples,
+                                     training_labels, task_information,
+                                     costSoFar, budget, job_id):
+
+
+    job = Job.objects.get(id = job_id)
+
+    print "Uncertainty Sampling Controller activated."
+    sys.stdout.flush()
+
+    if len(task_categories) < 3:
+        return  round_robin_controller(
+            task_ids,task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar, budget, job_id)
+
+    categories_to_examples = {}
+    for i, task_category in zip(range(len(task_categories)), task_categories):
+
+        #This check is because some data in the database is inconsistent
+        if isinstance(task_category, dict):
+            task_category_id = task_category['id']
+        else:
+            task_category_id = task_category
+
+        if not task_category_id in categories_to_exampels:
+            categories_to_examples[task_category_id] = []
+
+        categories_to_examples[task_category_id].append(task_ids[i])
+
+    #For every kind of action, check to see how well the extractor can
+    #predict it
+    worst_task_category_id = None
+    worst_fscore = 0.0
+    for target_task_category_id in categories_to_examples.keys():
+
+        training_positive_examples = []
+        training_negative_examples = []
+        validation_positive_examples = []
+        validation_negative_examples = []
+        validation_all_examples = []
+        validation_all_labels = []
+        
+        for task_category_id  in categories_to_examples.keys():
+            task_ids = categories_to_examples[task_category_id]
+            pos_examples, neg_examples = split_examples(
+                task_ids,
+                [task_category_id for i in task_ids],
+                ['all'])
+            if not task_category_id == target_task_category_id:
+                training_positive_examples += pos_examples
+                training_negative_examples += neg_examples
+            else:
+                shuffle(pos_examples)
+                shuffle(neg_examples)
+
+                size_of_validation_positive_examples = int(
+                    floor(0.2 * len(pos_examples)))
+                size_of_validation_negative_examples = int(
+                    floor(0.2 * len(neg_examples)))
+                
+                validation_positive_examples += pos_examples[
+                    0:size_of_validation_positive_examples]
+                validation_negative_examples += neg_examples[
+                    0:size_of_validation_negative_examples]
+
+                training_positive_examples += pos_examples[
+                    size_of_validation_positive_examples:]
+                training_negative_examples += neg_examples[
+                    size_of_validation_negative_examples:]
+
+        validation_all_examples = (validation_positive_examples +
+                                   validation_negative_examples)
+        validation_all_labels = ([1 for e in len(validation_positive_examples)]+
+                                 [0 for e in len(validation_negative_examples)])
+        retrain(job_id, ['all'],
+                training_positive_examples = training_positive_examples,
+                training_negative_examples = training_negative_examples)
+        
+        vocabulary = pickle.loads(job.vocabulary)
+        predicted_labels = test_cnn(
+            validation_all_examples,
+            validation_all_labels,
+            write_model_to_file(job_id),
+            vocabulary)
+
+        precision, recall, f1 = computeScores(predicted_labels,
+                                              validation_all_labels)
+
+        if f1 < worst_fscore:
+            worst_fscore =  f1
+            worst_task_category_id = target_task_category_id
+
+        if worst_task_category_id == 2:
+            print "choosing the LABEL category"
+            sys.stdout.flush()
+            
+            selected_examples = get_unlabeled_examples_from_tackbp(
+                task_ids, task_categories, training_examples,
+                training_labels, task_information, costSoFar,
+                budget, job_id)
+                                                                   
+            task = make_labeling_crowdjs_task(selected_examples,
+                                              task_information)
+
+            return 2, task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+
+        elif worst_task_category_id == 0:
+            print "choosing the RECALL category"
+            sys.stdout.flush()
+    
+            next_category = app.config['EXAMPLE_CATEGORIES'][0]
+            
+            task = make_recall_crowdjs_task(task_information)
+            
+            num_hits = app.config['CONTROLLER_BATCH_SIZE']
+            return 0, task, num_hits, num_hits * next_category['price']
+
+        elif worst_task_category_id == 1:
+
+            positive_examples = []
+            for training_example, training_label in zip(
+                    training_examples, training_labels):
+                if training_label == 1:
+                    positive_examples.append(training_example)
+
+            selected_positive_examples = sample(positive_examples, num_hits)
+            
+            next_category = app.config['EXAMPLE_CATEGORIES'][1]
+            
+            task = make_precision_crowdjs_task(selected_positive_examples,
+                                               task_information)
+
+            return 1, task, num_hits, num_hits * next_category['price']
