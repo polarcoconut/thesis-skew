@@ -50,6 +50,13 @@
       <label>Total Budget: </label>
       <input name="budget" type="text" size="100" value="100"/><br/>
 
+      <label> Control Strategy: </label>
+      <select id="control_strategy" name="control_strategy" form="theform">
+	<option value="label-only">label-only</option>
+	<option value="round-robin" selected>round-robin</option>
+	<option value="uncertainty">uncertainty</option>
+	<option value="impact">impact</option>
+      </select>
       <hr/>
       <h2> Test the UI:</h2>
       <input type="button" id="generate-button" value="Test Generate UI"/>

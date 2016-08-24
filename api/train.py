@@ -1,6 +1,6 @@
 import time
 from app import app
-from controllers import greedy_controller
+from controllers import round_robin_controller, uncertainty_sampling_controller
 import pickle
 import json
 import sys
@@ -13,7 +13,11 @@ from crowdjs_util import get_answers, upload_questions
 
 @app.celery.task(name='restart')
 def restart(job_id):
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+    job = Job.objects.get(id = job_id)
+    
+    checkpoint = getLatestCheckpoint(job_id)
+    (task_information, budget) = pickle.loads(job.task_information)
+
     gather(task_information, budget, job_id, checkpoint)
 
 #
@@ -25,7 +29,11 @@ def restart(job_id):
 #
 
 def gather_status(job_id, positive_types):
-    task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+    job = Job.objects.get(id = job_id)
+    
+    checkpoint = getLatestCheckpoint(job_id)
+    (task_information, budget) = pickle.loads(job.task_information)
+
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
     positive_examples, negative_examples = split_examples(
@@ -161,11 +169,22 @@ def get_next_batch(task_ids, task_categories,
                    training_examples, training_labels,
                    task_information, costSoFar, budget, job_id):
                       
-
+    job = Job.objects.get(id = job_id)
+    control_strategy = job.control_strategy
+    
     print "Using the controller:"
-    print app.config['CONTROLLER']
-    if app.config['CONTROLLER'] == 'greedy':
+    print control_strategy
+    sys.stdout.flush()
+
+    if control_strategy == 'round-robin':
         return round_robin_controller(task_ids,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
+    if control_strategy == 'uncertainty':
+        return uncertainty_sampling_controller(
+            task_ids,
+            task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar, budget, job_id)
+    

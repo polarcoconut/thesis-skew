@@ -24,9 +24,8 @@ train_parser.add_argument('event_neg_example',
                           type=str, required=True)
 train_parser.add_argument('event_neg_example_nearmiss',
                           type=str, required=True)
-
-#train_parser.add_argument('task_information', type=str, required=True)
 train_parser.add_argument('budget', type=str, required=True)
+train_parser.add_argument('control_strategy', type=str, required=True)
 
 restart_parser = reqparse.RequestParser()
 restart_parser.add_argument('job_id', type=str, required=True)
@@ -51,13 +50,16 @@ class GatherExtractorApi(Resource):
                 
         #task_information = args['task_information']
         budget = int(args['budget'])
-
+        control_strategy = args['control_strategy']
+    
         #Generate a random job_id
         job = Job(task_information = pickle.dumps((task_information, budget)),
                   num_training_examples_in_model = -1,
                   current_hit_ids = [],
                   checkpoints = {},
-                  status = 'Running')
+                  status = 'Running',
+                  control_strategy = control_strategy)
+        
         job.save()
         job_id = str(job.id)
         
@@ -99,7 +101,10 @@ class JobStatusApi(Resource):
         job_id = args['job_id']
 
         job = Job.objects.get(id = job_id)
-        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+
+        checkpoint = getLatestCheckpoint(job_id)
+        (task_information, budget) = pickle.loads(job.task_information)
+
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
         try:
             return [job.status, costSoFar]

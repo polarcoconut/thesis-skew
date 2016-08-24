@@ -67,13 +67,15 @@ class GetJobInfoApi(Resource):
         job_id = args['job_id']
 
 
-        #job = Job.objects.get(id = job_id)
-        #(task_information, budget) = pickle.loads(job.task_information)
+        job = Job.objects.get(id = job_id)
         
-        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+        checkpoint = getLatestCheckpoint(job_id)
+        (task_information, budget) = pickle.loads(job.task_information)
+        
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
-        return [task_information, budget, task_ids, task_categories]
+        return [task_information, budget, task_ids, task_categories,
+                job.control_strategy]
 
 change_budget_arg_parser = reqparse.RequestParser()
 change_budget_arg_parser.add_argument('job_id', type=str, required=True)

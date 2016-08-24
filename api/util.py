@@ -130,17 +130,15 @@ def getLatestCheckpoint(job_id):
     print job_id
     
     timestamps = job.checkpoints.keys()
-        
-    print timestamps
-    sys.stdout.flush()
-    
-    
+            
     most_recent_timestamp = max([int(x) for x in timestamps])
 
     checkpoint = job.checkpoints[str(most_recent_timestamp)]
-    (task_information, budget) = pickle.loads(job.task_information)
 
-    return (task_information, budget, checkpoint)
+    return checkpoint
+
+    #(task_information, budget) = pickle.loads(job.task_information)
+    #return (task_information, budget, checkpoint)
 
 def split_examples(task_ids, task_categories, positive_types = [],
                    only_sentence=True):
@@ -349,10 +347,15 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
 def retrain(job_id, positive_types, task_ids_to_train = [],
             training_positive_examples = [], training_negative_examples = []):
 
-    if training_positive_examples == [] and training_negative_examples = []:
+    if training_positive_examples == [] and training_negative_examples == []:
         print "Training a CNN"
         sys.stdout.flush()
-        task_information, budget, checkpoint = getLatestCheckpoint(job_id)
+
+        job = Job.objects.get(id = job_id)
+        
+        checkpoint = getLatestCheckpoint(job_id)
+        (task_information, budget) = pickle.loads(job.task_information)
+        
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
         if task_ids_to_train == []:

@@ -96,7 +96,6 @@ class Config(object):
     BROKER_POOL_LIMIT = 0
 
 
-    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/SENTTEXTINFORMATION_UNNUMBERED_270k'
 
     
 class DevelopmentConfig(Config):
@@ -115,6 +114,9 @@ class DevelopmentConfig(Config):
             'args': ()
         },
     }
+
+    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
+    
 class Production(Config):
     DEBUG = False
     DEVELOPMENT = False
@@ -133,3 +135,5 @@ class Production(Config):
             'args': ()
         },
     }
+    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-270k'
+

@@ -47,7 +47,7 @@ def round_robin_controller(task_ids, task_categories, training_examples,
     print "Round-Robin Controller activated."
     sys.stdout.flush()
         
-    if costSoFar >= (budget / 2):
+    if len(task_categories) % 3 == 2:
 
         selected_examples = get_unlabeled_examples_from_tackbp(
             task_ids, task_categories,
@@ -61,7 +61,7 @@ def round_robin_controller(task_ids, task_categories, training_examples,
  
         return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
-    if len(task_categories) % 2 == 0:
+    if len(task_categories) % 3 == 0:
         print "choosing the RECALL category"
         sys.stdout.flush()
     
@@ -74,7 +74,7 @@ def round_robin_controller(task_ids, task_categories, training_examples,
 
     #If task_categories has one element in it, pick a category that
     #can use previous training data
-    if len(task_categories) % 2 == 1:
+    if len(task_categories) % 3 == 1:
 
         last_batch = training_examples[-1]
         next_category = app.config['EXAMPLE_CATEGORIES'][1]

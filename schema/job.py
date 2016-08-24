@@ -16,3 +16,6 @@ class Job(db.DynamicDocument):
     status = db.StringField()
 
     lock = db.BooleanField()
+
+    control_strategy = db.StringField()
+

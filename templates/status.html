@@ -48,6 +48,10 @@
     </form>
     <br/>
 
+    <b>Control Strategy: </b> <span id="control_strategy">...</span>
+    <br/>
+    
+
 
     <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" style="visibility: hidden;">
     </iframe>
@@ -188,6 +192,7 @@
 	    var budget = job_information[1]
 	    var task_ids = job_information[2]
 	    var task_categories = job_information[3]
+	    var control_strategy = job_information[4]
 
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
@@ -212,6 +217,9 @@
 
 	    document.getElementById(
 		'event_budget').innerHTML = budget;
+
+	    document.getElementById(
+		'control_strategy').innerHTML = control_strategy;
 
 	    select_html = ''
 	    for (i = 0; i < task_ids.length; i++) {

@@ -60,8 +60,12 @@ class CrossValidationExtractorApi(Resource):
         print "Testing on  held-out set %d" % test_set
         sys.stdout.flush()
 
-        task_information, budget, checkpoint = getLatestCheckpoint(
-            job_id)
+        job = Job.objects.get(id = job_id)
+                
+        checkpoint = getLatestCheckpoint(job_id)
+        (task_information, budget) = pickle.loads(job.task_information)
+
+        
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
         if test_set == -1:
