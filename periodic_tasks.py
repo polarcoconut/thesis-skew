@@ -1,6 +1,7 @@
 from api.train import restart
 from app import app
 from schema.job import Job
+import sys, os, traceback
 
 @app.celery.task(name='run_gather')
 def run_gather():
@@ -31,7 +32,12 @@ def run_gather():
         try:
             restart(job.id)
         except Exception as e:
+            print "Exception:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
             print e
+            
         job.lock = False
         job.save()
         

@@ -11,6 +11,8 @@ from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 from random import sample, shuffle
 from math import floor, ceil
+import urllib2
+
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -161,7 +163,7 @@ def split_examples(task_ids, task_categories, positive_types = [],
 #                  details
 #
 def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
-                  positive_types = [], only_sentence = True):
+                  positive_types = ['all'], only_sentence = True):
 
 
     if not isinstance(category_id, dict):        
@@ -359,8 +361,14 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
         if task_ids_to_train == []:
-            task_ids_to_train = task_ids[2:]
-            task_categories_to_train = task_categories[2:]
+            ####
+            # The first two tasks are used for cross validation purposes
+            ####
+            #task_ids_to_train = task_ids[2:]
+            #task_categories_to_train = task_categories[2:]
+            task_ids_to_train = task_ids
+            task_categories_to_train = task_categories
+
         else:
             task_categories_to_train = []
             for task_id, task_category in zip(task_ids, task_categories):
@@ -425,18 +433,19 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     sys.stdout.flush()
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
-    budget_left_over = budget - costSoFar
-    cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-    budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
-    num_positive_examples_to_label = int(budget_left_over / 2)
-    num_negative_examples_to_label = (budget_left_over -
-                                      num_positive_examples_to_label)
+    #budget_left_over = budget - costSoFar
+    #cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+    #budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
+    #num_positive_examples_to_label = int(budget_left_over / 2)
+    #num_negative_examples_to_label = (budget_left_over -
+    #                                  num_positive_examples_to_label)
 
-    print "Numbers:"
-    print budget_left_over
-    print num_positive_examples_to_label
-    print num_negative_examples_to_label
-    sys.stdout.flush()
+
+    num_positive_examples_to_label = int(
+        app.config['CONTROLLER_BATCH_SIZE'] / 2.0)
+    num_negative_examples_to_label = (app.config['CONTROLLER_BATCH_SIZE'] -
+                                      num_positive_examples_to_label)
+    
 
     retrain(job_id, ['all'])
 
@@ -448,7 +457,7 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
     #Get all the previous examples that we labeled already
     used_examples = []
-    for i, task_category in zip(len(task_categories), task_categories):
+    for i, task_category in zip(range(len(task_categories)), task_categories):
         #This check is because some data in the database is inconsistent
         if isinstance(task_category, dict):
             task_category_id = task_category['id']
@@ -495,12 +504,12 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
         selected_examples += positive_examples
         selected_examples += sample(
             negative_examples,
-            budget_left_over - len(positive_examples))
+            app.config['CONTROLLER_BATCH_SIZE'] - len(positive_examples))
     elif negative_examples < num_negative_examples_to_label:
         selected_examples += negative_examples
         selected_examples += sample(
             positive_examples,
-            budget_left_over- len(negative_examples))
+            app.config['CONTROLLER_BATCH_SIZE'] - len(negative_examples))
     else:
         selected_examples += sample(positive_examples,
                                     num_positive_examples_to_label)
@@ -514,4 +523,4 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
     shuffle(selected_examples)
 
-    return selected_examples
+    return selected_examples, expected_labels

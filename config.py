@@ -53,7 +53,6 @@ class Config(object):
     AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
     AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
     
-    CONTROLLER = os.environ['CONTROLLER']
     CONTROLLER_BATCH_SIZE = int(os.environ['CONTROLLER_BATCH_SIZE'])
     CONTROLLER_APQ = int(os.environ['CONTROLLER_APQ'])
     CONTROLLER_LABELS_PER_QUESTION = int(
