@@ -232,6 +232,9 @@
 
 	    select_html = ''
 	    for (i = 0; i < task_ids.length; i++) {
+		if (typeof task_categories[i] === "object") {
+		    task_categories[i] = task_categories[i]['id']
+		}
 		select_html +=  '<option value="' + task_ids[i] + " " + task_categories[i] + '">' + task_ids[i] + " " + task_categories[i] + '</option>';
 	    }
 	    document.getElementById('train_task_ids').innerHTML = select_html;
