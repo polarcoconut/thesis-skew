@@ -9,6 +9,8 @@ import sys
 import uuid
 from schema.job import Job
 from util import parse_task_information, retrain, getLatestCheckpoint, split_examples, parse_answers
+from crowdjs_util import get_task_data
+
 
 train_parser = reqparse.RequestParser()
 train_parser.add_argument('event_name', type=str, required=True)
@@ -117,9 +119,15 @@ gather_status_parser = reqparse.RequestParser()
 gather_status_parser.add_argument('job_id', type=str, required=False)
 gather_status_parser.add_argument('positive_types', required=False,
                                   action='append')
-gather_status_parser.add_argument('task_id', type=str, required=False)
-gather_status_parser.add_argument('task_category', type=int, required=False)
+gather_status_parser.add_argument('task_id', required=False,
+                                  action='append')
+gather_status_parser.add_argument('task_category', required=False,
+                                  action='append')
 
+#
+# Get the examples that have been collected so far
+#
+#
 class GatherStatusApi(Resource):
     def get(self):
         args = gather_status_parser.parse_args()
@@ -128,13 +136,34 @@ class GatherStatusApi(Resource):
             positive_types = args['positive_types']
             return gather_status(job_id, positive_types)            
         else:
-            task_id = args['task_id']
-            task_category = args['task_category']
-            positive_examples, negative_examples = split_examples(
-                [task_id], [task_category], [], False)
-            return [len(positive_examples) + len(negative_examples),
-                    positive_examples,
-                    negative_examples]
+            task_ids = args['task_id']
+            task_categories = args['task_category']
+
+            all_positive_examples = []
+            all_negative_examples = []
+
+            taboo_words_pickles = []
+            print task_ids, task_categories
+            sys.stdout.flush()
+
+            for (task_id, task_category) in zip(task_ids, task_categories):
+                positive_examples, negative_examples = split_examples(
+                    [task_id], [int(task_category)], ['all'], False)
+                all_positive_examples += positive_examples
+                all_negative_examples += negative_examples
+
+                #Also get taboo words
+                taboo_words_pickle = get_task_data(task_id)
+                taboo_words_pickles.append(taboo_words_pickle)
+
+            print "taboo word pickles"
+            print taboo_words_pickles
+            sys.stdout.flush()
+            
+            return [len(all_positive_examples) + len(all_negative_examples),
+                    all_positive_examples,
+                    all_negative_examples,
+                    taboo_words_pickles]
         
 
 retrain_parser = reqparse.RequestParser()

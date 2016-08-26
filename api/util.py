@@ -142,7 +142,7 @@ def getLatestCheckpoint(job_id):
     #(task_information, budget) = pickle.loads(job.task_information)
     #return (task_information, budget, checkpoint)
 
-def split_examples(task_ids, task_categories, positive_types = [],
+def split_examples(task_ids, task_categories, positive_types = ['all'],
                    only_sentence=True):
     positive_examples = []
     negative_examples = []

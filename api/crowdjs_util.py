@@ -3,6 +3,19 @@ import requests
 import pickle
 import sys
 
+def get_task_data(task_id):
+    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
+    task_crowdjs_url = app.config['CROWDJS_GET_TASK_DATA_URL']
+    task_crowdjs_url += '?task_id=%s' % task_id
+    task_crowdjs_url += '&requester_id=%s' % app.config[
+        'CROWDJS_REQUESTER_ID']
+
+    r = requests.get(task_crowdjs_url, headers=headers)
+
+    data = r.json()['data']
+
+    return data
+    
 def get_answers(task_id):
     headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
     answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_URL']

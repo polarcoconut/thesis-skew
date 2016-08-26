@@ -75,6 +75,11 @@
     <br/>
     <input type="checkbox" id="view_details" value="general"> View Sentence Details (Trigger, Past Tense, etc...) </input>
     <br/>
+
+    <select id="train_task_ids_for_view" multiple size="10">
+    </select>
+    <br/>
+
     <button id="refresh">View current examples</button>
     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
     <br/><br/>
@@ -84,6 +89,10 @@
     </textarea><br/>
     Negative examples <span id=view_num_neg>(0) </span> :<br/>
     <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
+    </textarea><br/>
+
+    Taboo words: <br/>
+    <textarea id="taboo_words" rows="10" cols="100" wrap="soft">
     </textarea><br/>
 
     
@@ -223,9 +232,13 @@
 
 	    select_html = ''
 	    for (i = 0; i < task_ids.length; i++) {
-		select_html +=  '<option value="' + task_ids[i] + '">' + task_ids[i] + " " + task_categories[i] + '</option>';
+		select_html +=  '<option value="' + task_ids[i] + " " + task_categories[i] + '">' + task_ids[i] + " " + task_categories[i] + '</option>';
 	    }
 	    document.getElementById('train_task_ids').innerHTML = select_html;
+
+	    document.getElementById(
+		'train_task_ids_for_view').innerHTML = select_html;
+
 
 	}
     };
@@ -238,8 +251,8 @@
     document.getElementById("refresh").onclick = refresh;
     function refresh() {
 	var refresh_url = '/gather_status';
-	refresh_url += '?job_id={{job_id}}';
-	refresh_url += '&positive_types=dummytype';
+	//refresh_url += '?job_id={{job_id}}';
+	refresh_url += '?positive_types=dummytype';
 
 	if (document.getElementById('view_types_all').checked) {
 	    refresh_url += '&positive_types=';
@@ -258,7 +271,19 @@
 	    refresh_url += '&positive_types=';
 	    refresh_url += document.getElementById('view_types_general').value;
 	}
-	
+
+	train_task_ids = document.getElementById(
+	    'train_task_ids_for_view').options;
+	for (var i=0; i < train_task_ids.length; i++) {
+	    option = train_task_ids[i];
+	    if (option.selected) {
+		selection = option.value.split(/[ ,]+/);
+		refresh_url += '&task_id=';
+		refresh_url += selection[0];
+		refresh_url += '&task_category=';
+		refresh_url += selection[1];
+	    }
+	}
 
 	console.log(refresh_url);
 	document.getElementById(
@@ -271,13 +296,18 @@
     xmlhttp_refresh.onreadystatechange = function() {
 	if (xmlhttp_refresh.readyState == 4 && xmlhttp_refresh.status == 200) {
 	    var status  = JSON.parse(xmlhttp_refresh.responseText);
-	    var num_training_examples = status[0]
-	    var positive_examples = status[1]
-	    var negative_examples = status[2]
+	    var num_training_examples = status[0];
+	    var positive_examples = status[1];
+	    var negative_examples = status[2];
+	    var taboo_words_pickles = status[3];
 
+	    console.log("taboo");
+	    console.log(taboo_words_pickles);
+	    
 	    var positive_examples_string = "";
 	    var negative_examples_string = "";
-
+	    var taboo_words_string = "";
+	    
 	    for (var i=0; i < positive_examples.length; i++) {
 		if (document.getElementById('view_details').checked) {
 		    positive_examples_string += positive_examples[i];
@@ -297,6 +327,18 @@
 		}
 		negative_examples_string += "\r\n";
 	    }
+
+	    for (var i=0; i < taboo_words_pickles.length; i++) {
+
+		if (taboo_words_pickles[i] == "no_data") {
+		    taboo_words_string += "no_data"
+		} else {
+		    taboo_words_string += JSON.stringify(
+			pickle.loads(taboo_words_pickles[i]));
+		}
+		taboo_words_string += "\r\n";
+	    }
+
 	    
 	    console.log(num_training_examples);
 	    document.getElementById(
@@ -307,6 +349,10 @@
 	    document.getElementById(
 		'negative_examples').innerHTML = negative_examples_string;
 	    document.getElementById('view_num_neg').innerHTML = '(' + negative_examples.length + ')';
+
+	    document.getElementById(
+		'taboo_words').innerHTML = taboo_words_string;
+	    
 	    document.getElementById(
 	      'submitting-indicator-refresh').style.visibility = 'hidden';
 
@@ -503,8 +549,9 @@
 	for (var i=0; i < train_task_ids.length; i++) {
 	    option = train_task_ids[i];
 	    if (option.selected) {
+		selected_task_id = option.value.split(/[ ,]+/)[0];
 		retrain_url += '&task_ids_to_train=';
-		retrain_url += option.value;
+		retrain_url += selected_task_id;
 	    }
 	}
 
