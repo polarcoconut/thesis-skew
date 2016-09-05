@@ -21,11 +21,12 @@ class ComputeTabooApi(Resource):
         #old_taboo_words = args['old_taboo_words']
         old_sentence = args['old_sentence']
         new_sentence = args['new_sentence']
-        task_id = args['task_id']
+        task_id = str(args['task_id'])
         requester_id = args['requester_id']
         
         print "Posting to"
         print app.config['CROWDJS_PUT_TASK_DATA_URL']
+        print task_id
         sys.stdout.flush()
 
         compute_taboo_words.delay(old_sentence,
