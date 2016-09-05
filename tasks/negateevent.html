@@ -465,7 +465,7 @@ z-index: 1;
 	  submit_answer_request['question_name'] = question_name;
 	  submit_answer_request['worker_id'] = worker_id;
 	  submit_answer_request['worker_source'] = worker_source;
-	  submit_answer_request['value'] = x + "\t" + checked + "\t" + realis + "\t" + old_sentence;
+	  submit_answer_request['value'] = x + "\t" + checked + "\t" + realis + "\t" + old_sentence + "\t" + taboo_words_pickle;
 	  submit_answer_xmlhttp.open("PUT", submit_answer_url, true);
 	  submit_answer_xmlhttp.setRequestHeader("Content-type",
 						 "application/json");

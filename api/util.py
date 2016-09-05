@@ -5,7 +5,7 @@ import json
 import requests
 from app import app
 from schema.job import Job
-from crowdjs_util import get_answers, get_questions, get_answers_for_question
+from crowdjs_util import get_answers, get_questions, get_answers_for_question, get_task_data
 from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
@@ -17,13 +17,15 @@ import urllib2
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
 #they have been used
-@app.celery.task(name='compute_taboo_words')
-def compute_taboo_words(old_taboo_words, old_sentence, new_sentence, task_id,
+@app.celery.task(name='compute_taboo_words',
+                 queue='taboo-queue')
+def compute_taboo_words(old_sentence, new_sentence, task_id,
                         requester_id, put_task_data_url):
     nltk.download('punkt')
     nltk.download('stopwords')
 
-    old_taboo_words = pickle.loads(old_taboo_words)
+
+    old_taboo_words = pickle.loads(get_task_data(task_id))
                 
     print "FINDING TABOO WORDS"
     sys.stdout.flush()
