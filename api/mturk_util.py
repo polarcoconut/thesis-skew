@@ -80,7 +80,7 @@ def create_hits(category_id, task_id, num_hits):
             duration = datetime.timedelta(minutes=10),
             lifetime = datetime.timedelta(days=7),
             keywords = 'information extraction, events, natural language processing',
-            max_assignments = app.config['CONTROLLER_APQ'],
+            max_assignments = 1,
             approval_delay = 3600,
             qualifications = qualifications)[0]
             

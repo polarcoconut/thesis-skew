@@ -31,10 +31,10 @@ def test_controller(task_information, task_category_id):
 
     elif task_category_id == 0:
         task = make_recall_crowdjs_task(task_information)
-        return 0, task, app.config['CONTROLLER_BATCH_SIZE'], 0
+        return 0, task, app.config['CONTROLLER_GENERATE_BATCH_SIZE'], 0
 
     elif task_category_id == 1:
-        task = make_recall_crowdjs_task(some_examples_to_test_with,
+        task = make_precision_crowdjs_task(some_examples_to_test_with,
                                         task_information)
         return 1, task, len(some_examples_to_test_with), 0
 
@@ -73,11 +73,9 @@ def round_robin_controller(task_ids, task_categories, training_examples,
         
         task = make_recall_crowdjs_task(task_information)
                                         
-        num_hits = app.config['CONTROLLER_BATCH_SIZE']
+        num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return next_category['id'], task, num_hits, num_hits * next_category['price']
 
-    #If task_categories has one element in it, pick a category that
-    #can use previous training data
     if len(task_categories) % 3 == 1:
 
         last_batch = training_examples[-1]
@@ -85,7 +83,10 @@ def round_robin_controller(task_ids, task_categories, training_examples,
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        return next_category['id'], task, len(last_batch), len(last_batch)*next_category['price']
+        num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']
+        
+        return next_category['id'], task, num_hits, num_hits*next_category['price']
 
 
 #Pick the action corresponding to the distributino that the extractor performs
@@ -231,7 +232,7 @@ def uncertainty_sampling_controller(task_ids, task_categories,
         
         task = make_recall_crowdjs_task(task_information)
         
-        num_hits = app.config['CONTROLLER_BATCH_SIZE']
+        num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return 0, task, num_hits, num_hits * next_category['price']
     
     elif worst_task_category_id == 1:
@@ -249,7 +250,9 @@ def uncertainty_sampling_controller(task_ids, task_categories,
                 if training_label == 1:
                     positive_examples.append(training_example)
 
-        num_hits = app.config['CONTROLLER_BATCH_SIZE']
+        num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']
+
         selected_positive_examples = sample(positive_examples, num_hits)
         
         

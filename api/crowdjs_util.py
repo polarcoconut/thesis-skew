@@ -126,8 +126,7 @@ def make_recall_crowdjs_task(task_information):
         'question_description': 'Recall Question',
         'question_data': question_data,
         'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
-        'answers_per_question' : (app.config['CONTROLLER_BATCH_SIZE'] *
-                                  app.config['CONTROLLER_APQ']),
+        'answers_per_question' : app.config['CONTROLLER_GENERATE_BATCH_SIZE'],
         'unique_workers' : False}
     questions.append(question)
     
@@ -159,7 +158,8 @@ def make_precision_crowdjs_task(examples, task_information):
             'question_description': 'Precision Question %d' % i,
             'question_data': new_question_data,
             'requester_id' : app.config['CROWDJS_REQUESTER_ID'],
-            'answers_per_question' : app.config['CONTROLLER_APQ']}
+            'answers_per_question' : app.config[
+                'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']}
         questions.append(question)
         
 

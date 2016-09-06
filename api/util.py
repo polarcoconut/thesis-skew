@@ -435,18 +435,12 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     sys.stdout.flush()
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
-    #budget_left_over = budget - costSoFar
-    #cost_of_one_example = app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-    #budget_left_over = int(ceil(budget_left_over / cost_of_one_example))
-    #num_positive_examples_to_label = int(budget_left_over / 2)
-    #num_negative_examples_to_label = (budget_left_over -
-    #                                  num_positive_examples_to_label)
-
 
     num_positive_examples_to_label = int(
-        app.config['CONTROLLER_BATCH_SIZE'] / 2.0)
-    num_negative_examples_to_label = (app.config['CONTROLLER_BATCH_SIZE'] -
-                                      num_positive_examples_to_label)
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'] / 2.0)
+    num_negative_examples_to_label = (
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'] -
+        num_positive_examples_to_label)
     
 
     retrain(job_id, ['all'])
@@ -506,12 +500,12 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
         selected_examples += positive_examples
         selected_examples += sample(
             negative_examples,
-            app.config['CONTROLLER_BATCH_SIZE'] - len(positive_examples))
+            app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(positive_examples))
     elif negative_examples < num_negative_examples_to_label:
         selected_examples += negative_examples
         selected_examples += sample(
             positive_examples,
-            app.config['CONTROLLER_BATCH_SIZE'] - len(negative_examples))
+            app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(negative_examples))
     else:
         selected_examples += sample(positive_examples,
                                     num_positive_examples_to_label)
