@@ -35,7 +35,6 @@ def run_gather():
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
                 print '-'*60
-                print e
             finally:
                 release_lock()
                         
