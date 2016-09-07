@@ -76,7 +76,7 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
     print r.text
     sys.stdout.flush()
 
-    return taboo_words
+    #return taboo_words
     
 
 #Writes the model to a temporary file.
