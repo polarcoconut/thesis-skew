@@ -29,9 +29,9 @@ print "Loading redis and mongo"
 #from worker import conn
 #app.rq = Queue(connection = conn)
 
-print "Flush the cache"
-app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
-app.redis.flushdb()
+#print "Flush the cache"
+#app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
+#app.redis.flushdb()
 
 db = MongoEngine(app)
 
