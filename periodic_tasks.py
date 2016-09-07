@@ -11,19 +11,20 @@ def run_gather():
     jobs = Job.objects(status='Running')
 
     for job in jobs:
-        #FOR DEBUGGING PURPOSES
-        #job.lock = False
-        #job.save()
-        #raise Exception
-
-        if len(job.checkpoints.keys()) == 0:
-            continue
-
         lock_key = job.id
         redis_handle = redis.Redis.from_url(app.config['REDIS_URL'])
         
         acquire_lock = lambda: redis_handle.setnx(lock_key, '1')
         release_lock = lambda: redis_handle.delete(lock_key)
+
+        #FOR DEBUGGING PURPOSES
+        release_lock()
+        print "LOCK RELEASED"
+        raise Exception
+
+        if len(job.checkpoints.keys()) == 0:
+            continue
+
 
         if acquire_lock():
             try:
