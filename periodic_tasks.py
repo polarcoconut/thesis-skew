@@ -18,9 +18,9 @@ def run_gather():
         release_lock = lambda: redis_handle.delete(lock_key)
 
         #FOR DEBUGGING PURPOSES
-        release_lock()
-        print "LOCK RELEASED"
-        raise Exception
+        #release_lock()
+        #print "LOCK RELEASED"
+        #raise Exception
 
         if len(job.checkpoints.keys()) == 0:
             continue
