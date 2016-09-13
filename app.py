@@ -74,6 +74,12 @@ def status(job_id):
         'status.html',
         job_id = job_id)
 
+@app.route('/experiment_status/<experiment_id>')
+def experiment_status(experiment_id):
+    return render_template(
+        'experiment_status.html',
+        experiment_id = experiment_id)
+
 @app.route('/test/<task_id>/<task_category_id>')
 def test(task_id, task_category_id):
     return render_template(
@@ -134,3 +140,10 @@ api.add_resource(ChangeBudgetApi, '/change_budget')
 
 from api.util_api import CleanUpApi
 api.add_resource(CleanUpApi, '/cleanup')
+
+
+from api.experiment_api import ExperimentApi
+api.add_resource(ExperimentApi, '/experiment')
+
+from api.experiment_api import ExperimentStatusApi
+api.add_resource(ExperimentStatusApi, '/get_experiment_status')

@@ -6,7 +6,12 @@ import json
 import sys
 
 from schema.job import Job
-from mturk_util import delete_hits, create_hits
+
+from mturk_connection.Mturk_Connection import Mturk_Connection
+from mturk_connection.Mturk_Connection_Real import Mturk_Connection_Real
+from mturk_connection.Mturk_Connection_Sim import MTurk_Connection_Sim
+
+
 from util import getLatestCheckpoint, split_examples, parse_answers
 from crowdjs_util import get_answers, upload_questions
 
@@ -62,8 +67,6 @@ def gather(task_information, budget, job_id, checkpoint = None):
         print "loading checkpoint..."
         for task_id, task_category_id in zip(task_ids[0:-1],
                                           task_categories[0:-1]):
-            #print "loading task_id %s" % task_id
-            #sys.stdout.flush()
             
             answers = parse_answers(task_id, task_category_id)
             new_examples, new_labels = answers
@@ -72,6 +75,11 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
             
     job = Job.objects.get(id = job_id)
+
+    if experiment_id in job:
+        mturk_connection = MTurk_Connection_Sim(job.experiment_id)
+    else:
+        mturk_connection = MTurk_Connection_Real()
 
     if costSoFar >= budget:
         task_id = task_ids[-1]
@@ -83,7 +91,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
         if answers:
             print "Delete any existing leftover hits from turk"
             if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
-                delete_hits(job.current_hit_ids)
+                mturk_connection.delete_hits(job.current_hit_ids)
             job.status = 'Finished'
             job.save()
         return True
@@ -115,7 +123,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
         print "Delete any existing leftover hits from turk"
         if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
-            delete_hits(job.current_hit_ids)
+            mturk_connection.delete_hits(job.current_hit_ids)
         
         print "Deciding which category to do next"
         sys.stdout.flush()
@@ -141,7 +149,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
 
         #Upload assignments onto MTurk
         #number of workers per question is set in mturk layout
-        hit_ids = create_hits(category_id, task_id,
+        hit_ids = mturk_connection.create_hits(category_id, task_id,
                               num_hits)
         job.current_hit_ids = hit_ids
         job.save()

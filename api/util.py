@@ -164,6 +164,8 @@ def split_examples(task_ids, task_categories, positive_types = ['all'],
 #  only_sentence : return only the sentence, not all the other crowdsourced
 #                  details
 #
+#  return: examples, labels
+#
 def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
                   positive_types = ['all'], only_sentence = True):
 

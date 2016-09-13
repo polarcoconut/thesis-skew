@@ -120,6 +120,7 @@ class DevelopmentConfig(Config):
     }
 
     TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
+
     
 class Production(Config):
     DEBUG = False

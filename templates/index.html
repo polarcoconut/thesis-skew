@@ -64,6 +64,10 @@
       <input type="button" id="label-button" value="Test Label UI"/>
 
       <hr/>
+      <h2> Experiment with simulated data </h2>
+      <input type="button" id="experiment-button" value="Experiment!"/>
+      
+      <hr/>
       <h2>WARNING! THIS IS A LIVE BUTTON</h2>
       <input type="submit" value="Train an extractor!">
 
@@ -87,6 +91,11 @@
       }
       document.getElementById('label-button').onclick = function () {
 	  form.action = '/test_label_ui';
+	  form.submit();
+      }
+
+      document.getElementById('experiment-button').onclick = function () {
+	  form.action = '/experiment';
 	  form.submit();
       }
 

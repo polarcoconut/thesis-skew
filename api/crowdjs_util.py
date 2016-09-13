@@ -3,6 +3,48 @@ import requests
 import pickle
 import sys
 
+
+def submit_answer(task_id, worker_id, question_name, answer):
+    headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
+    submit_answer_request = {}
+    submit_answer_request['requester_id'] = app.config['CROWDJS_REQUESTER_ID']
+    submit_answer_request['task_id'] = task_id;
+    submit_answer_request['question_name'] = question_name;
+    submit_answer_request['worker_id'] = worker_id;
+    submit_answer_request['worker_source'] = 'mturk';
+    submit_answer_request['value'] = answer;
+
+    r = requests.put(app.config['CROWDJS_SUBMIT_ANSWER_URL'],
+                     headers=headers,
+                     json=submit_answer_request)
+
+    print "Here is the response"
+    print r.text
+    sys.stdout.flush()
+
+    return True
+
+
+def get_next_assignment(task_id, worker_id):
+    assign_crowdjs_url = app.config['CROWDJS_ASSIGN_URL']
+    assign_crowdjs_url += '?worker_id=';
+    assign_crowdjs_url += worker_id; 
+    assign_crowdjs_url += '&worker_source=mturk';
+    assign_crowdjs_url += '&task_id=';
+    assign_crowdjs_url += task_id;
+    assign_crowdjs_url += '&requester_id=';
+    assign_crowdjs_url += app.config['CROWDJS_REQUESTER_ID']
+    assign_crowdjs_url += '&preview=false';
+    assign_crowdjs_url += '&strategy=';
+    assign_crowdjs_url+= 'min_answers';
+
+    r = requests.get(assign_crowdjs_url)
+
+    data = r.json()
+
+    return data
+
+    
 def get_task_data(task_id):
     headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
     task_crowdjs_url = app.config['CROWDJS_GET_TASK_DATA_URL']
@@ -55,7 +97,6 @@ def upload_questions(task):
                      headers=headers,
                      json=task)
     print "Here is the response"
-    print app.config['CROWDJS_API_KEY']
     print r.text
     sys.stdout.flush()
     
