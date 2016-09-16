@@ -4,17 +4,15 @@ from controllers import round_robin_controller, uncertainty_sampling_controller
 import pickle
 import json
 import sys
+import cPickle
 
 from schema.job import Job
-
-from mturk_connection.Mturk_Connection import Mturk_Connection
-from mturk_connection.Mturk_Connection_Real import Mturk_Connection_Real
-from mturk_connection.Mturk_Connection_Sim import MTurk_Connection_Sim
+from schema.experiment import Experiment
 
 
-from util import getLatestCheckpoint, split_examples, parse_answers
+from util import getLatestCheckpoint, split_examples, parse_answers, retrain
 from crowdjs_util import get_answers, upload_questions
-
+from test_api import test_on_held_out_set
 
 @app.celery.task(name='restart')
 def restart(job_id):
@@ -76,8 +74,9 @@ def gather(task_information, budget, job_id, checkpoint = None):
             
     job = Job.objects.get(id = job_id)
 
-    if experiment_id in job:
-        mturk_connection = MTurk_Connection_Sim(job.experiment_id)
+    if 'experiment_id' in job:
+        mturk_connection = cPickle.loads(job.mturk_connection.read())
+        experiment = Experiment.objects.get(id = job.experiment_id)
     else:
         mturk_connection = MTurk_Connection_Real()
 
@@ -94,6 +93,17 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 mturk_connection.delete_hits(job.current_hit_ids)
             job.status = 'Finished'
             job.save()
+            if 'experiment_id' in job:
+                retrain(job_id, ['all'], task_ids)
+                (true_positives,
+                 false_positives,
+                 true_negatives,
+                 false_negatives,
+                 [precision, recall, f1]) = test_on_held_out_set(
+                     job_id, ['all'], experiment.test_set)
+                experiment.learning_curves[job_id].append(
+                    (precision, recall, f1))
+                experiment.save()
         return True
             
     else:
@@ -116,9 +126,23 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 
                 training_examples.append(new_examples)
                 training_labels.append(new_labels)
+
+                if 'experiment_id' in job:
+                    print "Computing current performance"
+                    sys.stdout.flush() 
+                    retrain(job_id, ['all'], task_ids)
+                    (true_positives,
+                     false_positives,
+                     true_negatives,
+                     false_negatives,
+                     [precision, recall, f1]) = test_on_held_out_set(
+                         job_id, ['all'], experiment.test_set)
+                    experiment.learning_curves[job_id].append(
+                        (precision, recall, f1))
+                    experiment.save()
             else:
                 print "Task not complete yet"
-                sys.stdout.flush()
+                sys.stdout.flush() 
                 return False
 
         print "Delete any existing leftover hits from turk"

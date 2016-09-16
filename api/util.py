@@ -498,12 +498,12 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
     selected_examples = []
     expected_labels = []
-    if positive_examples < num_positive_examples_to_label:
+    if len(positive_examples) < num_positive_examples_to_label:
         selected_examples += positive_examples
         selected_examples += sample(
             negative_examples,
             app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(positive_examples))
-    elif negative_examples < num_negative_examples_to_label:
+    elif len(negative_examples) < num_negative_examples_to_label:
         selected_examples += negative_examples
         selected_examples += sample(
             positive_examples,

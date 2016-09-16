@@ -16,6 +16,8 @@ class Config(object):
 
     REDIS_URL = os.environ['REDIS_URL']
 
+    RABBITMQ_BIGWIG_URL = os.environ['RABBITMQ_BIGWIG_URL']
+    
     MONGODB_SETTINGS = {    
         'db': dbname,
         'host': host,
@@ -98,7 +100,8 @@ class Config(object):
     CELERY_IMPORTS = ['api.util', 'api.train', 'periodic_tasks']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
     BROKER_POOL_LIMIT = 0
-
+    CELERYD_PREFETCH_MULTIPLIER = 1
+    CELERY_ACKS_LATE = True
 
 
     

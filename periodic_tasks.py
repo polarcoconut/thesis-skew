@@ -2,7 +2,6 @@ from api.train import restart
 from app import app
 from schema.job import Job
 import sys, os, traceback
-import redis
 
 @app.celery.task(name='run_gather')
 def run_gather():
@@ -10,12 +9,13 @@ def run_gather():
     jobs_checked = 0
     jobs = Job.objects(status='Running')
 
+    print "%d jobs currently running" % len(jobs)
+    
     for job in jobs:
         lock_key = job.id
-        redis_handle = redis.Redis.from_url(app.config['REDIS_URL'])
         
-        acquire_lock = lambda: redis_handle.setnx(lock_key, '1')
-        release_lock = lambda: redis_handle.delete(lock_key)
+        acquire_lock = lambda: app.redis.setnx(lock_key, '1')
+        release_lock = lambda: app.redis.delete(lock_key)
 
         #FOR DEBUGGING PURPOSES
         #release_lock()
@@ -30,7 +30,7 @@ def run_gather():
             try:
                 jobs_checked += 1
                 print "Running Gather for job %s" % job.id
-                restart(job.id)                
+                restart(str(job.id))                
             except Exception:
                 print "Exception:"
                 print '-'*60

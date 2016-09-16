@@ -8,11 +8,11 @@ class Experiment(db.DynamicDocument):
     control_strategy = db.StringField()
     num_runs = db.IntField()
 
-    precisions = db.ListField()
-    recalls = db.ListField()
-    fscores = db.ListField()
-
-    task_ids_for_simulation = db.ListField()
+    learning_curves = db.DictField()
+    
+    #Pickled dictionary where key is category id and value is
+    #list of file names
+    files_for_simulation = db.StringField()
     
 
     test_set = db.IntField()

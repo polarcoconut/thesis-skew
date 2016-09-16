@@ -26,19 +26,20 @@ sys.stdout.flush()
 mail = Mail(app)
 
 print "Loading redis and mongo"
-#from worker import conn
-#app.rq = Queue(connection = conn)
 
 #print "Flush the cache"
-#app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
+app.redis = redis.Redis.from_url(app.config['REDIS_URL'])
 #app.redis.flushdb()
 
 db = MongoEngine(app)
 
+
+
 print "Loading Celery"
 def make_celery(app):
-    celery = Celery(app.import_name, backend=app.config['REDIS_URL'],
-                    broker=app.config['REDIS_URL'])
+    #celery = Celery(app.import_name, backend=app.config['REDIS_URL'],
+    #                broker=app.config['REDIS_URL'])
+    celery = Celery(app.import_name, broker=app.config['RABBITMQ_BIGWIG_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
     class ContextTask(TaskBase):

@@ -41,8 +41,6 @@ job_status_parser.add_argument('job_id', type=str, required=True)
 
 
 
-retrain_status_parser = reqparse.RequestParser()
-retrain_status_parser.add_argument('job_id', type=str, required=True)
 
 
 class GatherExtractorApi(Resource):
@@ -189,6 +187,9 @@ class RetrainExtractorApi(Resource):
                       task_ids_to_train)
         return True
 
+
+retrain_status_parser = reqparse.RequestParser()
+retrain_status_parser.add_argument('job_id', type=str, required=True)
 
 class RetrainStatusApi(Resource):
     def get(self):

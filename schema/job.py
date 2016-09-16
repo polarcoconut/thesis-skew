@@ -20,3 +20,5 @@ class Job(db.DynamicDocument):
     control_strategy = db.StringField()
 
     experiment_id = db.StringField()
+
+    mturk_connection = db.FileField()

@@ -59,115 +59,18 @@
     <hr/>
     <h2> <b>Current Status:</b> <span id="job_status">...</span> </h2>
     <b> Experiment Id (save this somewhere!): </b> {{experiment_id}} <br/>
-    <b> Cost So Far: </b> <span id="costSoFar">...</span> <br/><br/>
-
-    <button id="pause">Pause the job</button>
-    <button id="restart">Restart the job</button>
 
     <hr/>
-    <h2> <b>Current Examples:</b></h2>
-    Label the following event types as positive examples, and all other types as negative:
-    <br/>
-    <input type="checkbox" id="view_types_all" value="all" checked> All events </input>
-    <input type="checkbox" id="view_types_past" value="past"> Past events </input>
-    <input type="checkbox" id="view_types_future" value="future"> Future events </input>
-    <input type="checkbox" id="view_types_general" value="general"> General/Hypothetical/Failing events </input>
-    <br/>
-    <input type="checkbox" id="view_details" value="general"> View Sentence Details (Trigger, Past Tense, etc...) </input>
-    <br/>
+    <h2> <b>Current Jobs:</b></h2>
 
-    <select id="train_task_ids_for_view" multiple size="10">
-    </select>
-    <br/>
-
-    <button id="refresh">View current examples</button>
-    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-refresh" style="visibility:hidden;"/>
-    <br/><br/>
-    <p> <b><span id="num_training_examples">0</span></b> training examples. </p>
-    Positive examples <span id=view_num_pos>(0) </span> : <br/>
-    <textarea id="positive_examples" rows="10" cols="100" wrap="soft">
-    </textarea><br/>
-    Negative examples <span id=view_num_neg>(0) </span> :<br/>
-    <textarea id="negative_examples" rows="10" cols="100" wrap="soft">
-    </textarea><br/>
-
-    Taboo words: <br/>
-    <textarea id="taboo_words" rows="10" cols="100" wrap="soft">
-    </textarea><br/>
+    <span id="current_jobs"> Initializing...</span>
 
     
     <hr/>
 
-    <h2><b> Current CNN Model: </b></h2>
-    Model currently trained using <b><span id="num_training_examples_in_model">0</span></b> examples. <br/>
+    <h2> <b> Learning Curves: </b></h2>
 
-    Train using the following event types as positive examples, and all other types as negative:
-    <br/>
-    <input type="checkbox" id="train_types_all" value="all" checked> All events </input>
-    <input type="checkbox" id="train_types_past" value="past"> Past events </input>
-    <input type="checkbox" id="train_types_future" value="future"> Future events </input>
-    <input type="checkbox" id="train_types_general" value="general"> General/Hypothetical/Failing events </input>
-    <br/>
-
-    Train using the results from the following tasks:
-    <br/>
-    <select id="train_task_ids" multiple size="10">
-    </select>
-    <br/>
-    
-    <span id="retrain_status"></span><br/>
-    <button id="retrain">Train the model (can take some time)</button>
-    <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-retrain" style="visibility:hidden;"/>
-    <br/><br/>
-
-    <hr/>
-    <h2><b>Test Current CNN Model:</b></h2>
-    Test using the following examples:
-    <select id="test_menu">
-      <option value="-1">Held-out set</option>
-      <option value="0">Nationality Test Set (Liu et al., 2016)</option>
-      <option value="1">Birth Test Set (Liu et al., 2016)</option>
-      <option value="2">LivedIn Test Set (Liu et al., 2016)</option>
-      <option value="3">Death Test Set (Liu et al., 2016)</option>
-      <option value="4">Movement of a Person Test set (Liu et al., 2016)</option>
-      <option value="5">Transfer of Money Test Set (TACKBP 2016)</option>
-      <option value="6">Broadcast Test Set (TACKBP 2016)</option>
-      <option value="7">Attack Test Set (TACKBP 2016)</option>
-      <option value="8">Contact Test Set (TACKBP 2016)</option>
-      <option value="9">Transfer of Ownership Test Set (TACKBP 2016)</option>
-      <option value="10">Death Test Set (From a different run of this system)</option>
-
-    </select><br/>
-    <button id="cv">Test!</button>     <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-cv" style="visibility:hidden;"/><br/>
-    F1: <span id="f1"></span> <br/>
-    Precision: <span id="precision"></span> <br/>
-    Recall: <span id="recall"></span> <br/>
-    True Positives:<br/>
-    <textarea id="true_positives" rows="5" cols="100" wrap="soft">
-    </textarea><br/>
-    False Positives:<br/>
-    <textarea id="false_positives" rows="5" cols="100" wrap="soft">
-    </textarea><br/>
-    True Negatives:<br/>
-    <textarea id="true_negatives" rows="5" cols="100" wrap="soft">
-    </textarea><br/>
-    False Negatives:<br/>
-    <textarea id="false_negatives" rows="5" cols="100" wrap="soft">
-    </textarea><br/>
-
-    <hr/>
-    <h2><b> Try a sentence: </b></h2>
-      <input id="test_sentence" type="text" size="100" placeholder="Enter a test sentence here."/> <br/>
-      <button id="test"></button>
-      <img src="https://homes.cs.washington.edu/~chrislin/ajax-loader.gif" id="submitting-indicator-test" style="visibility:hidden;"/>
-
-      <br/>
-      
-      <h3>Result:<span id="test_result"></span> </h3>
-
-      <br/>
-      <br/>
-      </div>
+    </div>
   </body>
 
 
@@ -190,26 +93,21 @@
     }
 
     xmlhttp_get_experiment_info.onreadystatechange = function() {
-	if (xmlhttp_experiment_job_info.readyState == 4 &&
-	    xmlhttp_experiment_job_info.status == 200) {
+	if (xmlhttp_get_experiment_info.readyState == 4 &&
+	    xmlhttp_get_experiment_info.status == 200) {
 	    console.log(xmlhttp_get_experiment_info.responseText);
 	    console.log(JSON.parse(xmlhttp_get_experiment_info.responseText));
 	    var  experiment_information  = JSON.parse(
 		xmlhttp_get_experiment_info.responseText);
-	    //job_information = pickle.loads(job_information_pickle);
 	    var task_information = experiment_information[0]
 	    var budget = experiment_information[1]
 	    var job_ids = experiment_information[2]
 	    var num_runs = experiment_information[3]
-	    var precisions = experiment_information[4]
-	    var recalls = experiment_information[5]
-	    var fscores = experiment_information[6]
-	    var control_strategy = experiment_information[7]
+	    var learning_curves = experiment_information[4]
+	    var control_strategy = experiment_information[5]
 
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
-	    document.getElementById(
-		'test').innerHTML = task_information[0] + "??";
 	    document.getElementById(
 		'event_definition').innerHTML = task_information[1];
 	    document.getElementById(
@@ -233,393 +131,23 @@
 	    document.getElementById(
 		'control_strategy').innerHTML = control_strategy;
 
-	    /*
-	    select_html = ''
-	    for (i = 0; i < task_ids.length; i++) {
-		if (typeof task_categories[i] === "object") {
-		    task_categories[i] = task_categories[i]['id']
-		}
-		select_html +=  '<option value="' + task_ids[i] + " " + task_categories[i] + '">' + task_ids[i] + " " + task_categories[i] + '</option>';
-	    }
-	    document.getElementById('train_task_ids').innerHTML = select_html;
-
-	    document.getElementById(
-		'train_task_ids_for_view').innerHTML = select_html;
-	    */
-
-	}
-    };
-
-    //
-    //GATHER STATUS CODE
-    //
-
-    var xmlhttp_refresh = new XMLHttpRequest();
-    document.getElementById("refresh").onclick = refresh;
-    function refresh() {
-	var refresh_url = '/gather_status';
-	//refresh_url += '?job_id={{job_id}}';
-	refresh_url += '?positive_types=dummytype';
-
-	if (document.getElementById('view_types_all').checked) {
-	    refresh_url += '&positive_types=';
-	    refresh_url += document.getElementById('view_types_all').value;
-	}
-	if (document.getElementById('view_types_past').checked) {
-	    refresh_url += '&positive_types=';
-	    refresh_url += document.getElementById('view_types_past').value;
-	}
-	if (document.getElementById('view_types_future').checked) {
-	    refresh_url += '&positive_types=';
-	    refresh_url += document.getElementById('view_types_future').value;
-	}
-	
-	if (document.getElementById('view_types_general').checked) {
-	    refresh_url += '&positive_types=';
-	    refresh_url += document.getElementById('view_types_general').value;
-	}
-
-	train_task_ids = document.getElementById(
-	    'train_task_ids_for_view').options;
-	for (var i=0; i < train_task_ids.length; i++) {
-	    option = train_task_ids[i];
-	    if (option.selected) {
-		selection = option.value.split(/[ ,]+/);
-		refresh_url += '&task_id=';
-		refresh_url += selection[0];
-		refresh_url += '&task_category=';
-		refresh_url += selection[1];
-	    }
-	}
-
-	console.log(refresh_url);
-	document.getElementById(
-	    'submitting-indicator-refresh').style.visibility = 'visible';
-	xmlhttp_refresh.open("GET", refresh_url, true);
-	xmlhttp_refresh.send();
-
-    }
-
-    xmlhttp_refresh.onreadystatechange = function() {
-	if (xmlhttp_refresh.readyState == 4 && xmlhttp_refresh.status == 200) {
-	    var status  = JSON.parse(xmlhttp_refresh.responseText);
-	    var num_training_examples = status[0];
-	    var positive_examples = status[1];
-	    var negative_examples = status[2];
-	    var taboo_words_pickles = status[3];
-
-	    console.log("taboo");
-	    console.log(taboo_words_pickles);
-	    
-	    var positive_examples_string = "";
-	    var negative_examples_string = "";
-	    var taboo_words_string = "";
-	    
-	    for (var i=0; i < positive_examples.length; i++) {
-		if (document.getElementById('view_details').checked) {
-		    positive_examples_string += positive_examples[i];
-		} else {
-		    positive_examples_string += positive_examples[i].split(
-			"\t")[0];
-		}
-		positive_examples_string += "\r\n";
-
-	    }
-	    for (var i=0; i < negative_examples.length; i++) {
-		if (document.getElementById('view_details').checked) {
-		    negative_examples_string += negative_examples[i];
-		} else {
-		    negative_examples_string += negative_examples[i].split(
-			"\t")[0];
-		}
-		negative_examples_string += "\r\n";
+	    job_id_html = '';
+	    for (i=0; i< job_ids.length; i++) {
+		job_id_html += '<a target="_blank" href="../status/' +
+		    job_ids[i] + '">' + job_ids[i] + '</a><br/>'
 	    }
 
-	    for (var i=0; i < taboo_words_pickles.length; i++) {
-
-		if (taboo_words_pickles[i] == "no_data") {
-		    taboo_words_string += "no_data"
-		} else {
-		    taboo_words_string += JSON.stringify(
-			pickle.loads(taboo_words_pickles[i]));
-		}
-		taboo_words_string += "\r\n";
-	    }
-
-	    
-	    console.log(num_training_examples);
-	    document.getElementById(
-		'num_training_examples').innerHTML = num_training_examples;
-	    document.getElementById(
-		'positive_examples').innerHTML = positive_examples_string;
-	    document.getElementById('view_num_pos').innerHTML = '(' + positive_examples.length + ')';
-	    document.getElementById(
-		'negative_examples').innerHTML = negative_examples_string;
-	    document.getElementById('view_num_neg').innerHTML = '(' + negative_examples.length + ')';
-
-	    document.getElementById(
-		'taboo_words').innerHTML = taboo_words_string;
-	    
-	    document.getElementById(
-	      'submitting-indicator-refresh').style.visibility = 'hidden';
-
-	}
-    };
-
-    //
-    // TEST CODE
-    //
-    var xmlhttp_test = new XMLHttpRequest();
-
-    document.getElementById("test").onclick = test;
-    function test() {
-	document.getElementById(
-	    'submitting-indicator-test').style.visibility = 'visible';
-	var test_url = '/test';
-	test_url += '?job_id={{job_id}}';
-	test_url += '&test_sentence=';
-	var test_sentence = document.getElementById("test_sentence").value;
-	console.log(test_sentence);
-	test_url += test_sentence;
-
-	xmlhttp_test.open("GET", test_url, true);
-	xmlhttp_test.send();
-
-    }
-
-    xmlhttp_test.onreadystatechange = function() {
-	if (xmlhttp_test.readyState == 4 && xmlhttp_test.status == 200) {
-	    var test_result = JSON.parse(xmlhttp_test.responseText);
-	    console.log(test_result);
-	    if (test_result == 0){
-		document.getElementById(
-		    'test_result').innerHTML = "<font color='red'>NO</font>";
-	    } else {
-		document.getElementById(
-		    'test_result').innerHTML = "<font color='green'>YES</font>";
-	    }
-	    document.getElementById(
-	      'submitting-indicator-test').style.visibility = 'hidden';
+	    document.getElementById('current_jobs').innerHTML = job_id_html;
 
 	}
     };
 
 
-    //
-    // Cross validation Code
-    //
-    var xmlhttp_cv = new XMLHttpRequest();
 
-    document.getElementById("cv").onclick = cv;
-    function cv() {
-	var test_menu = document.getElementById("test_menu");
-	var cv_url = '/cv';
-	cv_url += '?job_id={{job_id}}';
-	cv_url += '&test_set=';
-	cv_url += (test_menu.selectedIndex-1);
-	
-	cv_url += '&positive_types=dummytype';
-	if (document.getElementById('train_types_all').checked) {
-	    cv_url += '&positive_types=';
-	    cv_url += document.getElementById('train_types_all').value;
-	}
-	if (document.getElementById('train_types_past').checked) {
-	    cv_url += '&positive_types=';
-	    cv_url += document.getElementById('train_types_past').value;
-	}
-	if (document.getElementById('train_types_future').checked) {
-	    cv_url += '&positive_types=';
-	    cv_url += document.getElementById('train_types_future').value;
-	}
-	
-	if (document.getElementById('train_types_general').checked) {
-	    cv_url += '&positive_types=';
-	    cv_url += document.getElementById('train_types_general').value;
-	}
-
-	document.getElementById(
-	    'submitting-indicator-cv').style.visibility = 'visible';
-	xmlhttp_cv.open("GET", cv_url, true);
-	xmlhttp_cv.send();
-
-    }
-
-    xmlhttp_cv.onreadystatechange = function() {
-	if (xmlhttp_cv.readyState == 4 && xmlhttp_cv.status == 200) {
-	    var cv_result = JSON.parse(xmlhttp_cv.responseText);
-
-	    var true_positives = cv_result[0]
-	    var false_positives = cv_result[1]
-	    var true_negatives = cv_result[2]
-	    var false_negatives = cv_result[3]
-	    var stats = cv_result[4]
-	    var precision = stats[0]
-	    var recall = stats[1]
-	    var f1 = stats[2]
-
-	    var test_menu = document.getElementById("test_menu");
-	    document.getElementById(
-		'true_positives').innerHTML = '';
-	    document.getElementById(
-		'false_positives').innerHTML = '';
-	    document.getElementById(
-		'true_negatives').innerHTML = '';
-	    document.getElementById(
-		'false_negatives').innerHTML = '';
-	    
-	    if (test_menu.selectedIndex == 0 || test_menu.selectedIndex>5) {
-		var true_positives_string = "";
-		var false_positives_string = "";
-		var true_negatives_string = "";
-		var false_negatives_string = "";
-		
-		for (var i=0; i < true_positives.length; i++) {
-		    true_positives_string += true_positives[i];
-		    true_positives_string += "\r\n";
-		}
-		for (var i=0; i < false_positives.length; i++) {
-		    false_positives_string += false_positives[i];
-		    false_positives_string += "\r\n";
-		}
-		for (var i=0; i < false_negatives.length; i++) {
-		    false_negatives_string += false_negatives[i];
-		    false_negatives_string += "\r\n";
-		}
-		for (var i=0; i < true_negatives.length; i++) {
-		    true_negatives_string += true_negatives[i];
-		    true_negatives_string += "\r\n";
-		}
-		document.getElementById(
-		    'true_positives').innerHTML = true_positives_string;
-		document.getElementById(
-		    'false_positives').innerHTML = false_positives_string;
-		document.getElementById(
-		    'true_negatives').innerHTML = true_negatives_string;
-		document.getElementById(
-		    'false_negatives').innerHTML = false_negatives_string;
-
-	    }
-
-	    
-	    
-	    
-	    console.log(cv_result);
-	    
-	    document.getElementById(
-	      'submitting-indicator-cv').style.visibility = 'hidden';
-
-
-	    document.getElementById(
-		'precision').innerHTML = precision;
-	    document.getElementById(
-		'recall').innerHTML = recall;
-	    document.getElementById(
-		'f1').innerHTML = f1;
-	}
-    };
-
-
-
-    //
-    //RETRAIN CODE
-    //
-    var xmlhttp_retrain = new XMLHttpRequest();
-    
-    document.getElementById("retrain").onclick = retrain;
-    function retrain() {
-
-	var retrain_url = '/retrain';
-	retrain_url += '?job_id={{job_id}}';
-    
-	retrain_url += '&positive_types=dummytype';
-
-	if (document.getElementById('train_types_all').checked) {
-	    retrain_url += '&positive_types=';
-	    retrain_url += document.getElementById('train_types_all').value;
-	}
-	if (document.getElementById('train_types_past').checked) {
-	    retrain_url += '&positive_types=';
-	    retrain_url += document.getElementById('train_types_past').value;
-	}
-	if (document.getElementById('train_types_future').checked) {
-	    retrain_url += '&positive_types=';
-	    retrain_url += document.getElementById('train_types_future').value;
-	}
-	
-	if (document.getElementById('train_types_general').checked) {
-	    retrain_url += '&positive_types=';
-	    retrain_url += document.getElementById('train_types_general').value;
-	}
-	
-
-	train_task_ids = document.getElementById('train_task_ids').options;
-	for (var i=0; i < train_task_ids.length; i++) {
-	    option = train_task_ids[i];
-	    if (option.selected) {
-		selected_task_id = option.value.split(/[ ,]+/)[0];
-		retrain_url += '&task_ids_to_train=';
-		retrain_url += selected_task_id;
-	    }
-	}
-
-	document.getElementById(
-	    'submitting-indicator-retrain').style.visibility = 'visible';
-	document.getElementById(
-	    'retrain').disabled = true;
-	console.log(retrain_url);
-	xmlhttp_retrain.open("GET", retrain_url, true);
-	xmlhttp_retrain.send();
-
-    }
-
-    xmlhttp_retrain.onreadystatechange = function() {
-	if (xmlhttp_retrain.readyState == 4 && xmlhttp_retrain.status == 200) {
-	    var response = JSON.parse(xmlhttp_retrain.responseText);
-	    console.log(response);
-	    document.getElementById(
-		'retrain_status').innerHTML = 'Retraining...';
-	    
-	    setTimeout(check_retrain_status,10000);
-	    
-	}
-    };
-
-    var xmlhttp_retrain_status = new XMLHttpRequest();
-    var retrain_status_url = '/retrain_status';
-    retrain_status_url += '?job_id={{job_id}}';
-
-    xmlhttp_retrain_status.onreadystatechange = function() {
-	if (xmlhttp_retrain_status.readyState == 4 &&
-	    xmlhttp_retrain_status.status == 200) {
-	    var response = JSON.parse(xmlhttp_retrain_status.responseText);
-	    console.log(response);
-	    if (response >= 0) {
-		document.getElementById(
-		    'num_training_examples_in_model').innerHTML = response;
-		document.getElementById(
-		    'retrain_status').innerHTML = 'Model Ready.';
-		document.getElementById(
-		    'submitting-indicator-retrain').style.visibility = 'hidden';
-		document.getElementById(
-		    'retrain').disabled = false;
-	    } else {
-		setTimeout(check_retrain_status, 10000);
-
-	    }
-	    
-	}
-    };
-
-    function check_retrain_status() {
-	xmlhttp_retrain_status.open("GET", retrain_status_url, true);
-	xmlhttp_retrain_status.send();
-    }
 
 
     function on_window_load() {
 	get_experiment_info();
-	//check_retrain_status();
-	//check_job_status();
     }
 
     window.onload = on_window_load;

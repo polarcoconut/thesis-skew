@@ -12,11 +12,11 @@ from boto.mturk.question import HTMLQuestion
 from boto.mturk.connection import MTurkRequestError
 import sys
 import datetime
-from mturk_connection.MTurk_Connection import MTurk_Connection
+from mturk_connection import MTurk_Connection
 
 class MTurk_Connection_Real(MTurk_Connection):
     
-    def delete_hits(hits_to_delete):
+    def delete_hits(self, hits_to_delete):
         print "Connecting to Turk host at"
         print app.config['MTURK_HOST']
         sys.stdout.flush()
@@ -36,7 +36,7 @@ class MTurk_Connection_Real(MTurk_Connection):
         return True
 
     #task_id is the crowd_js assigned task id.
-    def create_hits(category_id, task_id, num_hits):
+    def create_hits(self, category_id, task_id, num_hits):
 
         print "Connecting to Turk host at"
         print app.config['MTURK_HOST']
