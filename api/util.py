@@ -5,6 +5,7 @@ import json
 import requests
 from app import app
 from schema.job import Job
+from schema.gold_extractor import Gold_Extractor
 from crowdjs_util import get_answers, get_questions, get_answers_for_question, get_task_data
 from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
@@ -12,6 +13,7 @@ from ml.extractors.cnn_core.computeScores import computeScores
 from random import sample, shuffle
 from math import floor, ceil
 import urllib2
+import uuid
 
 
 #old_taboo_words is a python pickle that is actually a dictionary
@@ -81,20 +83,37 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
 
 #Writes the model to a temporary file.
 #The purpose of this is so tensorflow can read the model
-def write_model_to_file(job_id):
-    job = Job.objects.get(id = job_id)
-    
-    temp_model_file_handle = open('temp_model_file', 'wb')
-    temp_model_file_handle.write(job.model_file)
-    temp_model_file_handle.close()
-    
-    
-    temp_model_meta_file_handle = open('temp_model_file.meta', 'wb')
-    temp_model_meta_file_handle.write(job.model_meta_file)
-    temp_model_meta_file_handle.close()
+def write_model_to_file(job_id = None, gold_extractor = None):
 
+    temp_model_file_name = '/temp_models/%s' % str(uuid.uuid4())
+    if not job_id == None:
+        job = Job.objects.get(id = job_id)
+        
+        temp_model_file_handle = open(temp_model_file_name, 'wb')
+        temp_model_file_handle.write(job.model_file)
+        temp_model_file_handle.close()
+        
+        
+        temp_model_meta_file_handle = open('%s.meta' % temp_model_file_name,
+                                           'wb')
+        temp_model_meta_file_handle.write(job.model_meta_file)
+        temp_model_meta_file_handle.close()
+    elif not gold_extractor == None:
+        gold_extractor = Gold_Extractor.objects.get(name = gold_extractor)
+        
+        temp_model_file_handle = open(temp_model_file_name, 'wb')
+        temp_model_file_handle.write(gold_extractor.model_file.read())
+        temp_model_file_handle.close()
+        
+        
+        temp_model_meta_file_handle = open('%s.meta' % temp_model_file_name,
+                                           'wb')
+        temp_model_meta_file_handle.write(gold_extractor.model_meta_file.read())
+        temp_model_meta_file_handle.close()
+        
+    
 
-    return 'temp_model_file'
+    return temp_model_file_name
 
 
 
@@ -500,21 +519,29 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     expected_labels = []
     if len(positive_examples) < num_positive_examples_to_label:
         selected_examples += positive_examples
+        expected_labels += [1 for i in range(len(positive_examples))]
         selected_examples += sample(
             negative_examples,
             app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(positive_examples))
+        expected_labels += [0 for i in range(
+                app.config['CONTROLLER_LABELING_BATCH_SIZE']-
+            len(positive_examples))]
     elif len(negative_examples) < num_negative_examples_to_label:
         selected_examples += negative_examples
+        expected_labels += [0 for i in range(len(negative_examples))]
         selected_examples += sample(
             positive_examples,
             app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(negative_examples))
+        expected_labels += [1 for i in range(
+            app.config['CONTROLLER_LABELING_BATCH_SIZE']-
+            len(negative_examples))]
     else:
         selected_examples += sample(positive_examples,
                                     num_positive_examples_to_label)
-        expected_labels.append(1)
+        expected_labels += [1 for i in range(num_positive_examples_to_label)]
         selected_examples += sample(negative_examples,
                                     num_negative_examples_to_label)
-        expected_labels.append(0)
+        expected_labels += [0 for i in range(num_negative_examples_to_label)]
 
     print "Shuffling examples from the corpus"
     sys.stdout.flush()

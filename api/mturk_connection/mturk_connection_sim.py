@@ -2,7 +2,7 @@ from app import app
 import sys
 from mturk_connection import MTurk_Connection
 from api.crowdjs_util import get_next_assignment, submit_answer, get_answers
-from api.util import parse_answers
+from api.util import parse_answers, write_model_to_file
 from api.ml.extractors.cnn_core.train import train_cnn
 from api.ml.extractors.cnn_core.test import test_cnn
 from random import shuffle
@@ -11,12 +11,13 @@ import pickle
 import json
 from schema.job import Job
 from schema.experiment import Experiment
+from schema.gold_extractor import Gold_Extractor
 import cPickle
 
 class MTurk_Connection_Sim(MTurk_Connection):
 
 
-    def __init__(self, experiment_id, job_id, model_file_name, vocabulary):
+    def __init__(self, experiment_id, job_id):
 
         print "Initializing Simulated Turk"
         sys.stdout.flush()
@@ -24,6 +25,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
         self.job_id = job_id
 
         experiment = Experiment.objects.get(id=experiment_id)
+        
         files_for_simulation = pickle.loads(experiment.files_for_simulation)
 
         self.modify_data = {}
@@ -66,9 +68,16 @@ class MTurk_Connection_Sim(MTurk_Connection):
         print "Done getting generate and modify data ready"
         sys.stdout.flush()
 
+        
+        gold_extractor = Gold_Extractor.objects.get(
+            name=experiment.gold_extractor)
+
+        model_file_name = write_model_to_file(
+            gold_extractor = gold_extractor.name)
+        
         self.model_file_name = model_file_name
         self.model_meta_file_name = "{}.meta".format(model_file_name)
-        self.vocabulary = vocabulary
+        self.vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
         
 
     def delete_hits(self, task_id):
@@ -90,6 +99,10 @@ class MTurk_Connection_Sim(MTurk_Connection):
             worker_id = str(uuid.uuid4())
             
             next_assignment_data = get_next_assignment(task_id, worker_id)
+
+            print next_assignment_data
+            sys.stdout.flush()
+
             next_assignment_question_data = next_assignment_data[
                 'question_data'].split('\t')
             next_assignment_question_name = next_assignment_data[

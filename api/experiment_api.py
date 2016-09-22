@@ -9,6 +9,7 @@ import sys
 import uuid
 from schema.job import Job
 from schema.experiment import Experiment
+from schema.gold_extractor import Gold_Extractor
 from util import parse_task_information, retrain, getLatestCheckpoint, split_examples, parse_answers, write_model_to_file
 from crowdjs_util import get_task_data
 from ml.extractors.cnn_core.parse import parse_angli_test_data
@@ -51,13 +52,14 @@ class ExperimentApi(Resource):
             0: ['data/training_data/data_for_simulation/death_positives'],
             1: ['data/training_data/data_for_simulation/death_negatives']}
         files_for_simulation = pickle.dumps(files_for_simulation)
-        
+         
         experiment = Experiment(
             job_ids = [],
             task_information = pickle.dumps((task_information, budget)),
             num_runs = num_runs,
             control_strategy = control_strategy,
             test_set = 3,
+            gold_extractor = 'death',
             files_for_simulation = files_for_simulation,
             learning_curves= {})
 
@@ -78,8 +80,39 @@ def run_experiment(experiment_id):
 
     (task_information, budget) = pickle.loads(experiment.task_information)
 
-    print "Train a classifier using angli's data."
-    sys.stdout.flush()
+
+    if len(Gold_Extractor.objects(name=experiment.gold_extractor)) < 1:
+        train_gold_extractor(experiment.gold_extractor)
+    
+    for i in range(experiment.num_runs):
+
+
+        job = Job(task_information = experiment.task_information,
+                  num_training_examples_in_model = -1,
+                  current_hit_ids = [],
+                  checkpoints = {},
+                  status = 'Running',
+                  control_strategy = experiment.control_strategy,
+                  experiment_id = experiment_id)
+        job.save()
+
+        job_id = str(job.id)
+
+        mturk_connection = cPickle.dumps(
+            MTurk_Connection_Sim(experiment_id, job_id))
+        job.mturk_connection.put(mturk_connection)
+        job.save()
+
+        
+        experiment.job_ids.append(job_id)
+        experiment.learning_curves[job_id] = []
+        experiment.save()
+
+        gather(task_information, budget, job_id)
+
+
+
+def train_gold_extractor(name_of_new_gold_extractor):
 
     pos_training_data_file = open(
         'data/training_data/train_CS_MJ_pos_comb_new_feature_died', 'r')
@@ -106,33 +139,22 @@ def run_experiment(experiment_id):
         ([1 for e in training_positive_examples] +
          [0 for e in training_negative_examples]))
 
-    for i in range(experiment.num_runs):
+    model_file_handle = open(model_file_name, 'rb')
+    #model_binary = model_file_handle.read()
 
+    model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
+    #model_meta_binary = model_meta_file_handle.read()
 
-        job = Job(task_information = experiment.task_information,
-                  num_training_examples_in_model = -1,
-                  current_hit_ids = [],
-                  checkpoints = {},
-                  status = 'Running',
-                  control_strategy = experiment.control_strategy,
-                  experiment_id = experiment_id)
-        job.save()
+    gold_extractor = Gold_Extractor(name=name_of_new_gold_extractor,
+                                    vocabulary = cPickle.dumps(vocabulary))
 
-        job_id = str(job.id)
+    gold_extractor.model_file.put(model_file_handle)
+    gold_extractor.model_meta_file.put(model_meta_file_handle)
 
-        mturk_connection = cPickle.dumps(
-            MTurk_Connection_Sim
-            (experiment_id, job_id, model_file_name, vocabulary))
-        job.mturk_connection.put(mturk_connection)
-        job.save()
+    gold_extractor.save()
+
 
         
-        experiment.job_ids.append(job_id)
-        experiment.learning_curves[job_id] = []
-        experiment.save()
-
-        gather(task_information, budget, job_id)
-
 experiment_status_parser = reqparse.RequestParser()
 experiment_status_parser.add_argument('experiment_id', type=str, required=True)
 
