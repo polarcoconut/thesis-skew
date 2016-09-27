@@ -241,14 +241,19 @@ def uncertainty_sampling_controller(task_ids, task_categories,
 
         next_category = app.config['EXAMPLE_CATEGORIES'][1]
 
-        positive_examples = []
-        
-        for training_example_set, training_label_set in zip(
-                training_examples, training_labels):
-            for training_example, training_label in zip(
-                    training_example_set, training_label_set):
-                if training_label == 1:
-                    positive_examples.append(training_example)
+        #positive_examples = []
+
+        generate_task_ids = categories_to_examples[0]
+        positive_examples, negative_examples = split_examples(
+                generate_task_ids,
+                [0 for i in generate_task_ids],
+                ['all'])
+        #for training_example_set, training_label_set in zip(
+        #        training_examples, training_labels):
+        #    for training_example, training_label in zip(
+        #            training_example_set, training_label_set):
+        #        if training_label == 1:
+        #            positive_examples.append(training_example)
 
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
             'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']

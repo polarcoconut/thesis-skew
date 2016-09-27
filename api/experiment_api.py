@@ -94,6 +94,9 @@ def run_experiment(experiment_id):
                   status = 'Running',
                   control_strategy = experiment.control_strategy,
                   experiment_id = experiment_id)
+
+        #job.model_file.put("placeholder")
+        #job.model_meta_file.put("placeholder")
         job.save()
 
         job_id = str(job.id)
@@ -108,8 +111,13 @@ def run_experiment(experiment_id):
         experiment.learning_curves[job_id] = []
         experiment.save()
 
-        gather(task_information, budget, job_id)
+        lock_key = job.id        
+        acquire_lock = lambda: app.redis.setnx(lock_key, '1')
+        release_lock = lambda: app.redis.delete(lock_key)
 
+        acquire_lock()
+        gather(task_information, budget, job_id)
+        release_lock()
 
 
 def train_gold_extractor(name_of_new_gold_extractor):
@@ -172,3 +180,59 @@ class ExperimentStatusApi(Resource):
                 experiment.num_runs,
                 experiment.learning_curves,
                 experiment.control_strategy]
+
+
+
+experiment_analyze_parser = reqparse.RequestParser()
+experiment_analyze_parser.add_argument('experiment_id', type=str, required=True)
+
+class ExperimentAnalyzeApi(Resource):
+    def get(self):
+
+        args = experiment_analyze_parser.parse_args()
+        experiment_id = args['experiment_id']
+
+        experiment = Experiment.objects.get(id=experiment_id)
+
+        precisions = []
+        recalls = []
+        f1s = []
+        for job_id in experiment.job_ids:
+            learning_curve = experiment.learning_curves[job_id]
+
+            print len(learning_curve)
+            #This initialization should only occur once
+            if len(precisions) == 0:
+                precisions = [[] for i in range(len(learning_curve))]
+                recalls = [[] for i in range(len(learning_curve))]
+                f1s = [[] for i in range(len(learning_curve))]
+                                   
+            for point_index, point in zip(range(len(learning_curve)),
+                                          learning_curve):
+                precision, recall, f1 = point
+                precisions[point_index].append(precision)
+                recalls[point_index].append(recall)
+                f1s[point_index].append(f1)
+            
+        precisions = [
+            float(sum(numbers)) / len(numbers) for numbers in precisions]
+        recalls = [
+            float(sum(numbers)) / len(numbers) for numbers in recalls]
+        f1s = [
+            float(sum(numbers)) / len(numbers) for numbers in f1s]
+        number_of_labels = [50 * i for i in range(len(f1s))]
+
+
+        precision_curve = []
+        recall_curve =[]
+        f1_curve = []
+        
+        for x,precision,recall,f1 in zip(number_of_labels,
+                                         precisions,
+                                         recalls,
+                                         f1s):
+            precision_curve.append({"x" : x, "y" :precision})
+            recall_curve.append({"x" : x, "y" : recall}) 
+            f1_curve.append({"x" : x, "y" : f1}) 
+
+        return [precision_curve, recall_curve, f1_curve]

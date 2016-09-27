@@ -12,6 +12,18 @@
        overflow:    -moz-scrollbars-horizontal;
        }
      </style>
+
+     <script src="//d3js.org/d3.v3.min.js"></script>
+     <script src="//vega.github.io/vega/vega.js"></script>
+     <script src="//vega.github.io/vega-lite/vega-lite.js"></script>
+     <script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+     
+     <style media="screen">
+       /* Add space between vega-embed links  */
+       .vega-actions a {
+       margin-right: 5px;
+       }
+     </style>
   </head>
   <body>
     <div class="container">
@@ -69,8 +81,21 @@
     <hr/>
 
     <h2> <b> Learning Curves: </b></h2>
+    <button id="analyze">
+      Analyze and Get Learning Curves</button>
+    <br/>
+    <b>Precision</b>
+    <div id="precision"></div>
+<br/>
+    <b>Recall</b>
+    <div id="recall"></div>
+<br/>
+    <b>F1</b>
+    <div id="f1"></div>
 
+    
     </div>
+
   </body>
 
 
@@ -80,7 +105,7 @@
 
  
 
-    //GET JOB INFO CODE
+    //GET EXPERIMENT INFO CODE
 
     var xmlhttp_get_experiment_info = new XMLHttpRequest();
 
@@ -143,7 +168,75 @@
     };
 
 
+    function draw_graphs(type, data) {
+	console.log("drawing the graph");
+	var vlSpec = {
+	    "data": {
+		"values": data
+	    },
+	    "mark": "line",
+	    "encoding": {
+		"y": {"field": "y",
+		      "type": "quantitative",
+		      "title" : type,
+		      "axis": {
+			  "format": ".2f" }
+		     },
+		"x": {
+		    "field": "x",
+		    "type": "quantitative",
+		    "numberFormat": ".0f",
+		    "axis": {
+			"format" :".0f",
+			"title": "Number of Labels"
+		    }
+		}
+	    }
+	};
+	    
+	var embedSpec = {
+	    mode: "vega-lite", 
+	    spec: vlSpec
+	};
+	
+	vg.embed("#" + type, embedSpec, function(error, result) {
+	});
+	
+    }
 
+
+
+    //GET EXPERIMENT INFO CODE
+
+    var xmlhttp_analyze_experiment = new XMLHttpRequest();
+
+    function analyze_experiment() {
+	var analyze_experiment_url = '/analyze_experiment?experiment_id=';
+	analyze_experiment_url = analyze_experiment_url + '{{experiment_id}}';
+	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
+	xmlhttp_analyze_experiment.send();
+
+    }
+
+    xmlhttp_analyze_experiment.onreadystatechange = function() {
+	if (xmlhttp_analyze_experiment.readyState == 4 &&
+	    xmlhttp_analyze_experiment.status == 200) {
+	    console.log(xmlhttp_analyze_experiment.responseText);
+	    console.log(JSON.parse(xmlhttp_analyze_experiment.responseText));
+	    var analysis  = JSON.parse(
+		xmlhttp_analyze_experiment.responseText);
+	    
+	    var precision_curve = analysis[0];
+	    var recall_curve = analysis[1];
+	    var f1_curve = analysis[2];
+
+	    draw_graphs("precision", precision_curve);
+	    draw_graphs("recall", recall_curve);
+	    draw_graphs("f1", f1_curve);
+	}
+    };
+
+    document.getElementById('analyze').onclick = analyze_experiment;
 
 
     function on_window_load() {

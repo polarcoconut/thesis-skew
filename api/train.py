@@ -5,7 +5,7 @@ import pickle
 import json
 import sys
 import cPickle
-
+import inspect
 from schema.job import Job
 from schema.experiment import Experiment
 
@@ -80,7 +80,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
     else:
         mturk_connection = MTurk_Connection_Real()
 
-    if costSoFar >= budget:
+    if costSoFar >= budget and not job.status == 'Finished':
         task_id = task_ids[-1]
         category_id = task_categories[-1]
         
@@ -102,7 +102,7 @@ def gather(task_information, budget, job_id, checkpoint = None):
                  [precision, recall, f1]) = test_on_held_out_set(
                      job_id, ['all'], experiment.test_set)
                 experiment.learning_curves[job_id].append(
-                    (precision, recall, f1))
+                    (task_id, precision, recall, f1))
                 experiment.save()
         return True
             
@@ -137,8 +137,10 @@ def gather(task_information, budget, job_id, checkpoint = None):
                      false_negatives,
                      [precision, recall, f1]) = test_on_held_out_set(
                          job_id, ['all'], experiment.test_set)
+                    curframe = inspect.currentframe()
+                    calframe = inspect.getouterframes(curframe, 2)
                     experiment.learning_curves[job_id].append(
-                        (precision, recall, f1))
+                        (task_id,  calframe[1][3], precision, recall, f1))
                     experiment.save()
             else:
                 print "Task not complete yet"

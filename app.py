@@ -148,3 +148,6 @@ api.add_resource(ExperimentApi, '/experiment')
 
 from api.experiment_api import ExperimentStatusApi
 api.add_resource(ExperimentStatusApi, '/get_experiment_status')
+
+from api.experiment_api import ExperimentAnalyzeApi
+api.add_resource(ExperimentAnalyzeApi, '/analyze_experiment')

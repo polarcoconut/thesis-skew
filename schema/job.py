@@ -3,8 +3,8 @@ from app import db
 class Job(db.DynamicDocument):
     task_information = db.StringField()
 
-    model_file = db.BinaryField()
-    model_meta_file = db.BinaryField()
+    model_file = db.StringField()
+    model_meta_file = db.StringField()
 
     vocabulary = db.StringField()
     num_training_examples_in_model = db.IntField()
@@ -22,3 +22,6 @@ class Job(db.DynamicDocument):
     experiment_id = db.StringField()
 
     mturk_connection = db.FileField()
+
+    exceptions = db.ListField()
+    

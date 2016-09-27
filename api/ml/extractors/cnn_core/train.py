@@ -72,13 +72,19 @@ def train_cnn(training_sentences, training_labels):
     # Training
     # ==================================================
 
+    #with tf.Graph().as_default(), tf.device('/gpu:2'):
     with tf.Graph().as_default():
+        #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.10,
+        #                            allow_growth = True)
+        gpu_options = tf.GPUOptions(allow_growth = True)
         session_conf = tf.ConfigProto(
           allow_soft_placement=FLAGS.allow_soft_placement,
-            log_device_placement=FLAGS.log_device_placement)
+            log_device_placement=FLAGS.log_device_placement,
+            gpu_options = gpu_options)
             #intra_op_parallelism_threads=90,
             #inter_op_parallelism_threads=90)
         sess = tf.Session(config=session_conf)
+        
         with sess.as_default():
             cnn = TextCNN(
                 sequence_length=x_train.shape[1],

@@ -35,6 +35,8 @@ def run_gather():
                 print "Exception:"
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
+                job.exceptions.append(traceback.format_exc())
+                job.save()
                 print '-'*60
             finally:
                 release_lock()

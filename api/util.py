@@ -7,6 +7,7 @@ from app import app
 from schema.job import Job
 from schema.gold_extractor import Gold_Extractor
 from crowdjs_util import get_answers, get_questions, get_answers_for_question, get_task_data
+from s3_util import insert_model_into_s3
 from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
@@ -85,18 +86,23 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
 #The purpose of this is so tensorflow can read the model
 def write_model_to_file(job_id = None, gold_extractor = None):
 
-    temp_model_file_name = '/temp_models/%s' % str(uuid.uuid4())
+    temp_model_file_name = 'temp_models/%s' % str(uuid.uuid4())
+
+
     if not job_id == None:
         job = Job.objects.get(id = job_id)
-        
+
+        model_file = urllib2.urlopen(job.model_file)
+        model_meta_file =  urllib2.urlopen(job.model_meta_file)
+    
         temp_model_file_handle = open(temp_model_file_name, 'wb')
-        temp_model_file_handle.write(job.model_file)
+        temp_model_file_handle.write(model_file.read())
         temp_model_file_handle.close()
         
         
         temp_model_meta_file_handle = open('%s.meta' % temp_model_file_name,
                                            'wb')
-        temp_model_meta_file_handle.write(job.model_meta_file)
+        temp_model_meta_file_handle.write(model_meta_file.read())
         temp_model_meta_file_handle.close()
     elif not gold_extractor == None:
         gold_extractor = Gold_Extractor.objects.get(name = gold_extractor)
@@ -409,20 +415,28 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
          [0 for e in training_negative_examples]))
 
 
-    model_file_handle = open(model_file_name, 'rb')
-    model_binary = model_file_handle.read()
+    #model_file_handle = open(model_file_name, 'rb')
+    #model_binary = model_file_handle.read()
 
-    model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
-    model_meta_binary = model_meta_file_handle.read()
+    #model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
+    #model_meta_binary = model_meta_file_handle.read()
 
     print "Saving the model"
     print job_id
     sys.stdout.flush()
 
+    model_url, model_meta_url = insert_model_into_s3(
+        model_file_name,
+        "{}.meta".format(model_file_name))
     job = Job.objects.get(id=job_id)
     job.vocabulary = pickle.dumps(vocabulary)
-    job.model_file = model_binary
-    job.model_meta_file = model_meta_binary
+    #job.model_file.replace(model_file_handle)
+    #job.model_meta_file.replace(model_meta_file_handle)
+    
+    
+    job.model_file = model_url
+    job.model_meta_file = model_meta_url
+    
     print "Model saved"
     sys.stdout.flush()
 
@@ -437,8 +451,8 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
     print "Job modified"
     sys.stdout.flush()
 
-    model_file_handle.close()
-    model_meta_file_handle.close()
+    #model_file_handle.close()
+    #model_meta_file_handle.close()
 
     print "file handles closed"
     sys.stdout.flush()

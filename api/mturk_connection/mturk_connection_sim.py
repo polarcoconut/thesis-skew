@@ -13,6 +13,7 @@ from schema.job import Job
 from schema.experiment import Experiment
 from schema.gold_extractor import Gold_Extractor
 import cPickle
+from random import sample
 
 class MTurk_Connection_Sim(MTurk_Connection):
 
@@ -110,7 +111,8 @@ class MTurk_Connection_Sim(MTurk_Connection):
 
 
             if category_id == 0:
-                generated_sentence = self.generate_data.pop()
+                #generated_sentence = self.generate_data.pop()
+                generated_sentence = sample(self.generate_data, 1)[0]
                 answer = (generated_sentence +
                           "\tTrigger\tPast\tFuture\tGeneral\tSimTaboo")
                 submit_answer(task_id, worker_id,
@@ -118,7 +120,9 @@ class MTurk_Connection_Sim(MTurk_Connection):
                               answer)
             elif category_id == 1:
                 old_sentence = next_assignment_question_data[9]
-                modified_sentence = self.modify_data[old_sentence].pop()
+                #modified_sentence = self.modify_data[old_sentence].pop()
+                modified_sentence = sample(self.modify_data[old_sentence], 1)[0]
+
                 answer = (modified_sentence + "\tNotPos\tHypOrGen\t" +
                           old_sentence + "\tSimTaboo")
                 submit_answer(task_id, worker_id,

@@ -45,10 +45,16 @@ def test_cnn(test_examples, test_labels, checkpoint_file, vocabulary):
 
     #checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
     graph = tf.Graph()
+    #with graph.as_default(), tf.device('/gpu:2'):
     with graph.as_default():
+        #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.10,
+        #                            allow_growth = True)
+        gpu_options = tf.GPUOptions(allow_growth = True)
+
         session_conf = tf.ConfigProto(
           allow_soft_placement=FLAGS.allow_soft_placement,
-          log_device_placement=FLAGS.log_device_placement)
+            log_device_placement=FLAGS.log_device_placement,
+            gpu_options = gpu_options)
         sess = tf.Session(config=session_conf)
         with sess.as_default():
             # Load the saved meta graph and restore variables
