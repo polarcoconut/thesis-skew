@@ -13,6 +13,7 @@ from schema.job import Job
 from schema.experiment import Experiment
 from schema.gold_extractor import Gold_Extractor
 import cPickle
+import urllib2
 from random import sample
 
 class MTurk_Connection_Sim(MTurk_Connection):
@@ -53,7 +54,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
         """
         modify_files = files_for_simulation[1]
         for modify_file in modify_files:
-            with open(modify_file, 'r') as modify_file_handle:
+            with urllib2.urlopen(modify_file) as modify_file_handle:
                 for line in modify_file_handle:
                     example = json.loads(line)
                     value = example['value'].split('\t')

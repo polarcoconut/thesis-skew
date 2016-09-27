@@ -49,8 +49,8 @@ class ExperimentApi(Resource):
         control_strategy = args['control_strategy']
         num_runs = args['num_runs']
         files_for_simulation = {
-            0: ['data/training_data/data_for_simulation/death_positives'],
-            1: ['data/training_data/data_for_simulation/death_negatives']}
+            0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_positives'],
+            1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_negatives']}
         files_for_simulation = pickle.dumps(files_for_simulation)
          
         experiment = Experiment(
