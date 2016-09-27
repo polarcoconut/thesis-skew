@@ -54,7 +54,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
         """
         modify_files = files_for_simulation[1]
         for modify_file in modify_files:
-            modify_file_handle = urllib2.urlopen(modify_file):
+            modify_file_handle = urllib2.urlopen(modify_file)
             for line in modify_file_handle:
                 example = json.loads(line)
                 value = example['value'].split('\t')
