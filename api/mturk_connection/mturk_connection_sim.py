@@ -54,16 +54,17 @@ class MTurk_Connection_Sim(MTurk_Connection):
         """
         modify_files = files_for_simulation[1]
         for modify_file in modify_files:
-            with urllib2.urlopen(modify_file) as modify_file_handle:
-                for line in modify_file_handle:
-                    example = json.loads(line)
-                    value = example['value'].split('\t')
-                    sentence = value[0]
-                    previous_sentence_not_example_of_event = value[1]
-                    old_sentence = value[3]
-                    if old_sentence not in self.modify_data:
-                        self.modify_data[old_sentence] = []
-                    self.modify_data[old_sentence].append(sentence)
+            modify_file_handle = urllib2.urlopen(modify_file):
+            for line in modify_file_handle:
+                example = json.loads(line)
+                value = example['value'].split('\t')
+                sentence = value[0]
+                previous_sentence_not_example_of_event = value[1]
+                old_sentence = value[3]
+                if old_sentence not in self.modify_data:
+                    self.modify_data[old_sentence] = []
+                self.modify_data[old_sentence].append(sentence)
+            
         self.generate_data = self.modify_data.keys()
         shuffle(self.generate_data)
 
