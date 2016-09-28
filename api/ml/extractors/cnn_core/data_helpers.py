@@ -223,10 +223,11 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     print "GENERATING A BATCH ITERATOR"
     data = np.array(data)
     data_size = len(data)
-    num_batches_per_epoch = int(len(data)/batch_size) + 1
-
+    num_batches_per_epoch = float(len(data))/batch_size
     print data_size
     print num_batches_per_epoch
+    if not num_batches_per_epoch.is_integer():
+        num_batches_per_epoch = int(num_batches_per_epoch) + 1
     for epoch in range(num_epochs):
         # Shuffle the data at each epoch
         if shuffle:
