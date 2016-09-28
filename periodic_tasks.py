@@ -1,7 +1,22 @@
 from api.train import restart
 from app import app
 from schema.job import Job
-import sys, os, traceback
+import sys, os, traceback, time, re
+
+@app.celery.task(name='delete_temp_files')
+def delete_temp_files():
+    now = time.time()
+    folder = 'temp_models'
+    files_deleted = 0
+    for f in os.listdir(folder):
+        f = os.path.join(folder, f)
+        if re.search('*-*-*-*-*', f):
+            if os.stat(f).st_mtime < now - 86400:
+                if os.path.isfile(f):
+                    os.remove(f)
+                    files_deleted += 1
+    print "Num files deleted:"
+    print files_deleted
 
 @app.celery.task(name='run_gather')
 def run_gather():

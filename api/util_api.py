@@ -12,7 +12,6 @@ from schema.ui_test import UI_Test
 from controllers import test_controller
 from util import parse_task_information, getLatestCheckpoint
 from crowdjs_util import upload_questions
-from mturk_util import create_hits, delete_hits
 
 arg_parser = reqparse.RequestParser()
 arg_parser.add_argument('job_id', type=str, required=True)

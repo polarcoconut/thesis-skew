@@ -115,6 +115,12 @@ class DevelopmentConfig(Config):
     QUALIFICATIONS = Qualifications([LocaleRequirement('EqualTo', 'US')])
 
     CELERYBEAT_SCHEDULE = {
+        'delete_temp_files': {
+            'task': 'delete_temp_files',
+            'schedule': timedelta(seconds=86400),
+            'args': ()
+        },
+
         'run_gather': {
             'task': 'run_gather',
             'schedule': timedelta(seconds=20),
@@ -137,6 +143,11 @@ class Production(Config):
          LocaleRequirement('EqualTo', 'US')])
 
     CELERYBEAT_SCHEDULE = {
+        'delete_temp_files': {
+            'task': 'delete_temp_files',
+            'schedule': timedelta(seconds=86400),
+            'args': ()
+        },
         'run_gather': {
             'task': 'run_gather',
             'schedule': timedelta(seconds=60),
