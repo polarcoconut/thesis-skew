@@ -67,6 +67,8 @@ def train_cnn(training_sentences, training_labels):
     y_train, y_dev = y[:len_train_split], y[len_train_split:]
     print("Vocabulary Size: {:d}".format(len(vocabulary)))
     print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
+    print("Sanity Check split: {:d}/{:d}".format(len(x_train), len(x_dev)))
+
 
 
     # Training
