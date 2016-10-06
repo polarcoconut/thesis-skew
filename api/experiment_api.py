@@ -209,7 +209,7 @@ class ExperimentAnalyzeApi(Resource):
                                    
             for point_index, point in zip(range(len(learning_curve)),
                                           learning_curve):
-                precision, recall, f1 = point
+                task_id, precision, recall, f1 = point
                 precisions[point_index].append(precision)
                 recalls[point_index].append(recall)
                 f1s[point_index].append(f1)

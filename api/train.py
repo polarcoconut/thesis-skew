@@ -80,30 +80,35 @@ def gather(task_information, budget, job_id, checkpoint = None):
     else:
         mturk_connection = MTurk_Connection_Real()
 
-    if costSoFar >= budget and not job.status == 'Finished':
-        task_id = task_ids[-1]
-        category_id = task_categories[-1]
-        
-        #Check if the task is complete
-        answers = parse_answers(task_id, category_id, wait_until_batch_finished = len(job.current_hit_ids))
+    if costSoFar >= budget:
+        if not job.status == 'Finished':
+            task_id = task_ids[-1]
+            category_id = task_categories[-1]
+            
+            #Check if the task is complete
+            answers = parse_answers(
+                task_id, category_id, 
+                wait_until_batch_finished = len(job.current_hit_ids))
 
-        if answers:
-            print "Delete any existing leftover hits from turk"
-            if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
-                mturk_connection.delete_hits(job.current_hit_ids)
-            job.status = 'Finished'
-            job.save()
-            if 'experiment_id' in job:
-                retrain(job_id, ['all'], task_ids)
-                (true_positives,
-                 false_positives,
-                 true_negatives,
-                 false_negatives,
-                 [precision, recall, f1]) = test_on_held_out_set(
-                     job_id, ['all'], experiment.test_set)
-                experiment.learning_curves[job_id].append(
-                    (task_id, precision, recall, f1))
-                experiment.save()
+            if answers:
+                print "Delete any existing leftover hits from turk"
+                if 'current_hit_ids' in job and len(job.current_hit_ids) > 0:
+                    mturk_connection.delete_hits(job.current_hit_ids)
+                job.status = 'Finished'
+                job.save()
+                if 'experiment_id' in job:
+                    retrain(job_id, ['all'], task_ids)
+                    (true_positives,
+                     false_positives,
+                     true_negatives,
+                     false_negatives,
+                     [precision, recall, f1]) = test_on_held_out_set(
+                         job_id, ['all'], experiment.test_set)
+                    experiment.learning_curves[job_id].append(
+                        (task_id, precision, recall, f1))
+                    experiment.save()
+        else:
+            print "job became finished after getting queued, so do nothing."
         return True
             
     else:
@@ -139,8 +144,9 @@ def gather(task_information, budget, job_id, checkpoint = None):
                          job_id, ['all'], experiment.test_set)
                     curframe = inspect.currentframe()
                     calframe = inspect.getouterframes(curframe, 2)
+                    caller =  calframe[1][3]
                     experiment.learning_curves[job_id].append(
-                        (task_id,  calframe[1][3], precision, recall, f1))
+                        (task_id, precision, recall, f1))
                     experiment.save()
             else:
                 print "Task not complete yet"

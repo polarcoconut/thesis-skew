@@ -228,6 +228,9 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     print num_batches_per_epoch
     if not num_batches_per_epoch.is_integer():
         num_batches_per_epoch = int(num_batches_per_epoch) + 1
+    else:
+        num_batches_per_epoch = int(num_batches_per_epoch)
+
     for epoch in range(num_epochs):
         # Shuffle the data at each epoch
         if shuffle:
