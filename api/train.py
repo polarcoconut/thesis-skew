@@ -228,3 +228,10 @@ def get_next_batch(task_ids, task_categories,
             training_labels, task_information,
             costSoFar, budget, job_id)
     
+    if control_strategy == 'impact':
+        return impact_sampling_controller(
+            task_ids,
+            task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar, budget, job_id)
+    

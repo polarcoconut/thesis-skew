@@ -291,8 +291,12 @@ def impact_sampling_controller(task_ids, task_categories,
     #First update the statistics about metric improvements from the last 
     #action taken
 
+    last_task_id = task_ids[-1]
+    last_task_category = task_categories[-1]
+
     categories_to_examples = {}
-    for i, task_category in zip(range(len(task_categories)), task_categories):
+    for i, task_category in zip(range(len(task_categories)-1), 
+                                task_categories[0:-1]):
 
         #This check is because some data in the database is inconsistent
         if isinstance(task_category, dict):
@@ -407,6 +411,8 @@ def impact_sampling_controller(task_ids, task_categories,
         1 for e in range(len(validation_positive_examples))]
     validation_negative_labels = [
         0 for e in range(len(validation_negative_examples))]
+
+
     predicted_labels = test_cnn(
         validation_positive_examples + validation_negative_examples,
         validation_positive_labels + validation_negative_labels,
@@ -427,16 +433,74 @@ def impact_sampling_controller(task_ids, task_categories,
         predicted_labels_for_negative_examples,
         validation_positive_labels)
     
-    print "Action:"
-    print target_task_category_id
-    print "Scores:"
-    print precision, recall, f1
-    sys.stdout.flush()
+    f1 = 2.0 * (precision * recall) / (precision + recall)
     
-        
-    worst_task_category_id = sample(worst_task_category_id, 1)[0]
+    ## Add in the extra data and compute the effect
+
+
+    pos_examples, neg_examples = split_examples(
+        last_task_id, [last_task_category], ['all'])
     
-    if worst_task_category_id == 2:
+
+    training_positive_examples += pos_examples
+    training_negative_examples += neg_examples
+
+    
+    retrain(job_id, ['all'],
+            training_positive_examples = training_positive_examples,
+            training_negative_examples = training_negative_examples)
+    
+    job = Job.objects.get(id = job_id)
+    vocabulary = pickle.loads(job.vocabulary)
+
+
+    predicted_labels = test_cnn(
+        validation_positive_examples + validation_negative_examples,
+        validation_positive_labels + validation_negative_labels,
+        write_model_to_file(job_id),
+        vocabulary)
+    
+    predicted_labels_for_positive_examples = predicted_labels[
+        0:len(validation_positive_examples)]
+    predicted_labels_for_negative_examples = predicted_labels[
+        len(validation_positive_examples):]
+
+    #compute scores separately for precision and recall
+    _, new_recall, _ = computeScores(
+        predicted_labels_for_positive_examples,
+        validation_positive_labels)
+
+    new_precision, _, _ = computeScores(
+        predicted_labels_for_negative_examples,
+        validation_positive_labels)
+
+
+    new_f1 = 2.0 * (new_precision * new_recall) / (new_precision + new_recall)
+
+
+    change_in_f1 = new_f1 - f1
+
+
+    current_control_data = pickle.loads(job.control_data)
+
+    current_control_data[last_task_category].append(change_in_f1)
+            
+    job.control_data = current_control_data
+    job.save()
+
+
+    best_task_category = []
+    best_change = float('-inf')
+    for task_category in current_control_data.key():
+        average_change = np.mean(current_control_data[task_category])
+        if average_change > best_change:
+            best_task_category = [task_category]
+            best_change = average_change
+        elif average_change == best_change:
+            best_task_category.append(task_category)
+    
+    best_task_category = sample(best_task_category,1)[0]
+    if best_task_category == 2:
         print "choosing the LABEL category"
         sys.stdout.flush()
 
@@ -454,7 +518,7 @@ def impact_sampling_controller(task_ids, task_categories,
         
         return 2, task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
-    elif worst_task_category_id == 0:
+    elif best_task_category == 0:
         print "choosing the RECALL category"
         sys.stdout.flush()
         
@@ -465,7 +529,7 @@ def impact_sampling_controller(task_ids, task_categories,
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return 0, task, num_hits, num_hits * next_category['price']
     
-    elif worst_task_category_id == 1:
+    elif best_task_category == 1:
         print "choosing the PRECISION category"
         sys.stdout.flush()
 

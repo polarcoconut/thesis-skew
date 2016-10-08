@@ -93,6 +93,9 @@ def run_experiment(experiment_id):
                   checkpoints = {},
                   status = 'Running',
                   control_strategy = experiment.control_strategy,
+                  control_data = pickle.dumps({0 : [],
+                                               1 : [],
+                                               2 : []}),
                   experiment_id = experiment_id)
 
         #job.model_file.put("placeholder")
