@@ -297,12 +297,35 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
     elif (('id' in category and category['id'] == 2) or
           category['task_name'] == 'Event Labeling'):
         questions = get_questions(task_id)
+        question_ids = []
         for question in questions:
             question_id = question['_id']['$oid']
+            question_ids.append(question_id)
+            print question_id
+            sys.stdout.flush()
+
+        all_answers = get_answers_for_question(question_ids)
+        
+        answers_by_question_id = {}
+
+        #print all_answers
+        #sys.stdout.flush()
+
+        for answer in all_answers:
+            #print answer
+            sys.stdout.flush()
+            answer_question_id = answer['question']['$oid']
+            if not answer_question_id in answers_by_question_id:
+                answers_by_question_id[answer_question_id] = []
+            answers_by_question_id[answer_question_id].append(answer)
+        
+
+        for question in questions:
             question_data = question['data'].split('\t')
+            question_id = question['_id']['$oid']
             sentence = question_data[len(question_data)-1]
             sentence = sentence.strip()
-            answers = get_answers_for_question(question_id)
+            answers = answers_by_question_id[question_id]
             if len(answers) == 0:
                 continue
 
@@ -364,6 +387,9 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
                 labels.append(1)
             else:
                 labels.append(0)
+    
+    print "Finished parsing the examples and the labels"
+    sys.stdout.flush()
 
     return examples, labels
 
@@ -471,8 +497,11 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
 
-    num_positive_examples_to_label = int(
-        app.config['CONTROLLER_LABELING_BATCH_SIZE'] / 2.0)
+    #num_positive_examples_to_label = int(
+    #    app.config['CONTROLLER_LABELING_BATCH_SIZE'] / 2.0)
+    num_positive_examples_to_label = app.config[
+        'CONTROLLER_LABELING_BATCH_SIZE']
+
     num_negative_examples_to_label = (
         app.config['CONTROLLER_LABELING_BATCH_SIZE'] -
         num_positive_examples_to_label)

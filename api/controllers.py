@@ -1,5 +1,5 @@
 
-from random import sample, shuffle
+from random import sample, shuffle, random
 import pickle
 import sys
 from app import app
@@ -10,7 +10,7 @@ from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackb
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
-from math import floor, ceil
+from math import floor, ceil, sqrt, log
 import numpy as np
 
 
@@ -281,7 +281,7 @@ def impact_sampling_controller(task_ids, task_categories,
     print "Impact Sampling Controller activated."
     sys.stdout.flush()
 
-    if len(task_categories) < 3:
+    if len(task_categories) < 4:
         return  round_robin_controller(
             task_ids,task_categories, training_examples,
             training_labels, task_information,
@@ -320,8 +320,10 @@ def impact_sampling_controller(task_ids, task_categories,
     training_positive_examples = []
     training_negative_examples = []
     validation_recall_examples = []
+    validation_recall_labels = []
     validation_precision_examples = []
-    
+    validation_precision_labels = []
+
     recall_measuring_task_cat_ids = [0]
     precision_measuring_task_cat_ids = [2]
     other_task_cat_ids = [1]
@@ -346,9 +348,18 @@ def impact_sampling_controller(task_ids, task_categories,
         validation_recall_examples += recall_examples[
             0:size_of_validation_recall_examples]
 
+        validation_recall_labels += [1 for e in range(
+            size_of_validation_recall_examples)]
+
         training_positive_examples += recall_examples[
             size_of_validation_recall_examples:]
     
+
+        print "ADDING RECALL EXAMPLES"
+        print len(training_positive_examples)
+        print len(training_negative_examples)
+        sys.stdout.flush()
+
     for precision_measuring_task_cat_id in precision_measuring_task_cat_ids:
         precision_task_ids = categories_to_examples[
             precision_measuring_task_cat_id]
@@ -370,20 +381,28 @@ def impact_sampling_controller(task_ids, task_categories,
 
         for index in shuffled_indices[0:size_of_validation_precision_examples]:
             if index < len(pos_examples):
-                validation_precision_examples += pos_examples[index]
+                validation_precision_examples.append(pos_examples[index])
+                validation_precision_labels.append(1)
             else:
                 real_index = index - len(pos_examples)
-                validation_precision_examples += neg_examples[real_index]
-        
+                validation_precision_examples.append(neg_examples[real_index])
+                validation_precision_labels.append(0)
+
         for index in shuffled_indices[size_of_validation_precision_examples:]:
             if index < len(pos_examples):
-                training_positive_examples += pos_examples[index]
+                training_positive_examples.append(pos_examples[index])
             else:
                 real_index = index - len(pos_examples)
-                training_negative_examples += neg_examples[real_index]
+                training_negative_examples.append(neg_examples[real_index])
+
+        print "ADDING PRECISION EXAMPLES"
+        print len(training_positive_examples)
+        print len(training_negative_examples)
+        sys.stdout.flush()
+
         
 
-   for other_task_cat_id in other_task_cat_ids:
+    for other_task_cat_id in other_task_cat_ids:
        other_task_ids = categories_to_examples[other_task_cat_id]
        
        pos_examples, neg_examples = split_examples(
@@ -395,10 +414,17 @@ def impact_sampling_controller(task_ids, task_categories,
        training_positive_examples += pos_examples
        training_negative_examples += neg_examples
 
+
+       print "ADDING ALL OTHER EXAMPLES"
+       print len(training_positive_examples)
+       print len(training_negative_examples)
+       sys.stdout.flush()
        
+               
     print "RETRAINING TO FIGURE OUT WHAT ACTION TO DO NEXT"
     print len(training_positive_examples)
     print len(training_negative_examples)
+    sys.stdout.flush()
     
     retrain(job_id, ['all'],
             training_positive_examples = training_positive_examples,
@@ -407,39 +433,56 @@ def impact_sampling_controller(task_ids, task_categories,
     job = Job.objects.get(id = job_id)
     vocabulary = pickle.loads(job.vocabulary)
 
-    validation_positive_labels = [
-        1 for e in range(len(validation_positive_examples))]
-    validation_negative_labels = [
-        0 for e in range(len(validation_negative_examples))]
-
 
     predicted_labels = test_cnn(
-        validation_positive_examples + validation_negative_examples,
-        validation_positive_labels + validation_negative_labels,
+        validation_recall_examples + validation_precision_examples,
+        validation_recall_labels + validation_precision_labels,
         write_model_to_file(job_id),
         vocabulary)
     
-    predicted_labels_for_positive_examples = predicted_labels[
-        0:len(validation_positive_examples)]
-    predicted_labels_for_negative_examples = predicted_labels[
-        len(validation_positive_examples):]
+    predicted_labels_for_recall_examples = predicted_labels[
+        0:len(validation_recall_examples)]
+    predicted_labels_for_precision_examples = predicted_labels[
+        len(validation_recall_examples):]
 
     #compute scores separately for precision and recall
     _, recall, _ = computeScores(
-        predicted_labels_for_positive_examples,
-        validation_positive_labels)
+        predicted_labels_for_recall_examples,
+        validation_recall_labels)
 
-    precision, _, _ = computeScores(
-        predicted_labels_for_negative_examples,
-        validation_positive_labels)
     
-    f1 = 2.0 * (precision * recall) / (precision + recall)
+    precision, _, _ = computeScores(
+        predicted_labels_for_precision_examples,
+        validation_precision_labels)
+
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print recall
+    print predicted_labels_for_recall_examples
+    print validation_recall_labels
+    print precision
+    print predicted_labels_for_precision_examples
+    print validation_precision_labels
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    sys.stdout.flush()
+
+    if (precision + recall) == 0:
+        f1 = 0.0
+    else:
+        f1 = 2.0 * (precision * recall) / (precision + recall)
     
     ## Add in the extra data and compute the effect
 
+    print "ADDING BACK IN EXTRA DATA"
+    print last_task_id
+    print last_task_category
+    sys.stdout.flush()
 
     pos_examples, neg_examples = split_examples(
-        last_task_id, [last_task_category], ['all'])
+        [last_task_id], [last_task_category], ['all'])
     
 
     training_positive_examples += pos_examples
@@ -455,27 +498,45 @@ def impact_sampling_controller(task_ids, task_categories,
 
 
     predicted_labels = test_cnn(
-        validation_positive_examples + validation_negative_examples,
-        validation_positive_labels + validation_negative_labels,
+        validation_recall_examples + validation_precision_examples,
+        validation_recall_labels + validation_precision_labels,
         write_model_to_file(job_id),
         vocabulary)
     
-    predicted_labels_for_positive_examples = predicted_labels[
-        0:len(validation_positive_examples)]
-    predicted_labels_for_negative_examples = predicted_labels[
-        len(validation_positive_examples):]
+    predicted_labels_for_recall_examples = predicted_labels[
+        0:len(validation_recall_examples)]
+    predicted_labels_for_precision_examples = predicted_labels[
+        len(validation_recall_examples):]
 
     #compute scores separately for precision and recall
     _, new_recall, _ = computeScores(
-        predicted_labels_for_positive_examples,
-        validation_positive_labels)
+        predicted_labels_for_recall_examples,
+        validation_recall_labels)
 
     new_precision, _, _ = computeScores(
-        predicted_labels_for_negative_examples,
-        validation_positive_labels)
+        predicted_labels_for_precision_examples,
+        validation_precision_labels)
 
 
-    new_f1 = 2.0 * (new_precision * new_recall) / (new_precision + new_recall)
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print new_recall
+    print predicted_labels_for_recall_examples
+    print validation_recall_labels
+    print new_precision
+    print predicted_labels_for_precision_examples
+    print validation_precision_labels
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    sys.stdout.flush()
+
+    if (new_precision + new_recall) == 0:
+        new_f1 = 0.0
+    else:
+        new_f1 = (2.0 * (new_precision * new_recall) / 
+                  (new_precision + new_recall))
 
 
     change_in_f1 = new_f1 - f1
@@ -485,21 +546,71 @@ def impact_sampling_controller(task_ids, task_categories,
 
     current_control_data[last_task_category].append(change_in_f1)
             
-    job.control_data = current_control_data
+    job.control_data = pickle.dumps(current_control_data)
     job.save()
 
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print current_control_data
+    print "------------------------------------------"
+    print "------------------------------------------"
+    print "------------------------------------------"
+    sys.stdout.flush()
+
+
+    if len(task_categories) < 6:
+        return  round_robin_controller(
+            task_ids,task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar, budget, job_id)
+
+
+    #Add an exploration term 
 
     best_task_category = []
     best_change = float('-inf')
-    for task_category in current_control_data.key():
+    num_actions_taken_so_far = 0.0
+    for task_category in current_control_data.keys():
+        num_actions_taken_so_far += len(current_control_data[task_category])
+
+    for task_category in current_control_data.keys():
         average_change = np.mean(current_control_data[task_category])
-        if average_change > best_change:
+        exploration_term =  sqrt(
+            2.0*log(num_actions_taken_so_far) / 
+            len(current_control_data[task_category]) )
+        ucb_value = average_change + exploration_term
+
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "Value of action %d" % task_category
+        print current_control_data[task_category]
+        print average_change
+        print exploration_term
+        print ucb_value
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        sys.stdout.flush()
+
+        if ucb_value > best_change:
             best_task_category = [task_category]
-            best_change = average_change
-        elif average_change == best_change:
+            best_change = ucb_value
+        elif ucb_value == best_change:
             best_task_category.append(task_category)
     
+
+    #epsilon = 1.0 / num_actions_taken_so_far
+    
+    #if random() < epsilon:
+    #    other_choices = [0,1,2]
+    #    for item in best_task_category:
+    #        other_choices.remove(item)
+    #    best_task_category = sample(other_choices, 1)[0]
+    #else:
     best_task_category = sample(best_task_category,1)[0]
+
     if best_task_category == 2:
         print "choosing the LABEL category"
         sys.stdout.flush()

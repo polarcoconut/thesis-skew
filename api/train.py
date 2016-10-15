@@ -1,6 +1,6 @@
 import time
 from app import app
-from controllers import round_robin_controller, uncertainty_sampling_controller
+from controllers import round_robin_controller, uncertainty_sampling_controller, impact_sampling_controller
 import pickle
 import json
 import sys
