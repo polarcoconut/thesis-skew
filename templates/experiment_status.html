@@ -13,10 +13,12 @@
        }
      </style>
 
-     <script src="//d3js.org/d3.v3.min.js"></script>
+     <!--<script src="//d3js.org/d3.v3.min.js"></script>
      <script src="//vega.github.io/vega/vega.js"></script>
      <script src="//vega.github.io/vega-lite/vega-lite.js"></script>
-     <script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+     <script src="//vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>-->
+
+     <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
      
      <style media="screen">
        /* Add space between vega-embed links  */
@@ -168,6 +170,7 @@
     };
 
 
+    /*
     function draw_graphs(type, data) {
 	console.log("drawing the graph");
 	var vlSpec = {
@@ -203,8 +206,7 @@
 	});
 	
     }
-
-
+    */
 
     //GET EXPERIMENT INFO CODE
 
@@ -230,9 +232,39 @@
 	    var recall_curve = analysis[1];
 	    var f1_curve = analysis[2];
 
-	    draw_graphs("precision", precision_curve);
-	    draw_graphs("recall", recall_curve);
-	    draw_graphs("f1", f1_curve);
+	    //draw_graphs("precision", precision_curve);
+	    //draw_graphs("recall", recall_curve);
+	    //draw_graphs("f1", f1_curve);
+
+	    g_precision = new Dygraph(
+		document.getElementById("precision"),
+		precision_curve,
+		{
+		    errorBars: true,
+		    xlabel: 'Number of Labels',
+		    ylabel: 'Precision'
+		}
+	    );
+	    g_recall = new Dygraph(
+		document.getElementById("recall"),
+		recall_curve,
+		{
+		    errorBars: true,
+		    xlabel: 'Number of Labels',
+		    ylabel: 'Recall'
+
+		}
+	    );
+	    g_f1 = new Dygraph(
+		document.getElementById("f1"),
+		f1_curve,
+		{
+		    errorBars: true,
+		    xlabel: 'Number of Labels',
+		    ylabel: 'F1'
+
+		}
+	    );
 	}
     };
 

@@ -9,8 +9,9 @@ import pickle
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 from ml.extractors.cnn_core.parse import parse_angli_test_data, parse_tackbp_test_data
-from util import write_model_to_file, getLatestCheckpoint, split_examples
+from util import write_model_to_file, getLatestCheckpoint, split_examples, retrain
 from schema.job import Job
+import numpy as np
 
 test_parser = reqparse.RequestParser()
 test_parser.add_argument('job_id', type=str, required=True)
@@ -154,3 +155,32 @@ def test_on_held_out_set(job_id, positive_types, test_set):
             true_negatives,
             false_negatives,
             [precision, recall, f1])
+
+
+
+def compute_performance_on_test_set(job_id, task_ids, experiment):
+
+    number_of_times_to_test = 3
+    precisions = []
+    recalls = []
+    f1s = []
+
+    for i in range(number_of_times_to_test):
+        retrain(job_id, ['all'], task_ids)
+        (true_positives, false_positives,
+         true_negatives, false_negatives,
+         [precision, recall, f1]) = test_on_held_out_set(
+         job_id, ['all'], experiment.test_set)
+        precisions.append(precision)
+        recalls.append(recall)
+        f1s.append(f1)
+        #curframe = inspect.currentframe()                                      
+        #calframe = inspect.getouterframes(curframe, 2)                         
+        #caller =  calframe[1][3]                                               
+
+    avg_precision = np.mean(precisions)
+    avg_recall = np.mean(recalls)
+    avg_f1 = np.mean(f1s)
+
+    return avg_precision, avg_recall, avg_f1
+

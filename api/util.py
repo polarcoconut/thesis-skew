@@ -16,7 +16,6 @@ from math import floor, ceil
 import urllib2
 import uuid
 
-
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
 #they have been used
@@ -487,6 +486,7 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
 
 
 
+#Gets examples that are predicted positive
 def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
                                        training_examples, training_labels,
                                        task_information, costSoFar,
@@ -592,3 +592,46 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     shuffle(selected_examples)
 
     return selected_examples, expected_labels
+
+
+#Gets random examples
+def get_random_unlabeled_examples_from_tackbp(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id):
+    
+    print "choosing to find examples from TACKBP and label them"
+    sys.stdout.flush()
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+
+    test_examples = []
+
+    tackbp_newswire_corpus = urllib2.urlopen(
+        app.config['TACKBP_NW_09_CORPUS_URL'])
+
+    #Get all the previous examples that we labeled already
+    used_examples = []
+    for i, task_category in zip(range(len(task_categories)), task_categories):
+        #This check is because some data in the database is inconsistent
+        if isinstance(task_category, dict):
+            task_category_id = task_category['id']
+        else:
+            task_category_id = task_category
+        if task_category_id == 2:
+            used_examples += training_examples[i]
+
+
+    tackbp_newswire_corpus = set(tackbp_newswire_corpus)-set(used_examples)
+    for sentence in tackbp_newswire_corpus:
+        test_examples.append(sentence)
+
+    selected_examples += sample(test_examples,
+                                app.config['CONTROLLER_LABELING_BATCH_SIZE'])
+    expected_labels += [0 for i in range(
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
+        
+
+    return selected_examples, expected_labels
+
+

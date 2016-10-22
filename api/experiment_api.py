@@ -21,6 +21,10 @@ from api.mturk_connection.mturk_connection_real import MTurk_Connection_Real
 from api.mturk_connection.mturk_connection_sim import MTurk_Connection_Sim
 import cPickle
 
+import numpy as np
+
+from math import sqrt
+
 experiment_parser = reqparse.RequestParser()
 experiment_parser.add_argument('event_name', type=str, required=True)
 experiment_parser.add_argument('event_definition', type=str, required=True)
@@ -96,6 +100,7 @@ def run_experiment(experiment_id):
                   control_data = pickle.dumps({0 : [],
                                                1 : [],
                                                2 : []}),
+                  logging_data = pickle.dumps([]),
                   experiment_id = experiment_id)
 
         #job.model_file.put("placeholder")
@@ -200,42 +205,67 @@ class ExperimentAnalyzeApi(Resource):
         precisions = []
         recalls = []
         f1s = []
+
+        len_longest_curve = 0
+        #first figure out the longest curve
         for job_id in experiment.job_ids:
             learning_curve = experiment.learning_curves[job_id]
-
+            if len(learning_curve) > len_longest_curve:
+                len_longest_curve = len(learning_curve)
             print len(learning_curve)
-            #This initialization should only occur once
-            if len(precisions) == 0:
-                precisions = [[] for i in range(len(learning_curve))]
-                recalls = [[] for i in range(len(learning_curve))]
-                f1s = [[] for i in range(len(learning_curve))]
-                                   
+        
+        precisions = [[] for i in range(len_longest_curve)]
+        recalls = [[] for i in range(len_longest_curve)]
+        f1s = [[] for i in range(len_longest_curve)]
+        
+        for job_id in experiment.job_ids:
+            learning_curve = experiment.learning_curves[job_id]           
             for point_index, point in zip(range(len(learning_curve)),
                                           learning_curve):
                 task_id, precision, recall, f1 = point
                 precisions[point_index].append(precision)
                 recalls[point_index].append(recall)
                 f1s[point_index].append(f1)
-            
-        precisions = [
-            float(sum(numbers)) / len(numbers) for numbers in precisions]
-        recalls = [
-            float(sum(numbers)) / len(numbers) for numbers in recalls]
-        f1s = [
-            float(sum(numbers)) / len(numbers) for numbers in f1s]
-        number_of_labels = [50 * i for i in range(len(f1s))]
 
 
-        precision_curve = []
-        recall_curve =[]
-        f1_curve = []
+        print precisions
+        print recalls
+        print f1s
+        sys.stdout.flush()
+
+        precisions_avgs = [np.mean(numbers) for numbers in precisions]
+        recalls_avgs = [np.mean(numbers) for numbers in recalls]
+        f1s_avgs = [np.mean(numbers) for numbers in f1s]
+
+        precisions_stds = [np.std(numbers) / 
+                           sqrt(len(numbers)) for numbers in precisions]
+        recalls_stds = [np.std(numbers) /
+                        sqrt(len(numbers)) for numbers in recalls]
+        f1s_stds = [np.std(numbers) / 
+                    sqrt(len(numbers)) for numbers in f1s]
+
+        number_of_labels = [50 * i for i in range(1, len(f1s_avgs)+1)]
+
+
+        #precision_curve = []
+        #recall_curve =[]
+        #f1_curve = []
         
-        for x,precision,recall,f1 in zip(number_of_labels,
-                                         precisions,
-                                         recalls,
-                                         f1s):
-            precision_curve.append({"x" : x, "y" :precision})
-            recall_curve.append({"x" : x, "y" : recall}) 
-            f1_curve.append({"x" : x, "y" : f1}) 
+        precision_curve = "Number of Labels,Precision\n"
+        recall_curve = "Number of Labels,Recall\n"
+        f1_curve = "Number of Labels,F1\n"
+
+        for (x,precision_avg,recall_avg,
+             f1_avg,precision_std,recall_std,f1_std) in zip(
+                number_of_labels,
+                precisions_avgs, recalls_avgs, f1s_avgs,
+                precisions_stds, recalls_stds, f1s_stds):
+            #precision_curve.append({"x" : x, "y" :precision})
+            #recall_curve.append({"x" : x, "y" : recall}) 
+            #f1_curve.append({"x" : x, "y" : f1}) 
+            precision_curve += "%d,%f,%f\n" % (x, precision_avg, precision_std)
+            recall_curve += "%d,%f,%f\n" % (x, recall_avg, recall_std) 
+            f1_curve  += "%d,%f,%f\n" % (x, f1_avg, f1_std) 
+
 
         return [precision_curve, recall_curve, f1_curve]

@@ -65,6 +65,12 @@
     <button id="restart">Restart the job</button>
 
     <hr/>
+
+    <h2> <b>Current Log:</b></h2>
+    <span id="job_log"></span>
+    </select>
+
+
     <h2> <b>Current Examples:</b></h2>
     Label the following event types as positive examples, and all other types as negative:
     <br/>
@@ -202,6 +208,8 @@
 	    var task_ids = job_information[2]
 	    var task_categories = job_information[3]
 	    var control_strategy = job_information[4]
+	    var job_logs = job_information[5]
+	    
 
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
@@ -242,7 +250,10 @@
 	    document.getElementById(
 		'train_task_ids_for_view').innerHTML = select_html;
 
+		    
+	    document.getElementById('job_log').innerHTML = job_logs;
 
+			
 	}
     };
 

@@ -39,6 +39,23 @@ def test_controller(task_information, task_category_id):
                                         task_information)
         return 1, task, len(some_examples_to_test_with), 0
 
+
+def label_only_controller(task_information, task_category_id):
+
+
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+    
+    selected_examples, expected_labels = get_unlabeled_examples_from_tackbp(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id)
+    
+    task = make_labeling_crowdjs_task(selected_examples,
+                                      expected_labels,
+                                      task_information)
+    
+    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
     
 #Alternate back and forth between precision and recall categories.
 #Then, use the other half of the budget and
@@ -420,124 +437,136 @@ def impact_sampling_controller(task_ids, task_categories,
        print len(training_negative_examples)
        sys.stdout.flush()
        
+
                
     print "RETRAINING TO FIGURE OUT WHAT ACTION TO DO NEXT"
     print len(training_positive_examples)
     print len(training_negative_examples)
     sys.stdout.flush()
-    
-    retrain(job_id, ['all'],
-            training_positive_examples = training_positive_examples,
-            training_negative_examples = training_negative_examples)
-    
-    job = Job.objects.get(id = job_id)
-    vocabulary = pickle.loads(job.vocabulary)
-
-
-    predicted_labels = test_cnn(
-        validation_recall_examples + validation_precision_examples,
-        validation_recall_labels + validation_precision_labels,
-        write_model_to_file(job_id),
-        vocabulary)
-    
-    predicted_labels_for_recall_examples = predicted_labels[
-        0:len(validation_recall_examples)]
-    predicted_labels_for_precision_examples = predicted_labels[
-        len(validation_recall_examples):]
-
-    #compute scores separately for precision and recall
-    _, recall, _ = computeScores(
-        predicted_labels_for_recall_examples,
-        validation_recall_labels)
 
     
-    precision, _, _ = computeScores(
-        predicted_labels_for_precision_examples,
-        validation_precision_labels)
-
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print recall
-    print predicted_labels_for_recall_examples
-    print validation_recall_labels
-    print precision
-    print predicted_labels_for_precision_examples
-    print validation_precision_labels
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print "------------------------------------------"
-    sys.stdout.flush()
-
-    if (precision + recall) == 0:
-        f1 = 0.0
-    else:
-        f1 = 2.0 * (precision * recall) / (precision + recall)
     
+    f1s = []
+
+    for i in range(3):
+        retrain(job_id, ['all'],
+                training_positive_examples = training_positive_examples,
+                training_negative_examples = training_negative_examples)
+        
+        job = Job.objects.get(id = job_id)
+        vocabulary = pickle.loads(job.vocabulary)
+    
+    
+        predicted_labels = test_cnn(
+            validation_recall_examples + validation_precision_examples,
+            validation_recall_labels + validation_precision_labels,
+            write_model_to_file(job_id),
+            vocabulary)
+
+        predicted_labels_for_recall_examples = predicted_labels[
+            0:len(validation_recall_examples)]
+        predicted_labels_for_precision_examples = predicted_labels[
+            len(validation_recall_examples):]
+
+        #compute scores separately for precision and recall
+        _, recall, _ = computeScores(
+            predicted_labels_for_recall_examples,
+            validation_recall_labels)
+        
+        precision, _, _ = computeScores(
+            predicted_labels_for_precision_examples,
+            validation_precision_labels)
+    
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print recall
+        print predicted_labels_for_recall_examples
+        print validation_recall_labels
+        print precision
+        print predicted_labels_for_precision_examples
+        print validation_precision_labels
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        sys.stdout.flush()
+        
+        if (precision + recall) == 0:
+            f1 = 0.0
+        else:
+            f1 = 2.0 * (precision * recall) / (precision + recall)
+            
+        f1s.append(f1)
+    f1 = np.mean(f1s)
     ## Add in the extra data and compute the effect
-
+    
     print "ADDING BACK IN EXTRA DATA"
     print last_task_id
     print last_task_category
     sys.stdout.flush()
-
+    
     pos_examples, neg_examples = split_examples(
         [last_task_id], [last_task_category], ['all'])
     
-
+    
     training_positive_examples += pos_examples
     training_negative_examples += neg_examples
+    
 
     
-    retrain(job_id, ['all'],
-            training_positive_examples = training_positive_examples,
-            training_negative_examples = training_negative_examples)
+    new_f1s = []
+    for i in range(3):
+        retrain(job_id, ['all'],
+                training_positive_examples = training_positive_examples,
+                training_negative_examples = training_negative_examples)
     
-    job = Job.objects.get(id = job_id)
-    vocabulary = pickle.loads(job.vocabulary)
+        job = Job.objects.get(id = job_id)
+        vocabulary = pickle.loads(job.vocabulary)
+        
 
+        predicted_labels = test_cnn(
+            validation_recall_examples + validation_precision_examples,
+            validation_recall_labels + validation_precision_labels,
+            write_model_to_file(job_id),
+            vocabulary)
+        predicted_labels_for_recall_examples = predicted_labels[
+            0:len(validation_recall_examples)]
+        predicted_labels_for_precision_examples = predicted_labels[
+            len(validation_recall_examples):]
+        
+        
+        #compute scores separately for precision and recall
+        _, new_recall, _ = computeScores(
+            predicted_labels_for_recall_examples,
+            validation_recall_labels)
+        
+        new_precision, _, _ = computeScores(
+            predicted_labels_for_precision_examples,
+            validation_precision_labels)
+        
+        
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print new_recall
+        print predicted_labels_for_recall_examples
+        print validation_recall_labels
+        print new_precision
+        print predicted_labels_for_precision_examples
+        print validation_precision_labels
+        print "------------------------------------------"
+        print "------------------------------------------"
+        print "------------------------------------------"
+        sys.stdout.flush()
+        
+        if (new_precision + new_recall) == 0:
+            new_f1 = 0.0
+        else:
+            new_f1 = (2.0 * (new_precision * new_recall) / 
+                      (new_precision + new_recall))
+        new_f1s.append(new_f1)
 
-    predicted_labels = test_cnn(
-        validation_recall_examples + validation_precision_examples,
-        validation_recall_labels + validation_precision_labels,
-        write_model_to_file(job_id),
-        vocabulary)
-    
-    predicted_labels_for_recall_examples = predicted_labels[
-        0:len(validation_recall_examples)]
-    predicted_labels_for_precision_examples = predicted_labels[
-        len(validation_recall_examples):]
-
-    #compute scores separately for precision and recall
-    _, new_recall, _ = computeScores(
-        predicted_labels_for_recall_examples,
-        validation_recall_labels)
-
-    new_precision, _, _ = computeScores(
-        predicted_labels_for_precision_examples,
-        validation_precision_labels)
-
-
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print new_recall
-    print predicted_labels_for_recall_examples
-    print validation_recall_labels
-    print new_precision
-    print predicted_labels_for_precision_examples
-    print validation_precision_labels
-    print "------------------------------------------"
-    print "------------------------------------------"
-    print "------------------------------------------"
-    sys.stdout.flush()
-
-    if (new_precision + new_recall) == 0:
-        new_f1 = 0.0
-    else:
-        new_f1 = (2.0 * (new_precision * new_recall) / 
-                  (new_precision + new_recall))
-
+    new_f1 = np.mean(new_f1s)
 
     change_in_f1 = new_f1 - f1
 
@@ -574,12 +603,22 @@ def impact_sampling_controller(task_ids, task_categories,
     for task_category in current_control_data.keys():
         num_actions_taken_so_far += len(current_control_data[task_category])
 
+    computed_values_of_each_action = []
     for task_category in current_control_data.keys():
-        average_change = np.mean(current_control_data[task_category])
+        average_change = np.average(
+            current_control_data[task_category],
+            weights=range(1, len(current_control_data[task_category])+1))
         exploration_term =  sqrt(
             2.0*log(num_actions_taken_so_far) / 
             len(current_control_data[task_category]) )
-        ucb_value = average_change + exploration_term
+        c = 0.2
+        ucb_value = average_change + (c * exploration_term)
+
+        computed_values_of_each_action.append(
+            (current_control_data[task_category],
+             average_change,
+             exploration_term,
+             ucb_value))
 
         print "------------------------------------------"
         print "------------------------------------------"
@@ -600,6 +639,11 @@ def impact_sampling_controller(task_ids, task_categories,
         elif ucb_value == best_change:
             best_task_category.append(task_category)
     
+    current_logging_data = pickle.loads(job.logging_data)
+    current_logging_data.append((best_task_category,
+                                 computed_values_of_each_action))
+    job.logging_data = pickle.dumps(current_logging_data)
+    job.save()
 
     #epsilon = 1.0 / num_actions_taken_so_far
     

@@ -12,6 +12,7 @@ from schema.ui_test import UI_Test
 from controllers import test_controller
 from util import parse_task_information, getLatestCheckpoint
 from crowdjs_util import upload_questions
+import pprint
 
 arg_parser = reqparse.RequestParser()
 arg_parser.add_argument('job_id', type=str, required=True)
@@ -73,8 +74,11 @@ class GetJobInfoApi(Resource):
         
         (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
+        log_data= pickle.loads(job.logging_data)
+        log_data= pprint.pformat(log_data, indent=2)
+        print log_data
         return [task_information, budget, task_ids, task_categories,
-                job.control_strategy]
+                job.control_strategy, log_data]
 
 change_budget_arg_parser = reqparse.RequestParser()
 change_budget_arg_parser.add_argument('job_id', type=str, required=True)

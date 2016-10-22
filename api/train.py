@@ -12,7 +12,7 @@ from schema.experiment import Experiment
 
 from util import getLatestCheckpoint, split_examples, parse_answers, retrain
 from crowdjs_util import get_answers, upload_questions
-from test_api import test_on_held_out_set
+from test_api import test_on_held_out_set, compute_performance_on_test_set
 
 @app.celery.task(name='restart')
 def restart(job_id):
@@ -97,23 +97,25 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 job.status = 'Finished'
                 job.save()
                 if 'experiment_id' in job:
-                    retrain(job_id, ['all'], task_ids)
-                    (true_positives,
-                     false_positives,
-                     true_negatives,
-                     false_negatives,
-                     [precision, recall, f1]) = test_on_held_out_set(
-                         job_id, ['all'], experiment.test_set)
+                    print "Computing current performance"
+                    sys.stdout.flush() 
+                    precision, recall, f1 = compute_performance_on_test_set(
+                        job_id, task_ids, 
+                        experiment)
                     experiment.learning_curves[job_id].append(
-                        (task_id, precision, recall, f1))
+                        (task_id, precision, recall, f1,
+                         category_id, costSoFar))
                     experiment.save()
+                    
+
+
         else:
             print "job became finished after getting queued, so do nothing."
         return True
             
     else:
         print "Cost so far: %d" % costSoFar
-        print "Number of training example batches and label batches: %d, %d" % (
+        print "Number of training example and label batches: %d, %d" % (
             len(training_examples), len(training_labels))
 
 
@@ -123,7 +125,9 @@ def gather(task_information, budget, job_id, checkpoint = None):
             category_id = task_categories[-1]
 
             #Check if the task is complete
-            answers = parse_answers(task_id, category_id, wait_until_batch_finished = len(job.current_hit_ids))
+            answers = parse_answers(
+                task_id, category_id, 
+                wait_until_batch_finished = len(job.current_hit_ids))
 
             if answers:
                 new_examples, new_labels = answers
@@ -135,19 +139,14 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 if 'experiment_id' in job:
                     print "Computing current performance"
                     sys.stdout.flush() 
-                    retrain(job_id, ['all'], task_ids)
-                    (true_positives,
-                     false_positives,
-                     true_negatives,
-                     false_negatives,
-                     [precision, recall, f1]) = test_on_held_out_set(
-                         job_id, ['all'], experiment.test_set)
-                    curframe = inspect.currentframe()
-                    calframe = inspect.getouterframes(curframe, 2)
-                    caller =  calframe[1][3]
+                    precision, recall, f1 = compute_performance_on_test_set(
+                        job_id, task_ids, 
+                        experiment)
                     experiment.learning_curves[job_id].append(
-                        (task_id, precision, recall, f1))
+                        (task_id, precision, recall, f1,
+                         category_id, costSoFar))
                     experiment.save()
+
             else:
                 print "Task not complete yet"
                 sys.stdout.flush() 

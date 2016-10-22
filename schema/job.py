@@ -27,3 +27,5 @@ class Job(db.DynamicDocument):
     
 
     control_data = db.StringField()
+
+    logging_data = db.StringField()
