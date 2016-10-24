@@ -15,13 +15,11 @@ class Job(db.DynamicDocument):
 
     status = db.StringField()
 
-    #lock = db.BooleanField()
-
     control_strategy = db.StringField()
 
     experiment_id = db.StringField()
 
-    mturk_connection = db.FileField()
+    mturk_connection = db.StringField()
 
     exceptions = db.ListField()
     

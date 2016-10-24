@@ -14,7 +14,7 @@ from util import parse_task_information, retrain, getLatestCheckpoint, split_exa
 from crowdjs_util import get_task_data
 from ml.extractors.cnn_core.parse import parse_angli_test_data
 from ml.extractors.cnn_core.train import train_cnn
-
+from api.s3_util import insert_connection_into_s3
 import time
 from api.mturk_connection.mturk_connection import MTurk_Connection
 from api.mturk_connection.mturk_connection_real import MTurk_Connection_Real
@@ -109,9 +109,9 @@ def run_experiment(experiment_id):
 
         job_id = str(job.id)
 
-        mturk_connection = cPickle.dumps(
-            MTurk_Connection_Sim(experiment_id, job_id))
-        job.mturk_connection.put(mturk_connection)
+        mturk_connection_url = insert_connection_into_s3(cPickle.dumps(
+            MTurk_Connection_Sim(experiment_id, job_id)))
+        job.mturk_connection = mturk_connection_url
         job.save()
 
         

@@ -8,8 +8,7 @@ import cPickle
 import inspect
 from schema.job import Job
 from schema.experiment import Experiment
-
-
+import urllib2
 from util import getLatestCheckpoint, split_examples, parse_answers, retrain
 from crowdjs_util import get_answers, upload_questions
 from test_api import test_on_held_out_set, compute_performance_on_test_set
@@ -75,7 +74,9 @@ def gather(task_information, budget, job_id, checkpoint = None):
     job = Job.objects.get(id = job_id)
 
     if 'experiment_id' in job:
-        mturk_connection = cPickle.loads(job.mturk_connection.read())
+        
+        connection_string = urllib2.urlopen(job.mturk_connection).read()
+        mturk_connection = cPickle.loads(connection_string)
         experiment = Experiment.objects.get(id = job.experiment_id)
     else:
         mturk_connection = MTurk_Connection_Real()

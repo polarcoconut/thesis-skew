@@ -15,6 +15,8 @@ from schema.gold_extractor import Gold_Extractor
 import cPickle
 import urllib2
 from random import sample
+from api.s3_util import insert_connection_into_s3
+
 
 class MTurk_Connection_Sim(MTurk_Connection):
 
@@ -157,7 +159,8 @@ class MTurk_Connection_Sim(MTurk_Connection):
 
         #save the connection to the job for later use
         job = Job.objects.get(id=self.job_id)
-        job.mturk_connection.replace(cPickle.dumps(self))
+        mturk_connection_url = insert_connection_into_s3(cPickle.dumps(self))
+        job.mturk_connection = mturk_connection_url
         job.save()
         
         return ['fakehitid' for i in range(num_hits)]
