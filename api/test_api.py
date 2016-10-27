@@ -112,7 +112,7 @@ def test_on_held_out_set(job_id, positive_types, test_set):
                        [0 for e in test_negative_examples])
 
 
-    job = Job.objects.get(id = job_id)
+    #job = Job.objects.get(id = job_id)
     vocabulary = pickle.loads(job.vocabulary)
 
     predicted_labels = test_cnn(
@@ -170,7 +170,7 @@ def compute_performance_on_test_set(job_id, task_ids, experiment):
         (true_positives, false_positives,
          true_negatives, false_negatives,
          [precision, recall, f1]) = test_on_held_out_set(
-         job_id, ['all'], experiment.test_set)
+             job_id, ['all'], experiment.test_set)
         precisions.append(precision)
         recalls.append(recall)
         f1s.append(f1)

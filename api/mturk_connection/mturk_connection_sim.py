@@ -101,7 +101,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
         
         for hit in range(num_hits):
 
-            worker_id = str(uuid.uuid4())
+            worker_id = str(uuid.uuid1())
             
             next_assignment_data = get_next_assignment(task_id, worker_id)
 

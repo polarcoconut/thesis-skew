@@ -222,7 +222,7 @@ class ExperimentAnalyzeApi(Resource):
             learning_curve = experiment.learning_curves[job_id]           
             for point_index, point in zip(range(len(learning_curve)),
                                           learning_curve):
-                task_id, precision, recall, f1 = point
+                task_id, precision, recall, f1, action, costSoFar = point
                 precisions[point_index].append(precision)
                 recalls[point_index].append(recall)
                 f1s[point_index].append(f1)

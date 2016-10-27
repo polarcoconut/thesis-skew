@@ -85,23 +85,26 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
 #The purpose of this is so tensorflow can read the model
 def write_model_to_file(job_id = None, gold_extractor = None):
 
-    temp_model_file_name = 'temp_models/%s' % str(uuid.uuid4())
+    temp_model_file_name = 'temp_models/%s' % str(uuid.uuid1())
 
 
     if not job_id == None:
         job = Job.objects.get(id = job_id)
 
-        model_file = urllib2.urlopen(job.model_file)
-        model_meta_file =  urllib2.urlopen(job.model_meta_file)
+        #model_file = urllib2.urlopen(job.model_file)
+        #model_meta_file =  urllib2.urlopen(job.model_meta_file)
+        model_file = requests.get(job.model_file)
+        model_meta_file =  requests.get(job.model_meta_file)
+    
     
         temp_model_file_handle = open(temp_model_file_name, 'wb')
-        temp_model_file_handle.write(model_file.read())
+        temp_model_file_handle.write(str(model_file.content))
         temp_model_file_handle.close()
         
         
         temp_model_meta_file_handle = open('%s.meta' % temp_model_file_name,
                                            'wb')
-        temp_model_meta_file_handle.write(model_meta_file.read())
+        temp_model_meta_file_handle.write(str(model_meta_file.content))
         temp_model_meta_file_handle.close()
     elif not gold_extractor == None:
         gold_extractor = Gold_Extractor.objects.get(name = gold_extractor)
@@ -512,9 +515,9 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     test_examples = []
     test_labels = []
 
-    tackbp_newswire_corpus = urllib2.urlopen(
-        app.config['TACKBP_NW_09_CORPUS_URL'])
-
+    tackbp_newswire_corpus = str(requests.get(
+        app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+    
     #Get all the previous examples that we labeled already
     used_examples = []
     for i, task_category in zip(range(len(task_categories)), task_categories):
@@ -607,8 +610,11 @@ def get_random_unlabeled_examples_from_tackbp(
 
     test_examples = []
 
-    tackbp_newswire_corpus = urllib2.urlopen(
-        app.config['TACKBP_NW_09_CORPUS_URL'])
+    tackbp_newswire_corpus = str(requests.get(
+        app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+    
+    #tackbp_newswire_corpus = urllib2.urlopen(
+    #    app.config['TACKBP_NW_09_CORPUS_URL'])
 
     #Get all the previous examples that we labeled already
     used_examples = []

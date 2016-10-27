@@ -9,6 +9,7 @@ import data_helpers
 from text_cnn import TextCNN
 from computeScores import computeScores
 import sys
+import uuid
 
 tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
 #2,3,4,5,6,7
@@ -19,7 +20,7 @@ tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -119,7 +120,8 @@ def train_cnn(training_sentences, training_labels):
             grad_summaries_merged = tf.merge_summary(grad_summaries)
 
             # Output directory for models and summaries
-            timestamp = str(int(time.time()))
+            #timestamp = str(int(time.time()))
+            timestamp = str(uuid.uuid1())
             out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
             print("Writing to {}\n".format(out_dir))
 
@@ -202,13 +204,18 @@ def train_cnn(training_sentences, training_labels):
                 x_batch, y_batch = zip(*batch)
                 train_step(x_batch, y_batch)
                 current_step = tf.train.global_step(sess, global_step)
-                if current_step % FLAGS.evaluate_every == 0:
-                    print("\nEvaluation:")
-                    dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                    print("")
-                if current_step % FLAGS.checkpoint_every == 0:
-                    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-                    print("Saved model checkpoint to {}\n".format(path))
+                #if current_step % FLAGS.evaluate_every == 0:
+                #    print("\nEvaluation:")
+                #    dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                #    print("")
+                #if current_step % FLAGS.checkpoint_every == 0:
+                #    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                #    print("Saved model checkpoint to {}\n".format(path))
+                
+            path = saver.save(sess, checkpoint_prefix, 
+                              global_step=current_step)
+            print("Saved model checkpoint to {}\n".format(path))
+
                     
             checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
             return checkpoint_file,(vocabulary, vocabulary_inv, sequence_length)
