@@ -2,6 +2,7 @@ from api.train import restart
 from app import app
 from schema.job import Job
 import sys, os, traceback, time, re
+import pprint
 
 @app.celery.task(name='delete_temp_files')
 def delete_temp_files():
@@ -51,8 +52,33 @@ def run_gather():
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
                 job.exceptions.append(traceback.format_exc())
+                
+                local_variables = inspect.trace()[-1][0].f_locals
+                pprint.pprint(local_variables)
+                job.exceptions.append(pprint.pformat(local_variables))
                 job.save()
                 print '-'*60
+                print "Killing background processes"
+                
+                celery_processes = []
+                for proc in psutil.process_iter():
+                    try:
+                        if proc.name() == "celery":
+                            celery_processes.append(proc)
+                    except psutil.NoSuchProcess:
+                        pass
+        
+                celery_processes = sorted(celery_processes,
+                                          key= lambda proc: proc.create_time,
+                                          reverse=True)
+
+                print [(proc.name(), 
+                        proc.create_time) for proc in celery_processes]
+        
+                for proc in celery_processes:
+                    if proc.pid == os.getpid():
+                        continue
+                    proc.kill()
             finally:
                 release_lock()
                         

@@ -632,9 +632,9 @@ def get_random_unlabeled_examples_from_tackbp(
     for sentence in tackbp_newswire_corpus:
         test_examples.append(sentence)
 
-    selected_examples += sample(test_examples,
+    selected_examples = sample(test_examples,
                                 app.config['CONTROLLER_LABELING_BATCH_SIZE'])
-    expected_labels += [0 for i in range(
+    expected_labels = [0 for i in range(
         app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
         
 

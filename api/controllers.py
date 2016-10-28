@@ -6,7 +6,7 @@ from app import app
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 
-from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp, split_examples
+from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp, get_random_unlabeled_examples_from_tackbp, split_examples
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
@@ -40,12 +40,15 @@ def test_controller(task_information, task_category_id):
         return 1, task, len(some_examples_to_test_with), 0
 
 
-def label_only_controller(task_information, task_category_id):
+def label_only_controller(task_ids, task_categories, training_examples,
+                      training_labels, task_information,
+                      costSoFar, budget, job_id):
 
 
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
     
-    selected_examples, expected_labels = get_unlabeled_examples_from_tackbp(
+    (selected_examples, 
+     expected_labels) = get_random_unlabeled_examples_from_tackbp(
         task_ids, task_categories,
         training_examples, training_labels,
         task_information, costSoFar,
