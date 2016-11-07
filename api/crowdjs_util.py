@@ -1,7 +1,7 @@
 from app import app
 import requests
 import pickle
-import sys
+import sys, traceback
 
 
 def submit_answer(task_id, worker_id, question_name, answer):
@@ -14,10 +14,20 @@ def submit_answer(task_id, worker_id, question_name, answer):
     submit_answer_request['worker_source'] = 'mturk';
     submit_answer_request['value'] = answer;
 
-    r = requests.put(app.config['CROWDJS_SUBMIT_ANSWER_URL'],
-                     headers=headers,
-                     json=submit_answer_request)
-
+    while True:
+        try:
+            r = requests.put(app.config['CROWDJS_SUBMIT_ANSWER_URL'],
+                             headers=headers,
+                             json=submit_answer_request)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
+        
     print "Here is the response"
     print r.text
     sys.stdout.flush()
@@ -52,7 +62,17 @@ def get_task_data(task_id):
     task_crowdjs_url += '&requester_id=%s' % app.config[
         'CROWDJS_REQUESTER_ID']
 
-    r = requests.get(task_crowdjs_url, headers=headers)
+    while True:
+        try:
+            r = requests.get(task_crowdjs_url, headers=headers)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
 
     data = r.json()['data']
 
@@ -66,7 +86,17 @@ def get_answers(task_id):
         'CROWDJS_REQUESTER_ID']
     answers_crowdjs_url += '&completed=True'
 
-    r = requests.get(answers_crowdjs_url, headers=headers)
+    while True:
+        try:
+            r = requests.get(answers_crowdjs_url, headers=headers)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
 
     answers = r.json()
 
@@ -75,7 +105,20 @@ def get_answers(task_id):
 def get_questions(task_id):
     #headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
     questions_crowdjs_url = app.config['CROWDJS_GET_QUESTIONS_URL'] % task_id
-    r = requests.get(questions_crowdjs_url)
+
+    while True:
+        try:
+            r = requests.get(questions_crowdjs_url)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
+
+
     questions = r.json()
     return questions
 
@@ -85,8 +128,20 @@ def get_answers_for_question(question_ids):
 
     for question_id in question_ids:
         answers_crowdjs_url += '&question_ids=%s' % question_id
-    
-    r = requests.get(answers_crowdjs_url)
+
+    while True:
+        try:
+            r = requests.get(answers_crowdjs_url)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
+
+
     answers = r.json()
     return answers
     
@@ -96,9 +151,20 @@ def upload_questions(task):
                'content_type' : 'application/json'}
 
 
-    r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
-                     headers=headers,
-                     json=task)
+    while True:
+        try:
+            r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
+                             headers=headers,
+                             json=task)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            continue
+
     print "Here is the response"
     print r.text
     sys.stdout.flush()

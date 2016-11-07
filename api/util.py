@@ -632,6 +632,10 @@ def get_random_unlabeled_examples_from_tackbp(
     for sentence in tackbp_newswire_corpus:
         test_examples.append(sentence)
 
+    print "Sampling from a TACKBP corpus of size"
+    print len(test_examples)
+    sys.stdout.flush()
+
     selected_examples = sample(test_examples,
                                 app.config['CONTROLLER_LABELING_BATCH_SIZE'])
     expected_labels = [0 for i in range(

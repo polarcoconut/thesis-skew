@@ -115,11 +115,11 @@ class DevelopmentConfig(Config):
     QUALIFICATIONS = Qualifications([LocaleRequirement('EqualTo', 'US')])
 
     CELERYBEAT_SCHEDULE = {
-        'delete_temp_files': {
-            'task': 'delete_temp_files',
-            'schedule': timedelta(seconds=86400),
-            'args': ()
-        },
+        #'delete_temp_files': {
+        #    'task': 'delete_temp_files',
+        #    'schedule': timedelta(seconds=86400),
+        #    'args': ()
+        #},
 
         'run_gather': {
             'task': 'run_gather',
@@ -128,7 +128,9 @@ class DevelopmentConfig(Config):
         },
     }
 
-    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
+    #TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
+    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-270k'
+
 
     
 class Production(Config):
@@ -143,11 +145,11 @@ class Production(Config):
          LocaleRequirement('EqualTo', 'US')])
 
     CELERYBEAT_SCHEDULE = {
-        'delete_temp_files': {
-            'task': 'delete_temp_files',
-            'schedule': timedelta(seconds=86400),
-            'args': ()
-        },
+        #'delete_temp_files': {
+        #    'task': 'delete_temp_files',
+        #    'schedule': timedelta(seconds=86400),
+        #    'args': ()
+        #},
         'run_gather': {
             'task': 'run_gather',
             'schedule': timedelta(seconds=60),
