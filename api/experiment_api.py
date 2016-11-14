@@ -193,12 +193,14 @@ class ExperimentStatusApi(Resource):
 
 experiment_analyze_parser = reqparse.RequestParser()
 experiment_analyze_parser.add_argument('experiment_id', type=str, required=True)
+experiment_analyze_parser.add_argument('job_ids', type=str, action='append')
 
 class ExperimentAnalyzeApi(Resource):
     def get(self):
 
         args = experiment_analyze_parser.parse_args()
         experiment_id = args['experiment_id']
+        job_ids = args['job_ids']
 
         experiment = Experiment.objects.get(id=experiment_id)
 
@@ -206,9 +208,13 @@ class ExperimentAnalyzeApi(Resource):
         recalls = []
         f1s = []
 
+
+        if job_ids == None:
+            job_ids = experiment.job_ids
+
         len_longest_curve = 0
         #first figure out the longest curve
-        for job_id in experiment.job_ids:
+        for job_id in job_ids:
             learning_curve = experiment.learning_curves[job_id]
             if len(learning_curve) > len_longest_curve:
                 len_longest_curve = len(learning_curve)
@@ -218,7 +224,7 @@ class ExperimentAnalyzeApi(Resource):
         recalls = [[] for i in range(len_longest_curve)]
         f1s = [[] for i in range(len_longest_curve)]
         
-        for job_id in experiment.job_ids:
+        for job_id in job_ids:
             learning_curve = experiment.learning_curves[job_id]           
             for point_index, point in zip(range(len(learning_curve)),
                                           learning_curve):
@@ -227,6 +233,15 @@ class ExperimentAnalyzeApi(Resource):
                 recalls[point_index].append(recall)
                 f1s[point_index].append(f1)
 
+        actions = []
+        if len(job_ids) == 1:
+            job_id = job_ids[0]
+            x_value = 50
+            for point in experiment.learning_curves[job_id]:
+                task_id, precision, recall, f1, action, costSoFar = point
+                #print [x_value, action]
+                actions.append([x_value, action])
+                x_value += 50
 
         print precisions
         print recalls
@@ -266,6 +281,8 @@ class ExperimentAnalyzeApi(Resource):
             precision_curve += "%d,%f,%f\n" % (x, precision_avg, precision_std)
             recall_curve += "%d,%f,%f\n" % (x, recall_avg, recall_std) 
             f1_curve  += "%d,%f,%f\n" % (x, f1_avg, f1_std) 
+            
+            
+                
 
-
-        return [precision_curve, recall_curve, f1_curve]
+        return [precision_curve, recall_curve, f1_curve, actions]

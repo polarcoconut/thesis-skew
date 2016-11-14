@@ -83,6 +83,12 @@
     <hr/>
 
     <h2> <b> Learning Curves: </b></h2>
+
+    <select id="select_job_ids_for_learning_curves" multiple size="10">
+    </select>
+
+    <br/>
+
     <button id="analyze">
       Analyze and Get Learning Curves</button>
     <br/>
@@ -159,12 +165,19 @@
 		'control_strategy').innerHTML = control_strategy;
 
 	    job_id_html = '';
+	    select_html = '';
 	    for (i=0; i< job_ids.length; i++) {
 		job_id_html += '<a target="_blank" href="../status/' +
 		    job_ids[i] + '">' + job_ids[i] + '</a><br/>'
+
+                select_html +=  '<option value="' + job_ids[i] + '">' + job_ids[i] + '</option>';
+
 	    }
 
 	    document.getElementById('current_jobs').innerHTML = job_id_html;
+
+            document.getElementById(
+                'select_job_ids_for_learning_curves').innerHTML = select_html;
 
 	}
     };
@@ -215,6 +228,18 @@
     function analyze_experiment() {
 	var analyze_experiment_url = '/analyze_experiment?experiment_id=';
 	analyze_experiment_url = analyze_experiment_url + '{{experiment_id}}';
+
+
+	job_ids= document.getElementById(
+	    'select_job_ids_for_learning_curves').options;
+	for (var i=0; i < job_ids.length; i++) {
+	    option = job_ids[i];
+	    if (option.selected) {
+		analyze_experiment_url += '&job_ids=';
+                analyze_experiment_url += option.value;
+            }
+        }
+
 	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
 	xmlhttp_analyze_experiment.send();
 
@@ -231,7 +256,7 @@
 	    var precision_curve = analysis[0];
 	    var recall_curve = analysis[1];
 	    var f1_curve = analysis[2];
-
+	    var actions = analysis[3];
 	    //draw_graphs("precision", precision_curve);
 	    //draw_graphs("recall", recall_curve);
 	    //draw_graphs("f1", f1_curve);
@@ -265,6 +290,60 @@
 
 		}
 	    );
+
+	    if (actions.length > 0) {
+		
+		g_recall.ready(function() {
+		    annotations = [];
+		    for (var i = 0; i < actions.length; i++) {
+			action = actions[i];
+			x_value = action[0];
+			label = action[1];
+			console.log([x_value, label]);
+			annotations.push({				
+			    series: "Recall",
+			    x: x_value,
+			    shortText: label});
+			
+		    }
+		    g_recall.setAnnotations(annotations);
+
+		});
+		g_f1.ready(function() {
+		    annotations = [];
+		    for (var i = 0; i < actions.length; i++) {
+			action = actions[i];
+			x_value = action[0];
+			label = action[1];
+			console.log([x_value, label]);
+			annotations.push({				
+			    series: "F1",
+			    x: x_value,
+			    shortText: label});
+			
+		    }
+		    g_f1.setAnnotations(annotations);
+
+		});
+
+		g_precision.ready(function() {
+		    annotations = [];
+		    for (var i = 0; i < actions.length; i++) {
+			action = actions[i];
+			x_value = action[0];
+			label = action[1];
+			console.log([x_value, label]);
+			annotations.push({				
+			    series: "Precision",
+			    x: x_value,
+			    shortText: label});
+			
+		    }
+		    g_precision.setAnnotations(annotations);
+
+		});
+	    }
+		
 	}
     };
 
