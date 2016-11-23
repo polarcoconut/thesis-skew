@@ -20,6 +20,9 @@ from api.mturk_connection.mturk_connection import MTurk_Connection
 from api.mturk_connection.mturk_connection_real import MTurk_Connection_Real
 from api.mturk_connection.mturk_connection_sim import MTurk_Connection_Sim
 import cPickle
+from ml.extractors.cnn_core.parse import parse_angli_test_data
+from ml.extractors.cnn_core.test import test_cnn
+from ml.extractors.cnn_core.computeScores import computeScores
 
 import numpy as np
 
@@ -62,6 +65,8 @@ class ExperimentApi(Resource):
             task_information = pickle.dumps((task_information, budget)),
             num_runs = num_runs,
             control_strategy = control_strategy,
+            control_strategy_configuration = '%s' % app.config[
+                'UCB_EXPLORATION_CONSTANT'],
             test_set = 3,
             gold_extractor = 'death',
             files_for_simulation = files_for_simulation,
@@ -88,6 +93,35 @@ def run_experiment(experiment_id):
     if len(Gold_Extractor.objects(name=experiment.gold_extractor)) < 1:
         train_gold_extractor(experiment.gold_extractor)
     
+
+    #Test how good the gold extractor is on the test set.
+  
+    print "TESTING HOW GOOD THE GOLD EXTRACTOR IS"
+    sys.stdout.flush()
+
+    testfile_name = 'data/test_data/test_strict_new_feature'                
+    (test_labels, test_features, test_examples,                             
+     test_positive_examples,                                                
+     test_negative_examples) = parse_angli_test_data(                       
+         testfile_name, [], experiment.test_set)
+
+    gold_extractor = Gold_Extractor.objects.get(name=experiment.gold_extractor)
+    model_file_name = write_model_to_file(
+        gold_extractor = gold_extractor.name)    
+    vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+    predicted_labels = test_cnn(test_examples,
+                                test_labels,
+                                model_file_name,
+                                vocabulary)
+    
+    precision, recall, f1 = computeScores(predicted_labels, test_labels)
+
+    print "PRECISION, RECALL, F1"
+    print precision, recall, f1
+    sys.stdout.flush()
+    
+
+
     for i in range(experiment.num_runs):
 
 
@@ -182,13 +216,17 @@ class ExperimentStatusApi(Resource):
 
         experiment = Experiment.objects.get(id=experiment_id)
 
+        if not 'control_strategy_configuration' in experiment:
+            control_strategy_configuration = "No Configuration"
+        else:
+            control_strategy_configuration = experiment.control_strategy_configuration
         (task_information, budget) = pickle.loads(experiment.task_information)
         
         return [task_information, budget, experiment.job_ids,
                 experiment.num_runs,
                 experiment.learning_curves,
-                experiment.control_strategy]
-
+                experiment.control_strategy,
+                control_strategy_configuration]
 
 
 experiment_analyze_parser = reqparse.RequestParser()
@@ -208,7 +246,7 @@ class ExperimentAnalyzeApi(Resource):
         recalls = []
         f1s = []
 
-
+        
         if job_ids == None:
             job_ids = experiment.job_ids
 
@@ -233,6 +271,12 @@ class ExperimentAnalyzeApi(Resource):
                 recalls[point_index].append(recall)
                 f1s[point_index].append(f1)
 
+        print job_ids
+        print "HUH"
+
+        predicted_precisions = [0,0,0]
+        predicted_recalls = [0,0,0]
+        predicted_f1s = [0,0,0]
         actions = []
         if len(job_ids) == 1:
             job_id = job_ids[0]
@@ -243,10 +287,52 @@ class ExperimentAnalyzeApi(Resource):
                 actions.append([x_value, action])
                 x_value += 50
 
-        print precisions
-        print recalls
-        print f1s
-        sys.stdout.flush()
+            job = Job.objects.get(id=job_id)
+            logging_data = pickle.loads(job.logging_data)
+            print logging_data
+            print len(logging_data)
+            print "HUH"
+            sys.stdout.flush()
+
+            if len(logging_data) > 0:
+                #x_value = 50
+                #print logging_data
+                for (best_actions, predictions, values) in logging_data:
+                    (predicted_precision, 
+                     predicted_recall, predicted_f1) = predictions
+                    predicted_precisions.append(predicted_precision)
+                    predicted_recalls.append(predicted_recall)
+                    predicted_f1s.append(predicted_f1)
+                    #x_value += 50
+                print "PREDICTIONS"
+                print predicted_precisions
+                print predicted_recalls
+                print predicted_f1s
+                sys.stdout.flush()
+
+        #print "Precisions"
+        #x_value = 50
+        #for precision in precisions:
+        #    print x_value
+        #    print precision
+        #    x_value += 50
+
+        #print "Recalls"
+        #x_value = 50
+        #for recall in recalls:
+        #    print x_value
+        #    print recall
+        #    x_value += 50
+
+        #print "F1s"
+        #x_value = 50
+        #for f1 in f1s:
+        #    print x_value
+        #    print f1
+        #    x_value += 50
+        #print f1s
+
+        #sys.stdout.flush()
 
         precisions_avgs = [np.mean(numbers) for numbers in precisions]
         recalls_avgs = [np.mean(numbers) for numbers in recalls]
@@ -266,23 +352,59 @@ class ExperimentAnalyzeApi(Resource):
         #recall_curve =[]
         #f1_curve = []
         
-        precision_curve = "Number of Labels,Precision\n"
-        recall_curve = "Number of Labels,Recall\n"
-        f1_curve = "Number of Labels,F1\n"
 
-        for (x,precision_avg,recall_avg,
-             f1_avg,precision_std,recall_std,f1_std) in zip(
-                number_of_labels,
-                precisions_avgs, recalls_avgs, f1s_avgs,
-                precisions_stds, recalls_stds, f1s_stds):
-            #precision_curve.append({"x" : x, "y" :precision})
-            #recall_curve.append({"x" : x, "y" : recall}) 
-            #f1_curve.append({"x" : x, "y" : f1}) 
-            precision_curve += "%d,%f,%f\n" % (x, precision_avg, precision_std)
-            recall_curve += "%d,%f,%f\n" % (x, recall_avg, recall_std) 
-            f1_curve  += "%d,%f,%f\n" % (x, f1_avg, f1_std) 
+        if len(logging_data) > 0:
+            print "LENGTH OF CURVE"
+            print len(precisions_avgs)
+            print len(predicted_precisions)
+            sys.stdout.flush()
+
+            
+            precision_curve = "Number of Labels,Precision,PredictedPrecision\n"
+            recall_curve = "Number of Labels,Recall,PredictedRecall\n"
+            f1_curve = "Number of Labels,F1,PredictedF1\n"
+            
+            for (x,precision_avg,recall_avg,
+                 f1_avg,precision_std,recall_std,f1_std,
+                 predicted_precision, predicted_recall, predicted_f1) in zip(
+                     number_of_labels,
+                     precisions_avgs, recalls_avgs, f1s_avgs,
+                     precisions_stds, recalls_stds, f1s_stds,
+                     predicted_precisions, predicted_recalls,
+                     predicted_f1s):
+                precision_curve += "%d,%f,%f,%f,%f\n" % (
+                    x, precision_avg, precision_std, predicted_precision, 0.0)
+                recall_curve += "%d,%f,%f,%f,%f\n" % (
+                    x, recall_avg, recall_std, predicted_recall, 0.0) 
+                f1_curve  += "%d,%f,%f,%f,%f\n" % (
+                    x, f1_avg, f1_std, predicted_f1, 0.0) 
+
+            
+        else:
+            precision_curve = "Number of Labels,Precision\n"
+            recall_curve = "Number of Labels,Recall\n"
+            f1_curve = "Number of Labels,F1\n"
+            
+            for (x,precision_avg,recall_avg,
+                 f1_avg,precision_std,recall_std,f1_std) in zip(
+                     number_of_labels,
+                     precisions_avgs, recalls_avgs, f1s_avgs,
+                     precisions_stds, recalls_stds, f1s_stds):
+                #precision_curve.append({"x" : x, "y" :precision})
+                #recall_curve.append({"x" : x, "y" : recall}) 
+                #f1_curve.append({"x" : x, "y" : f1}) 
+                precision_curve += "%d,%f,%f\n" % (
+                    x, precision_avg, precision_std)
+                recall_curve += "%d,%f,%f\n" % (x, recall_avg, recall_std) 
+                f1_curve  += "%d,%f,%f\n" % (x, f1_avg, f1_std) 
             
             
+
+        print recall_curve
+        print "PRECISION CURVE"
+        print actions
+        sys.stdout.flush()
+
                 
-
-        return [precision_curve, recall_curve, f1_curve, actions]
+        return [precision_curve, recall_curve, f1_curve, actions,
+                predicted_precisions, predicted_recalls, predicted_f1s]

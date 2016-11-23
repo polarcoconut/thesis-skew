@@ -14,6 +14,9 @@ class Config(object):
     (dbpass, host) = dbpass_host.split('@')
     dbname = mongolab_uri[3]
 
+
+    MODEL = os.environ['MODEL']
+
     REDIS_URL = os.environ['REDIS_URL']
 
     RABBITMQ_BIGWIG_URL = os.environ['RABBITMQ_BIGWIG_URL']
@@ -31,6 +34,9 @@ class Config(object):
     SECURITY_PASSWORD_SALT = 'abcde'
 
     MAIL_SUPPRESS_SEND = True
+
+
+    UCB_EXPLORATION_CONSTANT = float(os.environ['UCB_EXPLORATION_CONSTANT'])
 
     CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
     CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']

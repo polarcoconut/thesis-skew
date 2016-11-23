@@ -4,6 +4,7 @@ from schema.job import Job
 import sys, os, traceback, time, re
 import pprint
 import inspect
+import psutil
 
 #@app.celery.task(name='delete_temp_files')
 #def delete_temp_files():

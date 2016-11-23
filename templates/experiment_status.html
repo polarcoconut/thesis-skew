@@ -138,7 +138,8 @@
 	    var num_runs = experiment_information[3]
 	    var learning_curves = experiment_information[4]
 	    var control_strategy = experiment_information[5]
-
+	    var control_strategy_configuration = experiment_information[6]
+	    
 	    document.getElementById(
 		'event_name').innerHTML = task_information[0];
 	    document.getElementById(
@@ -162,7 +163,7 @@
 		'event_budget').innerHTML = budget;
 
 	    document.getElementById(
-		'control_strategy').innerHTML = control_strategy;
+		'control_strategy').innerHTML = control_strategy + " " + control_strategy_configuration;
 
 	    job_id_html = '';
 	    select_html = '';
@@ -267,7 +268,8 @@
 		{
 		    errorBars: true,
 		    xlabel: 'Number of Labels',
-		    ylabel: 'Precision'
+		    ylabel: 'Precision',
+		    legend: 'always'
 		}
 	    );
 	    g_recall = new Dygraph(
@@ -276,7 +278,8 @@
 		{
 		    errorBars: true,
 		    xlabel: 'Number of Labels',
-		    ylabel: 'Recall'
+		    ylabel: 'Recall',
+		    legend: 'always'
 
 		}
 	    );
@@ -286,7 +289,8 @@
 		{
 		    errorBars: true,
 		    xlabel: 'Number of Labels',
-		    ylabel: 'F1'
+		    ylabel: 'F1',
+		    legend: 'always'
 
 		}
 	    );
@@ -299,13 +303,13 @@
 			action = actions[i];
 			x_value = action[0];
 			label = action[1];
-			console.log([x_value, label]);
 			annotations.push({				
 			    series: "Recall",
 			    x: x_value,
 			    shortText: label});
 			
 		    }
+		    console.log(annotations);
 		    g_recall.setAnnotations(annotations);
 
 		});
@@ -315,7 +319,6 @@
 			action = actions[i];
 			x_value = action[0];
 			label = action[1];
-			console.log([x_value, label]);
 			annotations.push({				
 			    series: "F1",
 			    x: x_value,
@@ -332,7 +335,6 @@
 			action = actions[i];
 			x_value = action[0];
 			label = action[1];
-			console.log([x_value, label]);
 			annotations.push({				
 			    series: "Precision",
 			    x: x_value,

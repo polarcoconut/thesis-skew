@@ -2,6 +2,7 @@ from app import app
 import requests
 import pickle
 import sys, traceback
+import time
 
 
 def submit_answer(task_id, worker_id, question_name, answer):
@@ -26,6 +27,7 @@ def submit_answer(task_id, worker_id, question_name, answer):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
         
     print "Here is the response"
@@ -48,7 +50,18 @@ def get_next_assignment(task_id, worker_id):
     assign_crowdjs_url += '&strategy=';
     assign_crowdjs_url+= 'min_answers';
 
-    r = requests.get(assign_crowdjs_url)
+    while True:
+        try:
+            r = requests.get(assign_crowdjs_url)
+            break
+        except Exception:
+            print "Exception while communicating with crowdjs:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            time.sleep(10)
+            continue
 
     data = r.json()
 
@@ -72,6 +85,7 @@ def get_task_data(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
 
     data = r.json()['data']
@@ -96,6 +110,7 @@ def get_answers(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
 
     answers = r.json()
@@ -116,6 +131,7 @@ def get_questions(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
 
 
@@ -139,6 +155,7 @@ def get_answers_for_question(question_ids):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
 
 
@@ -163,6 +180,7 @@ def upload_questions(task):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
+            time.sleep(10)
             continue
 
     print "Here is the response"

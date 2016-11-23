@@ -3,10 +3,10 @@ from random import sample, shuffle, random
 import pickle
 import sys
 from app import app
-from ml.extractors.cnn_core.test import test_cnn
+#from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 
-from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp, get_random_unlabeled_examples_from_tackbp, split_examples
+from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp, get_random_unlabeled_examples_from_tackbp, split_examples, test
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
@@ -199,12 +199,10 @@ def uncertainty_sampling_controller(task_ids, task_categories,
                 training_negative_examples = training_negative_examples)
 
         job = Job.objects.get(id = job_id)
-        vocabulary = pickle.loads(job.vocabulary)
-        predicted_labels = test_cnn(
+        predicted_labels = test(
+            job_id,
             validation_all_examples,
-            validation_all_labels,
-            write_model_to_file(job_id),
-            vocabulary)
+            validation_all_labels)
 
         precision, recall, f1 = computeScores(predicted_labels,
                                               validation_all_labels)
@@ -457,14 +455,11 @@ def impact_sampling_controller(task_ids, task_categories,
                 training_negative_examples = training_negative_examples)
         
         job = Job.objects.get(id = job_id)
-        vocabulary = pickle.loads(job.vocabulary)
     
-    
-        predicted_labels = test_cnn(
+        predicted_labels = test(
+            job_id,
             validation_recall_examples + validation_precision_examples,
-            validation_recall_labels + validation_precision_labels,
-            write_model_to_file(job_id),
-            vocabulary)
+            validation_recall_labels + validation_precision_labels)
 
         predicted_labels_for_recall_examples = predicted_labels[
             0:len(validation_recall_examples)]
@@ -518,20 +513,21 @@ def impact_sampling_controller(task_ids, task_categories,
 
     
     new_f1s = []
+    new_precisions = []
+    new_recalls = []
+
     for i in range(3):
         retrain(job_id, ['all'],
                 training_positive_examples = training_positive_examples,
                 training_negative_examples = training_negative_examples)
     
         job = Job.objects.get(id = job_id)
-        vocabulary = pickle.loads(job.vocabulary)
         
-
-        predicted_labels = test_cnn(
+        predicted_labels = test(
+            job_id,
             validation_recall_examples + validation_precision_examples,
-            validation_recall_labels + validation_precision_labels,
-            write_model_to_file(job_id),
-            vocabulary)
+            validation_recall_labels + validation_precision_labels)
+
         predicted_labels_for_recall_examples = predicted_labels[
             0:len(validation_recall_examples)]
         predicted_labels_for_precision_examples = predicted_labels[
@@ -568,9 +564,14 @@ def impact_sampling_controller(task_ids, task_categories,
             new_f1 = (2.0 * (new_precision * new_recall) / 
                       (new_precision + new_recall))
         new_f1s.append(new_f1)
+        new_precisions.append(new_precision)
+        new_recalls.append(new_recall)
+
 
     new_f1 = np.mean(new_f1s)
-
+    new_precision = np.mean(new_precisions)
+    new_recall = np.mean(new_recalls)
+    
     change_in_f1 = new_f1 - f1
 
 
@@ -614,15 +615,15 @@ def impact_sampling_controller(task_ids, task_categories,
         exploration_term =  sqrt(
             2.0*log(num_actions_taken_so_far) / 
             len(current_control_data[task_category]) )
-        c = 0.2
+        c = app.config['UCB_EXPLORATION_CONSTANT']
         ucb_value = average_change + (c * exploration_term)
 
         computed_values_of_each_action.append(
-            (current_control_data[task_category],
+            [current_control_data[task_category],
              average_change,
              exploration_term,
-             ucb_value))
-
+             ucb_value])
+        
         print "------------------------------------------"
         print "------------------------------------------"
         print "------------------------------------------"
@@ -643,8 +644,9 @@ def impact_sampling_controller(task_ids, task_categories,
             best_task_category.append(task_category)
     
     current_logging_data = pickle.loads(job.logging_data)
-    current_logging_data.append((best_task_category,
-                                 computed_values_of_each_action))
+    current_logging_data.append([best_task_category,
+                                 [new_precision, new_recall, new_f1],
+                                 computed_values_of_each_action])
     job.logging_data = pickle.dumps(current_logging_data)
     job.save()
 

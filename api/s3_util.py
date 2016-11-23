@@ -29,7 +29,29 @@ def insert_model_into_s3(model_file_name, model_meta_file_name):
     model_url = model_key.generate_url(3600000)
     model_meta_url = model_meta_key.generate_url(3600000)
 
-    return model_url, model_meta_url
+    return model_url, model_meta_url, model_key_name, model_meta_key_name
+
+def insert_crf_model_into_s3(model_file_name):
+    
+    s3 = S3Connection(app.config['AWS_ACCESS_KEY_ID'],
+                                app.config['AWS_SECRET_ACCESS_KEY'])
+
+    
+    bucket = s3.get_bucket("extremest-extraction-temp-models")
+
+    model_key_name = str(uuid.uuid1())
+
+    model_key = bucket.new_key(model_key_name)
+
+    model_key.set_contents_from_filename(model_file_name)
+        
+
+    model_key.make_public()
+
+    model_url = model_key.generate_url(3600000)
+
+    return model_url
+
 
 
 def insert_connection_into_s3(connection_pickle):

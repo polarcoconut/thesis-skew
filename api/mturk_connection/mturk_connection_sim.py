@@ -2,8 +2,7 @@ from app import app
 import sys
 from mturk_connection import MTurk_Connection
 from api.crowdjs_util import get_next_assignment, submit_answer, get_answers
-from api.util import parse_answers, write_model_to_file
-from api.ml.extractors.cnn_core.train import train_cnn
+from api.util import parse_answers, write_model_to_file, test
 from api.ml.extractors.cnn_core.test import test_cnn
 from random import shuffle
 import uuid
@@ -145,6 +144,10 @@ class MTurk_Connection_Sim(MTurk_Connection):
                                         [0 for s in category_2_sentences],
                                         self.model_file_name,
                                         self.vocabulary)
+            #predicted_labels = test(
+            #                self.job_id,
+            #                category_2_sentences,
+            #                [0 for s in category_2_sentences])
             for label, worker_id, question_name in zip(
                     predicted_labels,
                     category_2_worker_ids,

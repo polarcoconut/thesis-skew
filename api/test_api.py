@@ -6,10 +6,10 @@ import pickle
 from app import app
 import sys
 import pickle
-from ml.extractors.cnn_core.test import test_cnn
+#from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 from ml.extractors.cnn_core.parse import parse_angli_test_data, parse_tackbp_test_data
-from util import write_model_to_file, getLatestCheckpoint, split_examples, retrain
+from util import write_model_to_file, getLatestCheckpoint, split_examples, retrain, test
 from schema.job import Job
 import numpy as np
 
@@ -37,11 +37,7 @@ class TestExtractorApi(Resource):
         print test_sentence
         sys.stdout.flush()
 
-        job = Job.objects.get(id = job_id)
-        vocabulary = pickle.loads(job.vocabulary)
-        predicted_labels = test_cnn([test_sentence], [0],
-                                    write_model_to_file(job_id),
-                                    vocabulary)
+        predicted_labels = test(job_id, [test_sentence], [0])
 
         print "predicted_labels"
         print predicted_labels
@@ -112,14 +108,8 @@ def test_on_held_out_set(job_id, positive_types, test_set):
                        [0 for e in test_negative_examples])
 
 
-    #job = Job.objects.get(id = job_id)
-    vocabulary = pickle.loads(job.vocabulary)
 
-    predicted_labels = test_cnn(
-        test_examples,
-        test_labels,
-        write_model_to_file(job_id),
-        vocabulary)
+    predicted_labels = test(job_id,test_examples,test_labels)
 
     print "predicted_labels"
     print predicted_labels

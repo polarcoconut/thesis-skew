@@ -6,6 +6,9 @@ class Experiment(db.DynamicDocument):
 
     job_ids = db.ListField()
     control_strategy = db.StringField()
+
+    control_strategy_configuration = db.StringField()
+
     num_runs = db.IntField()
 
     learning_curves = db.DictField()

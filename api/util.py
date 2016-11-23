@@ -7,7 +7,7 @@ from app import app
 from schema.job import Job
 from schema.gold_extractor import Gold_Extractor
 from crowdjs_util import get_answers, get_questions, get_answers_for_question, get_task_data
-from s3_util import insert_model_into_s3
+from s3_util import insert_model_into_s3, insert_crf_model_into_s3
 from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
@@ -15,6 +15,10 @@ from random import sample, shuffle
 from math import floor, ceil
 import urllib2
 import uuid
+import shutil
+import os
+import subprocess
+import re
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -122,6 +126,39 @@ def write_model_to_file(job_id = None, gold_extractor = None):
     
 
     return temp_model_file_name
+
+
+#Writes the model to a temporary file.
+#The purpose of this is so tensorflow can read the model
+def write_crf_model_to_file(job_id = None, gold_extractor = None):
+
+    model_folder = str(uuid.uuid1())
+    shutil.copytree('api/ml/extractors/crf', 
+                    'api/ml/extractors/temp_extractors/%s' % model_folder)
+
+    if not job_id == None:
+        job = Job.objects.get(id = job_id)
+
+        model_file = requests.get(job.model_file)
+    
+        temp_model_file_handle = open(
+            "api/ml/extractors/temp_extractors/%s/model.out" % model_folder, 
+            'wb')
+        temp_model_file_handle.write(str(model_file.content))
+        temp_model_file_handle.close()
+                
+
+    elif not gold_extractor == None:
+        gold_extractor = Gold_Extractor.objects.get(name = gold_extractor)
+        
+        temp_model_file_handle = open(
+           "api/ml/extractors/temp_extractors/%s/model.out" % model_folder, 
+            'wb')
+        temp_model_file_handle.write(gold_extractor.model_file.read())
+        temp_model_file_handle.close()
+        
+    
+    return model_folder
 
 
 
@@ -437,55 +474,199 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
             task_categories_to_train,
             positive_types)
     
-    model_file_name, vocabulary = train_cnn(
-        training_positive_examples + training_negative_examples,
-        ([1 for e in training_positive_examples] +
-         [0 for e in training_negative_examples]))
 
+    if app.config['MODEL'] == 'CNN':
+        model_file_name, vocabulary = train_cnn(
+            training_positive_examples + training_negative_examples,
+            ([1 for e in training_positive_examples] +
+             [0 for e in training_negative_examples]))
 
-    #model_file_handle = open(model_file_name, 'rb')
-    #model_binary = model_file_handle.read()
+        print "Saving the model"
+        print job_id
+        sys.stdout.flush()
 
-    #model_meta_file_handle = open("{}.meta".format(model_file_name), 'rb')
-    #model_meta_binary = model_meta_file_handle.read()
-
-    print "Saving the model"
-    print job_id
-    sys.stdout.flush()
-
-    model_url, model_meta_url = insert_model_into_s3(
-        model_file_name,
-        "{}.meta".format(model_file_name))
-    job = Job.objects.get(id=job_id)
-    job.vocabulary = pickle.dumps(vocabulary)
-    #job.model_file.replace(model_file_handle)
-    #job.model_meta_file.replace(model_meta_file_handle)
+        (model_url, model_meta_url, 
+         model_key, model_meta_key) = insert_model_into_s3(
+            model_file_name,
+            "{}.meta".format(model_file_name))
+        job = Job.objects.get(id=job_id)
+        job.vocabulary = pickle.dumps(vocabulary)
     
     
-    job.model_file = model_url
-    job.model_meta_file = model_meta_url
+        job.model_file = model_url
+        job.model_meta_file = model_meta_url
     
-    print "Model saved"
-    sys.stdout.flush()
+        print "Model saved"
+        sys.stdout.flush()
+        
+        job.num_training_examples_in_model = (
+            len(training_positive_examples) + len(training_negative_examples))
 
-    job.num_training_examples_in_model = (
-        len(training_positive_examples) + len(training_negative_examples))
+        print "training saved"
+        sys.stdout.flush()
+        
+        job.save()
 
-    print "training saved"
-    sys.stdout.flush()
-
-    job.save()
-
-    print "Job modified"
-    sys.stdout.flush()
-
-    #model_file_handle.close()
-    #model_meta_file_handle.close()
-
-    print "file handles closed"
-    sys.stdout.flush()
+        model_folder = re.search('\/[^/]+-[^/]+-[^/]+-[^/]+-[^/]+\/', 
+                                 model_file_name).group(0)
+        model_folder = model_folder.split('/')[1]
+        shutil.rmtree('runs/%s' % model_folder )
+                        
+        print "Job modified"        
+        print "file handles closed"
+        sys.stdout.flush()
     
-    return True
+        return True
+    
+    elif app.config['MODEL'] == 'CRF':
+        model_folder = str(uuid.uuid1())
+        shutil.copytree('api/ml/extractors/crf', 
+                        'api/ml/extractors/temp_extractors/%s' % model_folder)
+        
+        training_data_directory = os.path.join(
+            os.getcwd(),
+            'api/ml/extractors/temp_extractors/%s/training_data' % 
+            model_folder)
+
+        os.mkdir(training_data_directory)
+
+        print "Writing Training Data"        
+        print model_folder
+        print training_data_directory
+        print os.path.exists(training_data_directory)
+        sys.stdout.flush()    
+
+        training_data_file = open(
+            'api/ml/extractors/temp_extractors/%s/training_data/training_data'%
+            model_folder,
+            'w')
+        
+        for training_positive_example in training_positive_examples:
+            training_data_file.write(
+                'event\t%s\n' % training_positive_example.encode(
+                    'utf8').replace('\n', ''))
+        for training_negative_example in training_negative_examples:
+            training_data_file.write(
+                'NO_EVENT\t%s\n' % training_negative_example.encode(
+                    'utf8').replace('\n',''))
+        
+        training_data_file.close()
+
+        print "Done Writing Training Data"        
+        print model_folder
+        sys.stdout.flush()
+
+        train_process = subprocess.Popen(
+            [
+            os.path.join(
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s/train.sh" %model_folder),
+            os.path.join(
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s/training_data" % 
+                model_folder)
+            ],
+            cwd=os.path.join(
+                #os.path.abspath(sys.path[0]), 
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s" % model_folder))
+        train_process.wait() 
+        
+
+        shutil.copyfile(
+            "api/ml/extractors/temp_extractors/%s/model.out" % model_folder,
+            "api/ml/extractors/temp_extractors/%s/%s" % (model_folder, 
+                                                         model_folder))
+        model_url = insert_crf_model_into_s3(
+            "api/ml/extractors/temp_extractors/%s/%s" % (model_folder,
+                                                         model_folder))
+
+        job.model_file = model_url
+        job.save()
+
+        shutil.rmtree('api/ml/extractors/temp_extractors/%s' % 
+                      model_folder)
+                
+        return True
+
+def test(job_id, test_examples, test_labels):
+    job = Job.objects.get(id = job_id)
+
+    if app.config['MODEL'] == 'CNN':
+        vocabulary = pickle.loads(job.vocabulary)
+        temp_file_name = write_model_to_file(job_id)
+        predicted_labels = test_cnn(test_examples, test_labels,
+                                    temp_file_name,
+                                    vocabulary)
+        os.remove(os.path.join(
+            os.getcwd(),temp_file_name))
+        os.remove(os.path.join(
+            os.getcwd(),'%s.meta' % temp_file_name))
+
+        return predicted_labels
+    elif app.config['MODEL'] == 'CRF':
+        model_folder = write_crf_model_to_file(job_id)
+
+        os.makedirs(
+            os.path.join(
+                os.getcwd(),
+                'api/ml/extractors/temp_extractors/%s/testing_data' % 
+                model_folder))
+
+        testing_data_file = open(
+            'api/ml/extractors/temp_extractors/%s/testing_data/testing_data' %
+            model_folder,
+            'w')
+
+        for test_example, test_label in zip(test_examples, test_labels):
+            #if test_label == 0:
+            #    testing_data_file.write(
+            #        '%s\n' % test_example)
+            #elif test_label == 1:
+            #    testing_data_file.write(
+            #        '%s\n' % test_example)
+            testing_data_file.write(
+                '%s\n' % test_example)
+
+
+        test_process = subprocess.Popen(
+            [
+            os.path.join(
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s/run.sh" %model_folder),
+            os.path.join(
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s/testing_data" % 
+                model_folder)
+            ],
+            cwd=os.path.join(
+                #os.path.abspath(sys.path[0]), 
+                os.getcwd(),
+                "api/ml/extractors/temp_extractors/%s" % model_folder))
+        test_process.wait()                                 
+
+
+        predicted_labels = []
+        predicted_labels_file = open(
+            'api/ml/extractors/temp_extractors/%s/output' % model_folder, 'r')
+
+        for predicted_label in predicted_labels_file:
+            predicted_label = predicted_label.split('\t')[0]
+            if predicted_label == "NO_EVENT":
+                predicted_labels.append(0)
+            else:
+                predicted_labels.append(1)
+
+
+        #shutil.rmtree('api/ml/extractors/temp_extractors/%s' % 
+        #              model_folder)
+
+        print "PREDICTED LABELS"
+        print predicted_labels
+        sys.stdout.flush()
+
+        return predicted_labels
+
 
 
 
@@ -537,13 +718,11 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
 
     job = Job.objects.get(id = job_id)
-    vocabulary = pickle.loads(job.vocabulary)
 
-    predicted_labels = test_cnn(
+    predicted_labels = test(
+        job_id,
         test_examples,
-        test_labels,
-        write_model_to_file(job_id),
-        vocabulary)
+        test_labels)
 
 
     positive_examples = []
