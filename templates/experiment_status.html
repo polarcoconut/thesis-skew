@@ -93,12 +93,27 @@
       Analyze and Get Learning Curves</button>
     <br/>
     <b>Precision</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
     <div id="precision"></div>
 <br/>
     <b>Recall</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
     <div id="recall"></div>
 <br/>
     <b>F1</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
     <div id="f1"></div>
 
     
@@ -303,10 +318,24 @@
 			action = actions[i];
 			x_value = action[0];
 			label = action[1];
+			/*
+			if (label == 0) {
+			    label = 'pos';
+			} else if (label == 1) {
+			    label = 'neg';
+			} else if (label == 2) {
+			    label = 'lab';
+			}*/
+
 			annotations.push({				
 			    series: "Recall",
 			    x: x_value,
 			    shortText: label});
+			annotations.push({				
+			    series: "PredictedRecall",
+			    x: x_value,
+			    shortText: label});
+
 			
 		    }
 		    console.log(annotations);
@@ -323,6 +352,10 @@
 			    series: "F1",
 			    x: x_value,
 			    shortText: label});
+			annotations.push({				
+			    series: "PredictedF1",
+			    x: x_value,
+			    shortText: label});
 			
 		    }
 		    g_f1.setAnnotations(annotations);
@@ -337,6 +370,10 @@
 			label = action[1];
 			annotations.push({				
 			    series: "Precision",
+			    x: x_value,
+			    shortText: label});
+			annotations.push({				
+			    series: "PredictedPrecision",
 			    x: x_value,
 			    shortText: label});
 			

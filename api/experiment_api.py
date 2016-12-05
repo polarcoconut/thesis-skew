@@ -23,6 +23,9 @@ import cPickle
 from ml.extractors.cnn_core.parse import parse_angli_test_data
 from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
+import requests
+from random import sample, shuffle
+import pprint
 
 import numpy as np
 
@@ -59,6 +62,7 @@ class ExperimentApi(Resource):
             0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_positives'],
             1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_negatives']}
         files_for_simulation = pickle.dumps(files_for_simulation)
+
          
         experiment = Experiment(
             job_ids = [],
@@ -71,6 +75,11 @@ class ExperimentApi(Resource):
             gold_extractor = 'death',
             files_for_simulation = files_for_simulation,
             learning_curves= {})
+
+        #Compute an upper bound on performance
+        #compute_upper_bound.delay(experiment.gold_extractor, 
+        #                          experiment.test_set)
+        #raise Exception
 
         experiment.save()
         
@@ -95,7 +104,8 @@ def run_experiment(experiment_id):
     
 
     #Test how good the gold extractor is on the test set.
-  
+    
+    """
     print "TESTING HOW GOOD THE GOLD EXTRACTOR IS"
     sys.stdout.flush()
 
@@ -119,7 +129,7 @@ def run_experiment(experiment_id):
     print "PRECISION, RECALL, F1"
     print precision, recall, f1
     sys.stdout.flush()
-    
+    """
 
 
     for i in range(experiment.num_runs):
@@ -160,6 +170,160 @@ def run_experiment(experiment_id):
         acquire_lock()
         gather(task_information, budget, job_id)
         release_lock()
+
+@app.celery.task(name='compute_upper_bound')
+def compute_upper_bound(gold_extractor, test_set_index):
+
+    test_examples = []
+    test_labels = []
+
+    tackbp_newswire_corpus = str(requests.get(
+        app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+ 
+    for sentence in tackbp_newswire_corpus:
+        test_examples.append(sentence)
+        test_labels.append(0)
+
+    gold_extractor = Gold_Extractor.objects.get(name=gold_extractor)
+    model_file_name = write_model_to_file(
+        gold_extractor = gold_extractor.name)    
+    vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+    predicted_labels = test_cnn(test_examples,
+                                test_labels,
+                                model_file_name,
+                                vocabulary)
+    
+    positive_examples = []
+    negative_examples = []
+    for i in range(len(predicted_labels)):
+        predicted_label = predicted_labels[i]
+        example = test_examples[i]
+        if predicted_label == 1:
+            positive_examples.append(example)
+        else:
+            negative_examples.append(example)
+
+
+
+    num_positive_examples_list  = [1000, 666, 500, 400, 333, 250]
+    #num_positive_examples_list  = [1000]
+    f1_results_raw = {}
+    precision_results_raw = {}
+    recall_results_raw = {}
+    f1_results = {}
+    precision_results = {}
+    recall_results = {}
+    num_trials = 5
+
+    
+    for num_positive_examples in num_positive_examples_list:
+        print "TRYING WITH NUMBER OF POSITIVE EXAMPLES"
+        print num_positive_examples
+        sys.stdout.flush()
+
+        f1_results_raw[num_positive_examples] = []
+        precision_results_raw[num_positive_examples] = []
+        recall_results_raw[num_positive_examples] = []
+        for num_trial in range(num_trials):
+            num_negative_examples = 2000 - num_positive_examples
+            
+            selected_examples = []
+            expected_labels = []
+
+            #if len(positive_examples) < num_positive_examples_to_label:
+            #    selected_examples += positive_examples
+            #    expected_labels += [1 for i in range(len(positive_examples))]
+            #    selected_examples += sample(
+            #        negative_examples,
+            #        app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(positive_examples)\
+                #    )
+            #       expected_labels += [0 for i in range(
+            #           app.config['CONTROLLER_LABELING_BATCH_SIZE']-
+            #           len(positive_examples))]
+            
+            #   elif len(negative_examples) < num_negative_examples_to_label:
+            #       selected_examples += negative_examples
+            #       expected_labels += [0 for i in range(len(negative_examples))]
+            #       selected_examples += sample(
+            #           positive_examples,
+            #           app.config['CONTROLLER_LABELING_BATCH_SIZE']-len(negative_examples)\
+            #       )
+            #       expected_labels += [1 for i in range(
+            #           app.config['CONTROLLER_LABELING_BATCH_SIZE']-
+            #           len(negative_examples))]
+            #   else:
+        
+            selected_examples += sample(positive_examples,
+                                        num_positive_examples)
+            expected_labels += [1 for i in range(num_positive_examples)]
+            selected_examples += sample(negative_examples,
+                                        num_negative_examples)
+            expected_labels += [0 for i in range(num_negative_examples)]
+        
+            #shuffle(selected_examples)
+
+            model_file_name, vocabulary = train_cnn(
+                selected_examples, expected_labels)
+            
+            #(model_url, model_meta_url,
+            # model_key, model_meta_key) = insert_model_into_s3(
+            #    model_file_name,
+            #    "{}.meta".format(model_file_name))
+            
+            
+            testfile_name = 'data/test_data/test_strict_new_feature'   
+            (test_labels, test_features, test_examples,                        
+             test_positive_examples,                                          
+             test_negative_examples) = parse_angli_test_data(
+                 testfile_name, [], test_set_index)           
+            predicted_labels = test_cnn(test_examples, test_labels,
+                                        model_file_name,
+                                        vocabulary)
+
+            precision, recall, f1 = computeScores(predicted_labels, 
+                                                  test_labels)
+            f1_results_raw[num_positive_examples].append(f1)
+            recall_results_raw[num_positive_examples].append(recall)
+            precision_results_raw[num_positive_examples].append(precision)
+
+        f1_results[num_positive_examples] = [
+            np.mean(f1_results_raw[num_positive_examples]),
+            np.std(f1_results_raw[num_positive_examples])]
+        precision_results[num_positive_examples] = [
+            np.mean(precision_results_raw[num_positive_examples]),
+            np.std(precision_results_raw[num_positive_examples])]
+        recall_results[num_positive_examples] = [
+            np.mean(recall_results_raw[num_positive_examples]),
+            np.std(recall_results_raw[num_positive_examples])]
+        
+
+    print "RESULTS"
+    print f1_results_raw
+    print precision_results_raw
+    print recall_results_raw
+    print f1_results
+    print precision_results
+    print recall_results
+
+    upperbound_file = open('upperbounds', 'w')
+    upperbound_file.write(pprint.pformat(f1_results_raw))
+    upperbound_file.write('\n')
+    upperbound_file.write(pprint.pformat(precision_results_raw))
+    upperbound_file.write('\n')
+    upperbound_file.write(pprint.pformat(recall_results_raw))
+    upperbound_file.write('\n')
+    upperbound_file.write(pprint.pformat(f1_results))
+    upperbound_file.write('\n')
+    upperbound_file.write(pprint.pformat(precision_results))
+    upperbound_file.write('\n')
+    upperbound_file.write(pprint.pformat(recall_results))
+    upperbound_file.write('\n')
+
+    
+    
+    return [f1_results_raw, precision_results_raw, recall_results_raw,
+            f1_results, precision_results, recall_results]
+
 
 
 def train_gold_extractor(name_of_new_gold_extractor):
@@ -274,9 +438,9 @@ class ExperimentAnalyzeApi(Resource):
         print job_ids
         print "HUH"
 
-        predicted_precisions = [0,0,0]
-        predicted_recalls = [0,0,0]
-        predicted_f1s = [0,0,0]
+        predicted_precisions = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        predicted_recalls = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        predicted_f1s = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         actions = []
         if len(job_ids) == 1:
             job_id = job_ids[0]
@@ -353,7 +517,7 @@ class ExperimentAnalyzeApi(Resource):
         #f1_curve = []
         
 
-        if len(logging_data) > 0:
+        if len(predicted_precisions) > 14:
             print "LENGTH OF CURVE"
             print len(precisions_avgs)
             print len(predicted_precisions)
