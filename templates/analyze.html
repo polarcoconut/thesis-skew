@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <title>Extremest Extraction></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+     <style type='text/css'>
+       textarea {
+       white-space: nowrap;
+       overflow:    scroll;
+       overflow-y:  scroll;
+       overflow-x:  scroll;
+       overflow:    -moz-scrollbars-horizontal;
+       }
+     </style>
+
+     <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combin
+ed.js"></script>
+
+     <style media="screen">
+       /* Add space between vega-embed links  */
+       .vega-actions a {
+       margin-right: 5px;
+       }
+     </style>
+  </head>
+  <body>
+
+
+    <h2> <b> Learning Curves: </b></h2>
+
+    <br/>
+
+    <button id="analyze">
+      Analyze and Get Learning Curves</button>
+    <br/>
+    <b>Precision</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
+    <div id="precision"></div>
+<br/>
+    <b>Recall</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
+    <div id="recall"></div>
+<br/>
+    <b>F1</b>
+    <br/>
+    <b>0: Generate Positive Examples, </b>
+    <b>1: Generate Negative Examples, </b>
+    <b>2: Label Predicted Positives </b>
+    <br/>
+    <div id="f1"></div>
+
+
+
+</body>
+  <script type="text/javascript">
+    var xmlhttp_analyze_experiment = new XMLHttpRequest();
+    
+    function analyze_all_experiments() {
+	var analyze_experiment_url = '/analyze_all_experiments';
+		
+	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
+        xmlhttp_analyze_experiment.send();
+
+    }
+
+    xmlhttp_analyze_experiment.onreadystatechange = function() {
+	if (xmlhttp_analyze_experiment.readyState == 4 &&
+	    xmlhttp_analyze_experiment.status == 200) {
+	    console.log(xmlhttp_analyze_experiment.responseText);
+	    console.log(JSON.parse(xmlhttp_analyze_experiment.responseText));
+	    var analysis  = JSON.parse(
+                xmlhttp_analyze_experiment.responseText);
+
+            var precision_curve = analysis[0];
+            var recall_curve = analysis[1];
+            var f1_curve = analysis[2];
+
+            g_precision = new Dygraph(
+                document.getElementById("precision"),
+                precision_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Amount Spent',
+                    ylabel: 'Precision',
+                    legend: 'always',
+		    connectSeparatedPoints: true,
+                }
+            );
+            g_recall = new Dygraph(
+                document.getElementById("recall"),
+                recall_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Amount Spent',
+                    ylabel: 'Recall',
+                    legend: 'always',
+		    connectSeparatedPoints: true,
+
+                }
+            );
+            g_f1 = new Dygraph(
+                document.getElementById("f1"),
+                f1_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Amount Spent',
+                    ylabel: 'F1',
+                    legend: 'always',
+		    connectSeparatedPoints: true
+
+		}
+	    );
+	}
+    };
+
+    document.getElementById('analyze').onclick = analyze_all_experiments;
+
+  </script>
+</html>
