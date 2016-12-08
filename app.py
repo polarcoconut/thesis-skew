@@ -69,6 +69,11 @@ sys.stdout.flush()
 def hello():
     return render_template('index.html')
 
+@app.route('/analyze')
+def analyze_endpoint():
+    return render_template('analyze.html')
+
+
 @app.route('/status/<job_id>')
 def status(job_id):
     return render_template(
@@ -151,3 +156,7 @@ api.add_resource(ExperimentStatusApi, '/get_experiment_status')
 
 from api.experiment_api import ExperimentAnalyzeApi
 api.add_resource(ExperimentAnalyzeApi, '/analyze_experiment')
+
+from api.experiment_api import AllExperimentAnalyzeApi
+api.add_resource(AllExperimentAnalyzeApi, '/analyze_all_experiments')
+

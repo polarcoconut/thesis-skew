@@ -225,7 +225,7 @@ def get_next_batch(task_ids, task_categories,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
-    if control_strategy == 'seed':
+    if control_strategy == 'seed2':
         return seed_controller(task_ids,
                                task_categories, training_examples,
                                training_labels, task_information,

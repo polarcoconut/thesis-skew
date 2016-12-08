@@ -572,3 +572,139 @@ class ExperimentAnalyzeApi(Resource):
                 
         return [precision_curve, recall_curve, f1_curve, actions,
                 predicted_precisions, predicted_recalls, predicted_f1s]
+
+
+#all_experiment_analyze_parser = reqparse.RequestParser()
+#all_experiment_analyze_parser.add_argument('experiment_id', 
+#                                           type=str, required=True)
+#all_experiment_analyze_parser.add_argument('job_ids', 
+#                                           type=str, action='append')
+
+class AllExperimentAnalyzeApi(Resource):
+    def get(self):
+
+        #args = all_experiment_analyze_parser.parse_args()
+        #experiment_id = args['experiment_id']
+        #job_ids = args['job_ids']
+
+        experiment = Experiment.objects
+
+
+        #precision_curves = []
+        #recall_curves = []
+        #f1_curves = []
+        
+        precision_curve = "Amount Spent,Seed,Round-Robin\n"
+        recall_curve = "Amount Spent,Seed,Round-Robin\n"
+        f1_curve = "Amount Spent,Seed,Round-Robin\n"
+
+
+        for experiment in Experiment.objects:
+            [precisions_avgs, recalls_avgs, f1s_avgs, 
+             precisions_stds, recalls_stds, f1s_stds] = get_average_curve(
+                 experiment.id)
+
+            if experiment.control_strategy == 'round-robin':
+                x_axis = [0.0]
+                for i in range(1, len(f1s_avgs)+1):
+                    if i % 3 == 1:
+                        x_axis.append(x_axis[i-1] + 7.5)
+                    elif i % 3 == 2:
+                        x_axis.append(x_axis[i-1] + 5)
+                    elif i %3 == 0:
+                        x_axis.append(x_axis[i-1] + 1.5)
+
+                x_axis = x_axis[1:len(x_axis)]
+                for (x,precision_avg,recall_avg,
+                     f1_avg,precision_std,recall_std,f1_std) in zip(
+                         x_axis,
+                         precisions_avgs, recalls_avgs, f1s_avgs,
+                         precisions_stds, recalls_stds, f1s_stds):
+                    
+                    
+                    precision_curve += "%f,,,%f,%f\n" % (
+                        x, precision_avg, precision_std)
+                    recall_curve += "%f,,,%f,%f\n" % (
+                        x, recall_avg, recall_std) 
+                    f1_curve  += "%f,,,%f,%f\n" % (x, f1_avg, f1_std) 
+
+            elif experiment.control_strategy == 'seed':
+                x_axis = [0.0]
+                for i in range(1, 11):
+                    print "X-AXIS"
+                    print x_axis
+                    if i % 2 == 1:
+                        x_axis.append(x_axis[i-1] + 7.5)
+                    elif i % 2 == 0:
+                        x_axis.append(x_axis[i-1] + 5)
+
+                for i in range(11, len(f1s_avgs)+1):
+                    x_axis.append(x_axis[i-1] + 1.5)
+
+                x_axis = x_axis[1:len(x_axis)]
+
+
+                for (x,precision_avg,recall_avg,
+                     f1_avg,precision_std,recall_std,f1_std) in zip(
+                         x_axis,
+                         precisions_avgs, recalls_avgs, f1s_avgs,
+                         precisions_stds, recalls_stds, f1s_stds):
+                    
+                    
+                    precision_curve += "%f,%f,%f,,\n" % (
+                        x, precision_avg, precision_std)
+                    recall_curve += "%f,%f,%f,,\n" % (
+                        x, recall_avg, recall_std) 
+                    f1_curve  += "%f,%f,%f,,\n" % (x, f1_avg, f1_std) 
+                    
+            #precision_curves.append(precision_curve)
+            #recall_curves.append(recall_curve)
+            #f1_curves.append(f1_curve)
+                
+        return [precision_curve, recall_curve, f1_curve]
+
+
+def get_average_curve(experiment_id):
+
+    experiment = Experiment.objects.get(id=experiment_id)
+    job_ids = experiment.job_ids
+    precisions = []
+    recalls = []
+    f1s = []
+    
+    len_longest_curve = 0
+    #first figure out the longest curve
+    for job_id in job_ids:
+        learning_curve = experiment.learning_curves[job_id]
+        if len(learning_curve) > len_longest_curve:
+            len_longest_curve = len(learning_curve)
+            print len(learning_curve)
+            
+    precisions = [[] for i in range(len_longest_curve)]
+    recalls = [[] for i in range(len_longest_curve)]
+    f1s = [[] for i in range(len_longest_curve)]
+        
+    for job_id in job_ids:
+        learning_curve = experiment.learning_curves[job_id]           
+        for point_index, point in zip(range(len(learning_curve)),
+                                      learning_curve):
+            task_id, precision, recall, f1, action, costSoFar = point
+            precisions[point_index].append(precision)
+            recalls[point_index].append(recall)
+            f1s[point_index].append(f1)
+            
+
+    precisions_avgs = [np.mean(numbers) for numbers in precisions]
+    recalls_avgs = [np.mean(numbers) for numbers in recalls]
+    f1s_avgs = [np.mean(numbers) for numbers in f1s]
+    
+    precisions_stds = [np.std(numbers) / 
+                       sqrt(len(numbers)) for numbers in precisions]
+    recalls_stds = [np.std(numbers) /
+                    sqrt(len(numbers)) for numbers in recalls]
+    f1s_stds = [np.std(numbers) / 
+                sqrt(len(numbers)) for numbers in f1s]
+    
+
+    return [precisions_avgs, recalls_avgs, f1s_avgs, 
+            precisions_stds, recalls_stds, f1s_stds]
