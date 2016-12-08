@@ -15,6 +15,7 @@ import cPickle
 import urllib2
 from random import sample
 from api.s3_util import insert_connection_into_s3
+import requests
 
 
 class MTurk_Connection_Sim(MTurk_Connection):
@@ -122,12 +123,28 @@ class MTurk_Connection_Sim(MTurk_Connection):
                               next_assignment_question_name,
                               answer)
             elif category_id == 1:
-                old_sentence = next_assignment_question_data[9]
-                #modified_sentence = self.modify_data[old_sentence].pop()
-                modified_sentence = sample(self.modify_data[old_sentence], 1)[0]
+                
+                #########
+                #USE NEAR-MISSES
+                #########
+                #old_sentence = next_assignment_question_data[9]
+                #modified_sentence = sample(
+                #    self.modify_data[old_sentence], 1)[0]
 
-                answer = (modified_sentence + "\tNotPos\tHypOrGen\t" +
-                          old_sentence + "\tSimTaboo")
+                #answer = (modified_sentence + "\tNotPos\tHypOrGen\t" +
+                #          old_sentence + "\tSimTaboo")
+
+
+                ########
+                #USE RANDOM NEGATIVES
+                #########
+                tackbp_newswire_corpus = str(requests.get(
+                    app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+                random_negative = sample(tackbp_newswire_corpus, 1)[0]
+                answer = (random_negative + "\tNotPos\tHypOrGen\t" +
+                          "no_old_sentence" + "\tSimTaboo")
+                
+                
                 submit_answer(task_id, worker_id,
                               next_assignment_question_name,
                               answer)

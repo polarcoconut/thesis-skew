@@ -15,6 +15,9 @@ from schema.gold_extractor import Gold_Extractor
 from math import floor, ceil, sqrt, log
 import numpy as np
 
+import cPickle
+from ml.extractors.cnn_core.test import test_cnn
+import os
 
 def test_controller(task_information, task_category_id):
 
@@ -1100,7 +1103,7 @@ def seed_controller(task_ids, task_categories, training_examples,
     print "Seed Controller activated."
     sys.stdout.flush()
         
-    if len(task_categories) > 10:
+    if len(task_categories) >= 10:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
@@ -1134,7 +1137,7 @@ def seed_controller(task_ids, task_categories, training_examples,
                                                  selected_examples):
             if predicted_label == 1:
                 expected_positive_examples.append(selected_example)
-            else if predicted_label == 0:
+            elif predicted_label == 0:
                 expected_negative_examples.append(selected_example)
             else:
                 raise Exception
@@ -1143,23 +1146,30 @@ def seed_controller(task_ids, task_categories, training_examples,
         
         selected_examples = []
         expected_labels = []
+        num_negatives_wanted = 3
         for pos_example in expected_positive_examples:
             selected_examples.append(pos_example)
             expected_labels.append(1)
 
-            num_negatives_wanted = 2
-            while num_negatives_wanted > 0:
+            temp_num_negatives_wanted = num_negatives_wanted
+            while temp_num_negatives_wanted > 0:
                 if len(expected_negative_examples) > 0:
                     selected_examples.append(expected_negative_examples.pop())
                     expected_labels.append(0)
+                    temp_num_negatives_wanted -= 1
                 else:
                     break
-            
+
+        if len(expected_positive_examples) == 0:
+            selected_examples += sample(expected_negative_examples, 
+                                        num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
+
         task = make_labeling_crowdjs_task(selected_examples,
                                           expected_labels,
                                           task_information)
  
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     if len(task_categories) % 2 == 0:
         print "choosing the RECALL category"

@@ -225,6 +225,12 @@ def get_next_batch(task_ids, task_categories,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
+    if control_strategy == 'seed':
+        return seed_controller(task_ids,
+                               task_categories, training_examples,
+                               training_labels, task_information,
+                               costSoFar, budget, job_id)
+
     if control_strategy == 'round-robin-no-negate':
         return round_robin_no_negate_controller(
             task_ids,

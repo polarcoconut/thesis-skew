@@ -20,7 +20,10 @@ def submit_answer(task_id, worker_id, question_name, answer):
             r = requests.put(app.config['CROWDJS_SUBMIT_ANSWER_URL'],
                              headers=headers,
                              json=submit_answer_request)
-            break
+            print "Here is the response"
+            print r.text
+            sys.stdout.flush()
+            return True
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -30,11 +33,7 @@ def submit_answer(task_id, worker_id, question_name, answer):
             time.sleep(10)
             continue
         
-    print "Here is the response"
-    print r.text
-    sys.stdout.flush()
 
-    return True
 
 
 def get_next_assignment(task_id, worker_id):
@@ -53,7 +52,10 @@ def get_next_assignment(task_id, worker_id):
     while True:
         try:
             r = requests.get(assign_crowdjs_url)
-            break
+            data = r.json()
+            
+            return data
+
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -63,9 +65,6 @@ def get_next_assignment(task_id, worker_id):
             time.sleep(10)
             continue
 
-    data = r.json()
-
-    return data
 
     
 def get_task_data(task_id):
@@ -78,7 +77,10 @@ def get_task_data(task_id):
     while True:
         try:
             r = requests.get(task_crowdjs_url, headers=headers)
-            break
+            data = r.json()['data']
+            
+            return data
+
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -88,9 +90,6 @@ def get_task_data(task_id):
             time.sleep(10)
             continue
 
-    data = r.json()['data']
-
-    return data
     
 def get_answers(task_id):
     headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
@@ -103,7 +102,10 @@ def get_answers(task_id):
     while True:
         try:
             r = requests.get(answers_crowdjs_url, headers=headers)
-            break
+            answers = r.json()
+            
+            return answers
+
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -113,9 +115,6 @@ def get_answers(task_id):
             time.sleep(10)
             continue
 
-    answers = r.json()
-
-    return answers
 
 def get_questions(task_id):
     #headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
@@ -124,7 +123,9 @@ def get_questions(task_id):
     while True:
         try:
             r = requests.get(questions_crowdjs_url)
-            break
+            questions = r.json()
+            return questions
+
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -135,8 +136,6 @@ def get_questions(task_id):
             continue
 
 
-    questions = r.json()
-    return questions
 
 def get_answers_for_question(question_ids):
     answers_crowdjs_url = app.config['CROWDJS_GET_ANSWERS_FOR_QUESTION_URL']
@@ -148,7 +147,9 @@ def get_answers_for_question(question_ids):
     while True:
         try:
             r = requests.get(answers_crowdjs_url)
-            break
+            answers = r.json()
+            return answers
+    
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -159,8 +160,6 @@ def get_answers_for_question(question_ids):
             continue
 
 
-    answers = r.json()
-    return answers
     
 
 def upload_questions(task):
@@ -173,7 +172,15 @@ def upload_questions(task):
             r = requests.put(app.config['CROWDJS_PUT_TASK_URL'],
                              headers=headers,
                              json=task)
-            break
+            print "Here is the response"
+            print r.text
+            sys.stdout.flush()
+            
+            response_content = r.json()
+            task_id = response_content['task_id']    
+            
+            return task_id
+
         except Exception:
             print "Exception while communicating with crowdjs:"
             print '-'*60
@@ -183,14 +190,6 @@ def upload_questions(task):
             time.sleep(10)
             continue
 
-    print "Here is the response"
-    print r.text
-    sys.stdout.flush()
-    
-    response_content = r.json()
-    task_id = response_content['task_id']    
-        
-    return task_id
 
 def make_labeling_crowdjs_task(examples, expected_labels,
                                task_information):
