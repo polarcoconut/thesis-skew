@@ -19,6 +19,8 @@ import shutil
 import os
 import subprocess
 import re
+import traceback
+import time
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -75,8 +77,19 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
             'requester_id' : requester_id,
             'data' : taboo_words}
 
-    r = requests.post(put_task_data_url,
-                      json=data)
+    while True:
+        try:
+            r = requests.post(put_task_data_url,
+                              json=data)
+            break
+        except Exception:
+            print "Exception while communicating with S3:"
+            print '-'*60
+            traceback.print_exc(file=sys.stdout)
+            print '-'*60
+            sys.stdout.flush()
+            time.sleep(10)
+            continue
 
     print "Here is the response after trying to modify the task data"
     print r.text
@@ -97,9 +110,20 @@ def write_model_to_file(job_id = None, gold_extractor = None):
 
         #model_file = urllib2.urlopen(job.model_file)
         #model_meta_file =  urllib2.urlopen(job.model_meta_file)
-        model_file = requests.get(job.model_file)
-        model_meta_file =  requests.get(job.model_meta_file)
-    
+        while True:
+            try:
+                model_file = requests.get(job.model_file)
+                model_meta_file =  requests.get(job.model_meta_file)
+                break
+            except Exception:
+                print "Exception while communicating with S3:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
     
         temp_model_file_handle = open(temp_model_file_name, 'wb')
         temp_model_file_handle.write(str(model_file.content))
@@ -139,8 +163,19 @@ def write_crf_model_to_file(job_id = None, gold_extractor = None):
     if not job_id == None:
         job = Job.objects.get(id = job_id)
 
-        model_file = requests.get(job.model_file)
-    
+        while True:
+            try:
+                model_file = requests.get(job.model_file)
+                break
+            except Exception:
+                print "Exception while communicating with crowdjs:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
         temp_model_file_handle = open(
             "api/ml/extractors/temp_extractors/%s/model.out" % model_folder, 
             'wb')
@@ -696,9 +731,20 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
     test_examples = []
     test_labels = []
 
-    tackbp_newswire_corpus = str(requests.get(
-        app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
-    
+    while True:
+        try:
+            tackbp_newswire_corpus = str(requests.get(
+                app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+            break
+        except Exception:
+                print "Exception while communicating with S3:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
     #Get all the previous examples that we labeled already
     used_examples = []
     for i, task_category in zip(range(len(task_categories)), task_categories):
@@ -789,9 +835,20 @@ def get_random_unlabeled_examples_from_tackbp(
 
     test_examples = []
 
-    tackbp_newswire_corpus = str(requests.get(
-        app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
-    
+    while True:
+        try:
+            tackbp_newswire_corpus = str(requests.get(
+                app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+            break
+        except Exception:
+                print "Exception while communicating with S3:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
     #tackbp_newswire_corpus = urllib2.urlopen(
     #    app.config['TACKBP_NW_09_CORPUS_URL'])
 
