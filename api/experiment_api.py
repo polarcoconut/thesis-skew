@@ -609,10 +609,14 @@ class AllExperimentAnalyzeApi(Resource):
                 for i in range(1, len(f1s_avgs)+1):
                     if i % 3 == 1:
                         x_axis.append(x_axis[i-1] + 7.5)
+                        #x_axis.append(x_axis[i-1] + 1)
+
                     elif i % 3 == 2:
                         x_axis.append(x_axis[i-1] + 5)
+                        #x_axis.append(x_axis[i-1] + 1)
                     elif i %3 == 0:
                         x_axis.append(x_axis[i-1] + 1.5)
+                        #x_axis.append(x_axis[i-1] + 1)
 
                 x_axis = x_axis[1:len(x_axis)]
                 for (x,precision_avg,recall_avg,
@@ -628,18 +632,23 @@ class AllExperimentAnalyzeApi(Resource):
                         x, recall_avg, recall_std) 
                     f1_curve  += "%f,,,%f,%f\n" % (x, f1_avg, f1_std) 
 
-            elif experiment.control_strategy == 'seed':
+            elif experiment.control_strategy == 'seed3':
                 x_axis = [0.0]
                 for i in range(1, 11):
                     print "X-AXIS"
                     print x_axis
                     if i % 2 == 1:
                         x_axis.append(x_axis[i-1] + 7.5)
+                        #x_axis.append(x_axis[i-1] + 1)
                     elif i % 2 == 0:
-                        x_axis.append(x_axis[i-1] + 5)
+                        #x_axis.append(x_axis[i-1] + 5)
+                        x_axis.append(x_axis[i-1] + 0.001)
+                        #x_axis.append(x_axis[i-1] + 0)
+
 
                 for i in range(11, len(f1s_avgs)+1):
                     x_axis.append(x_axis[i-1] + 1.5)
+                    #x_axis.append(x_axis[i-1] + 1)
 
                 x_axis = x_axis[1:len(x_axis)]
 

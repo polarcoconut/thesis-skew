@@ -78,14 +78,14 @@ class Config(object):
     PRECISION_EXAMPLE_TASK = {
         'id' : 1,
         'needs_data': True,
-        'price' : 0.10,
+        'price' : float(os.environ['GENERATE_NEG_TASK_PRICE']),
         'hit_html' : open('tasks/negateevent.html').read(),
         'task_name' : 'Event Modification',
         'task_description' : 'Modify a sentence so that it either expresses a different event than the one it currently expresses or it negates the event.'}
     RECALL_EXAMPLE_TASK = {
         'id' : 0,
         'needs_data' : False,
-        'price' : 0.15,
+        'price' : float(os.environ['GENERATE_POS_TASK_PRICE']),
         'hit_html' : open('tasks/generate.html').read(),
         'task_name' : 'Event Generation',
         'task_description' : 'Provide a sentence that is an example of a given event.'}

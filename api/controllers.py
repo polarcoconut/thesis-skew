@@ -114,9 +114,6 @@ def round_robin_controller(task_ids, task_categories, training_examples,
         
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
-#Alternate back and forth between precision and recall categories.
-#Then, use the other half of the budget and
-#select a bunch of examples from TACKBP corpus to label.
 def round_robin_no_negate_controller(task_ids, task_categories, 
                                      training_examples,
                                      training_labels, task_information,
