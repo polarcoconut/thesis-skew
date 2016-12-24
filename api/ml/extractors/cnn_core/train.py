@@ -212,10 +212,16 @@ def train_cnn(training_sentences, training_labels):
                 #    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                 #    print("Saved model checkpoint to {}\n".format(path))
                 
-            path = saver.save(sess, checkpoint_prefix, 
-                              global_step=current_step)
-            print("Saved model checkpoint to {}\n".format(path))
 
+            while True:
+                try:
+                    path = saver.save(sess, checkpoint_prefix, 
+                                      global_step=current_step)
+                    print("Saved model checkpoint to {}\n".format(path))
+                    break
+                except Exception:
+                    time.sleep(3600)
+                    continue
                     
             checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
             return checkpoint_file,(vocabulary, vocabulary_inv, sequence_length)

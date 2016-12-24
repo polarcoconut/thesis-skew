@@ -30,6 +30,10 @@ def run_gather():
     print "%d jobs currently running" % len(jobs)
     
     for job in jobs:
+        #job.status = 'Finished'
+        #job.save()
+        #continue
+
         lock_key = job.id
         
         acquire_lock = lambda: app.redis.setnx(lock_key, '1')

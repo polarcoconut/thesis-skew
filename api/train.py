@@ -220,7 +220,7 @@ def get_next_batch(task_ids, task_categories,
     print control_strategy
     sys.stdout.flush()
 
-    if control_strategy == 'round-robin':
+    if control_strategy == 'round-robin-random-negatives':
         return round_robin_controller(task_ids,
                                       task_categories, training_examples,
                                       training_labels, task_information,

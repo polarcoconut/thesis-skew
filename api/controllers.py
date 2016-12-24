@@ -65,9 +65,6 @@ def label_only_controller(task_ids, task_categories, training_examples,
     
     return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
     
-#Alternate back and forth between precision and recall categories.
-#Then, use the other half of the budget and
-#select a bunch of examples from TACKBP corpus to label.
 def round_robin_controller(task_ids, task_categories, training_examples,
                       training_labels, task_information,
                       costSoFar, budget, job_id):
