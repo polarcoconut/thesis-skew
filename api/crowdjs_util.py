@@ -30,7 +30,7 @@ def submit_answer(task_id, worker_id, question_name, answer):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
         
 
@@ -62,7 +62,7 @@ def get_next_assignment(task_id, worker_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
 
@@ -87,7 +87,7 @@ def get_task_data(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
     
@@ -112,7 +112,7 @@ def get_answers(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
 
@@ -132,7 +132,7 @@ def get_questions(task_id):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
 
@@ -156,7 +156,7 @@ def get_answers_for_question(question_ids):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
 
@@ -187,7 +187,7 @@ def upload_questions(task):
             traceback.print_exc(file=sys.stdout)
             print '-'*60
             sys.stdout.flush()
-            time.sleep(10)
+            time.sleep(60)
             continue
 
 
