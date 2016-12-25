@@ -1,6 +1,6 @@
 import time
 from app import app
-from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, impact_sampling_controller, label_only_controller, greedy_controller, seed_controller
+from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, impact_sampling_controller, label_only_controller, greedy_controller, seed_controller, round_robin_constant_ratio_controller
 import pickle
 import json
 import sys
@@ -225,6 +225,12 @@ def get_next_batch(task_ids, task_categories,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
+    if control_strategy == 'round-robin-constant-ratio':
+        return round_robin_constant_ratio_controller(task_ids,
+                               task_categories, training_examples,
+                               training_labels, task_information,
+                               costSoFar, budget, job_id)
+
     if control_strategy == 'seed3':
         return seed_controller(task_ids,
                                task_categories, training_examples,
