@@ -157,10 +157,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 
         #For efficiency reasons, get the labels from NN in one batch.
         if category_id == 2:
-            predicted_labels = test_cnn(category_2_sentences,
-                                        [0 for s in category_2_sentences],
-                                        self.model_file_name,
-                                        self.vocabulary)
+            predicted_labels, label_probabilities = test_cnn(
+                category_2_sentences,
+                [0 for s in category_2_sentences],
+                self.model_file_name,
+                self.vocabulary)
             #predicted_labels = test(
             #                self.job_id,
             #                category_2_sentences,

@@ -630,9 +630,10 @@ def test(job_id, test_examples, test_labels):
     if app.config['MODEL'] == 'CNN':
         vocabulary = pickle.loads(job.vocabulary)
         temp_file_name = write_model_to_file(job_id)
-        predicted_labels = test_cnn(test_examples, test_labels,
-                                    temp_file_name,
-                                    vocabulary)
+        predicted_labels, label_probabilities = test_cnn(
+            test_examples, test_labels,
+            temp_file_name,
+            vocabulary)
         os.remove(os.path.join(
             os.getcwd(),temp_file_name))
         os.remove(os.path.join(

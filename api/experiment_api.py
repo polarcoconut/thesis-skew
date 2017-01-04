@@ -119,7 +119,7 @@ def run_experiment(experiment_id):
     model_file_name = write_model_to_file(
         gold_extractor = gold_extractor.name)    
     vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-    predicted_labels = test_cnn(test_examples,
+    predicted_labels, label_probabilities = test_cnn(test_examples,
                                 test_labels,
                                 model_file_name,
                                 vocabulary)
@@ -188,7 +188,7 @@ def compute_upper_bound(gold_extractor, test_set_index):
     model_file_name = write_model_to_file(
         gold_extractor = gold_extractor.name)    
     vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-    predicted_labels = test_cnn(test_examples,
+    predicted_labels, label_probabilities = test_cnn(test_examples,
                                 test_labels,
                                 model_file_name,
                                 vocabulary)
@@ -276,9 +276,10 @@ def compute_upper_bound(gold_extractor, test_set_index):
              test_positive_examples,                                          
              test_negative_examples) = parse_angli_test_data(
                  testfile_name, [], test_set_index)           
-            predicted_labels = test_cnn(test_examples, test_labels,
-                                        model_file_name,
-                                        vocabulary)
+            predicted_labels, label_probabilities = test_cnn(
+                test_examples, test_labels,
+                model_file_name,
+                vocabulary)
 
             precision, recall, f1 = computeScores(predicted_labels, 
                                                   test_labels)
@@ -594,9 +595,9 @@ class AllExperimentAnalyzeApi(Resource):
         #recall_curves = []
         #f1_curves = []
         
-        precision_curve = "Amount Spent,Seed,Round-Robin,Round-Robin-Random-Negatives\n"
-        recall_curve = "Amount Spent,Seed,Round-Robin,Round-Robin-Random-Negatives\n"
-        f1_curve = "Amount Spent,Seed,Round-Robin,Round-Robin-Random-Negatives\n"
+        precision_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
+        recall_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
+        f1_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
 
 
         for experiment in Experiment.objects:
@@ -626,11 +627,30 @@ class AllExperimentAnalyzeApi(Resource):
                          precisions_stds, recalls_stds, f1s_stds):
                     
                     
-                    precision_curve += "%f,,,%f,%f,,\n" % (
+                    precision_curve += "%f,,,%f,%f,,,,,,\n" % (
                         x, precision_avg, precision_std)
-                    recall_curve += "%f,,,%f,%f,,\n" % (
+                    recall_curve += "%f,,,%f,%f,,,,,,\n" % (
                         x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,%f,%f,,\n" % (x, f1_avg, f1_std) 
+                    f1_curve  += "%f,,,%f,%f,,,,,,\n" % (x, f1_avg, f1_std) 
+            elif experiment.control_strategy == 'label-only-constant-ratio':
+                x_axis = [0.0]
+                for i in range(1, len(f1s_avgs)+1):
+                    x_axis.append(x_axis[i-1] + 1.5)
+
+                x_axis = x_axis[1:len(x_axis)]
+                for (x,precision_avg,recall_avg,
+                     f1_avg,precision_std,recall_std,f1_std) in zip(
+                         x_axis,
+                         precisions_avgs, recalls_avgs, f1s_avgs,
+                         precisions_stds, recalls_stds, f1s_stds):
+                    
+                    
+                    precision_curve += "%f,,,,,,,,,%f,%f\n" % (
+                        x, precision_avg, precision_std)
+                    recall_curve += "%f,,,%f,%f,,,,,%f,%f\n" % (
+                        x, recall_avg, recall_std) 
+                    f1_curve  += "%f,,,%f,%f,,,,,%f,%f\n" % (
+                        x, f1_avg, f1_std) 
 
             elif experiment.control_strategy == 'round-robin-random-negatives':
                 x_axis = [0.0]
@@ -654,12 +674,39 @@ class AllExperimentAnalyzeApi(Resource):
                          precisions_stds, recalls_stds, f1s_stds):
                     
                     
-                    precision_curve += "%f,,,,,%f,%f\n" % (
+                    precision_curve += "%f,,,,,%f,%f,,,,\n" % (
                         x, precision_avg, precision_std)
-                    recall_curve += "%f,,,,,%f,%f\n" % (
+                    recall_curve += "%f,,,,,%f,%f,,,,\n" % (
                         x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,,,%f,%f\n" % (x, f1_avg, f1_std) 
+                    f1_curve  += "%f,,,,,%f,%f,,,,\n" % (x, f1_avg, f1_std) 
 
+            elif experiment.control_strategy == 'round-robin-constant-ratio':
+                x_axis = [0.0]
+                for i in range(1, len(f1s_avgs)+1):
+                    if i % 5 == 1:
+                        x_axis.append(x_axis[i-1] + 7.5)
+                        #x_axis.append(x_axis[i-1] + 1)
+
+                    elif i % 5 >= 2 and i % 5 <= 4:
+                        x_axis.append(x_axis[i-1] + 0.01)
+                        #x_axis.append(x_axis[i-1] + 1)
+                    elif i % 5 == 0:
+                        x_axis.append(x_axis[i-1] + 1.5)
+                        #x_axis.append(x_axis[i-1] + 1)
+
+                x_axis = x_axis[1:len(x_axis)]
+                for (x,precision_avg,recall_avg,
+                     f1_avg,precision_std,recall_std,f1_std) in zip(
+                         x_axis,
+                         precisions_avgs, recalls_avgs, f1s_avgs,
+                         precisions_stds, recalls_stds, f1s_stds):
+                    
+                    
+                    precision_curve += "%f,,,,,,,%f,%f,,\n" % (
+                        x, precision_avg, precision_std)
+                    recall_curve += "%f,,,,,,,%f,%f,,\n" % (
+                        x, recall_avg, recall_std) 
+                    f1_curve  += "%f,,,,,,,%f,%f,,\n" % (x, f1_avg, f1_std) 
 
             elif experiment.control_strategy == 'seed3':
                 x_axis = [0.0]
@@ -689,11 +736,11 @@ class AllExperimentAnalyzeApi(Resource):
                          precisions_stds, recalls_stds, f1s_stds):
                     
                     
-                    precision_curve += "%f,%f,%f,,,,\n" % (
+                    precision_curve += "%f,%f,%f,,,,,,,,\n" % (
                         x, precision_avg, precision_std)
-                    recall_curve += "%f,%f,%f,,,,\n" % (
+                    recall_curve += "%f,%f,%f,,,,,,,,\n" % (
                         x, recall_avg, recall_std) 
-                    f1_curve  += "%f,%f,%f,,,,\n" % (x, f1_avg, f1_std) 
+                    f1_curve  += "%f,%f,%f,,,,,,,,\n" % (x, f1_avg, f1_std) 
                     
             #precision_curves.append(precision_curve)
             #recall_curves.append(recall_curve)
