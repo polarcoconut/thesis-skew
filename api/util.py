@@ -779,9 +779,11 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
         example = test_examples[i]
         if predicted_label == 1:
             positive_examples.append(example)
-        else:
+        elif predicted_label == 0:
             negative_examples.append(example)
-
+        else:
+            print "This should not happen"
+            raise Exception
 
 
     print "Sampling examples from the corpus"

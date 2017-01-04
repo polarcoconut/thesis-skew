@@ -137,6 +137,95 @@ def label_only_constant_ratio_controller(task_ids, task_categories,
 
     return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
+
+
+def label_only_US_constant_ratio_controller(task_ids, task_categories,
+                                            training_examples,
+                                            training_labels, task_information,
+                                            costSoFar, budget, job_id):
+    
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+
+    active_learning_threshold = app.config['AL_THRESHOLD']
+    #Figure out how many positive examples we currently have
+    
+    num_current_pos_examples, num_current_neg_examples = split_examples(
+        task_ids, task_categories, ['all'])
+    
+    if num_current_pos_examples >= active_learning_threshold:
+        (selected_examples, 
+         expected_labels) = get_unlabeled_examples_from_tackbp(
+            task_ids, task_categories,
+            training_examples, training_labels,
+            task_information, costSoFar,
+            budget, job_id)
+
+    elif num_current_pos_examples < active_learning_threshold:
+        (selected_examples, 
+         expected_labels) = get_random_unlabeled_examples_from_tackbp(
+            task_ids, task_categories,
+            training_examples, training_labels,
+            task_information, costSoFar,
+            budget, job_id)
+
+        job = Job.objects.get(id = job_id)
+        experiment = Experiment.objects.get(id=job.experiment_id)
+        gold_extractor = Gold_Extractor.objects.get(
+            name=experiment.gold_extractor)
+        model_file_name = write_model_to_file(
+            gold_extractor = gold_extractor.name) 
+        vocabulary = cPickle.loads(str(gold_extractor.vocabulary))             
+        predicted_labels, label_probabilities = test_cnn(selected_examples,
+                                    [0 for i in selected_examples], 
+                                    model_file_name, 
+                                    vocabulary)
+
+        os.remove(os.path.join(
+            os.getcwd(), model_file_name))
+        os.remove(os.path.join(
+            os.getcwd(),'%s.meta' % model_file_name))
+
+
+        expected_positive_examples = []
+        expected_negative_examples = []
+        for predicted_label, selected_example in zip(predicted_labels,
+                                                 selected_examples):
+            if predicted_label == 1:
+                expected_positive_examples.append(selected_example)
+            elif predicted_label == 0:
+                expected_negative_examples.append(selected_example)
+            else:
+                raise Exception
+
+        # For now, put in a ratio of 1 positive : 2 negatives
+
+        selected_examples = []
+        expected_labels = []
+        num_negatives_wanted = 3
+        for pos_example in expected_positive_examples:
+            selected_examples.append(pos_example)
+            expected_labels.append(1)
+
+            temp_num_negatives_wanted = num_negatives_wanted
+            while temp_num_negatives_wanted > 0:
+                if len(expected_negative_examples) > 0:
+                    selected_examples.append(expected_negative_examples.pop())
+                    expected_labels.append(0)
+                    temp_num_negatives_wanted -= 1
+                else:
+                    break
+
+        if len(expected_positive_examples) == 0:
+            selected_examples += sample(expected_negative_examples, 
+                                        num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
+
+    task = make_labeling_crowdjs_task(selected_examples,
+                                      expected_labels,
+                                      task_information)
+
+    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+
     
 def round_robin_controller(task_ids, task_categories, training_examples,
                       training_labels, task_information,

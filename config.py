@@ -73,6 +73,8 @@ class Config(object):
     TABOO_THRESHOLD = int(os.environ['TABOO_THRESHOLD'])
     ASSIGNMENT_DURATION = int(os.environ['ASSIGNMENT_DURATION'])
 
+    AL_THRESHOLD = int(os.environ['AL_THRESHOLD'])
+
     #Every task is an action.
     
     PRECISION_EXAMPLE_TASK = {
