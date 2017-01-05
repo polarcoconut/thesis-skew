@@ -74,17 +74,29 @@ class MTurk_Connection_Sim(MTurk_Connection):
         sys.stdout.flush()
 
         
-        gold_extractor = Gold_Extractor.objects.get(
-            name=experiment.gold_extractor)
 
-        model_file_name = write_model_to_file(
-            gold_extractor = gold_extractor.name)
-        
-        self.model_file_name = model_file_name
-        self.model_meta_file_name = "{}.meta".format(model_file_name)
-        self.vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-        
-
+        if experiment.gold_extractor == 'death':
+            gold_extractor = Gold_Extractor.objects.get(
+                name=experiment.gold_extractor)
+            
+            model_file_name = write_model_to_file(
+                gold_extractor = gold_extractor.name)
+            
+            self.model_file_name = model_file_name
+            self.model_meta_file_name = "{}.meta".format(model_file_name)
+            self.vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+            self.use_gold_extractor = True
+        else:
+            gold_labels = {}
+            gold_corpus = str(requests.get(
+                experiment.unlabeled_corpus).content).split('\n')
+            for line in gold_corpus:
+                line = line.split('\t')
+                example = line[0]
+                label = int(line[1])
+                gold_labels[example] = label
+            self.gold_labels = gold_labels
+            self.use_gold_extractor = False
     def delete_hits(self, task_id):
         #Delete all the fake tasks and answers we made
         print "Deleting simulated hits"
@@ -138,9 +150,10 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 ########
                 #USE RANDOM NEGATIVES
                 #########
-                tackbp_newswire_corpus = str(requests.get(
-                    app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
-                random_negative = sample(tackbp_newswire_corpus, 1)[0]
+                job = Job.objects.get(id=self.job_id)
+                unlabeled_corpus = str(requests.get(
+                    job.unlabeled_corpus).content).split('\n')
+                random_negative = sample(unlabeled_corpus, 1)[0]
                 answer = (random_negative + "\tNotPos\tHypOrGen\t" +
                           "no_old_sentence" + "\tSimTaboo")
                 
@@ -156,16 +169,24 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 category_2_question_names.append(next_assignment_question_name)
                 
         #For efficiency reasons, get the labels from NN in one batch.
+        job = Job.objects.get(id=self.job_id)
         if category_id == 2:
-            predicted_labels, label_probabilities = test_cnn(
-                category_2_sentences,
-                [0 for s in category_2_sentences],
-                self.model_file_name,
-                self.vocabulary)
-            #predicted_labels = test(
-            #                self.job_id,
-            #                category_2_sentences,
-            #                [0 for s in category_2_sentences])
+            if self.use_gold_extractor:
+                predicted_labels, label_probabilities = test_cnn(
+                    category_2_sentences,
+                    [0 for s in category_2_sentences],
+                    self.model_file_name,
+                    self.vocabulary)
+                #predicted_labels = test(
+                #                self.job_id,
+                #                category_2_sentences,
+                #                [0 for s in category_2_sentences])
+            else:
+                predicted_labels = []
+                for sentence in category_2_sentences:
+                    predicted_labels.append(self.gold_labels[sentence])
+
+                
             for label, worker_id, question_name in zip(
                     predicted_labels,
                     category_2_worker_ids,
@@ -177,9 +198,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
                     
                 submit_answer(task_id, worker_id, question_name, answer)
                               
-
         #save the connection to the job for later use
-        job = Job.objects.get(id=self.job_id)
         mturk_connection_url = insert_connection_into_s3(cPickle.dumps(self))
         job.mturk_connection = mturk_connection_url
         job.save()

@@ -111,7 +111,9 @@ class Config(object):
     CELERYD_PREFETCH_MULTIPLIER = 1
     CELERY_ACKS_LATE = True
 
-
+    UCI_NEWS_AGGREGATOR_HEALTH = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_corpus'
+    UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_labeled_corpus'
+    
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True

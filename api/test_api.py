@@ -155,6 +155,9 @@ def compute_performance_on_test_set(job_id, task_ids, experiment):
     recalls = []
     f1s = []
 
+    #if experiment.test_set == 'death':
+    #    test_set_index = 3
+
     for i in range(number_of_times_to_test):
         retrain(job_id, ['all'], task_ids)
         (true_positives, false_positives,

@@ -21,3 +21,4 @@ class Experiment(db.DynamicDocument):
     test_set = db.IntField()
     
     
+    unlabeled_corpus = db.StringField()

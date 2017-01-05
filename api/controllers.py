@@ -6,7 +6,7 @@ from app import app
 #from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 
-from util import write_model_to_file, retrain, get_unlabeled_examples_from_tackbp, get_random_unlabeled_examples_from_tackbp, split_examples, test
+from util import write_model_to_file, retrain, get_unlabeled_examples_from_corpus, get_random_unlabeled_examples_from_corpus, split_examples, test
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
@@ -53,7 +53,7 @@ def label_only_controller(task_ids, task_categories, training_examples,
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
     
     (selected_examples, 
-     expected_labels) = get_random_unlabeled_examples_from_tackbp(
+     expected_labels) = get_random_unlabeled_examples_from_corpus(
         task_ids, task_categories,
         training_examples, training_labels,
         task_information, costSoFar,
@@ -73,7 +73,7 @@ def label_only_constant_ratio_controller(task_ids, task_categories,
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
     (selected_examples, 
-     expected_labels) = get_random_unlabeled_examples_from_tackbp(
+     expected_labels) = get_random_unlabeled_examples_from_corpus(
         task_ids, task_categories,
         training_examples, training_labels,
         task_information, costSoFar,
@@ -154,7 +154,7 @@ def label_only_US_constant_ratio_controller(task_ids, task_categories,
     
     if num_current_pos_examples >= active_learning_threshold:
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
@@ -162,7 +162,7 @@ def label_only_US_constant_ratio_controller(task_ids, task_categories,
 
     elif num_current_pos_examples < active_learning_threshold:
         (selected_examples, 
-         expected_labels) = get_random_unlabeled_examples_from_tackbp(
+         expected_labels) = get_random_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
@@ -238,7 +238,8 @@ def round_robin_controller(task_ids, task_categories, training_examples,
     if len(task_categories) % 3 == 2:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
-        selected_examples, expected_labels = get_unlabeled_examples_from_tackbp(
+        (selected_examples, 
+         expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
@@ -285,7 +286,8 @@ def round_robin_no_negate_controller(task_ids, task_categories,
     if len(task_categories) % 2 == 1:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
-        selected_examples, expected_labels = get_unlabeled_examples_from_tackbp(
+        (selected_examples, 
+         expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
@@ -436,7 +438,7 @@ def uncertainty_sampling_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples,
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
              task_ids, task_categories, training_examples,
              training_labels, task_information, costSoFar,
              budget, job_id)
@@ -513,7 +515,7 @@ def impact_sampling_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
              task_ids, task_categories,
              training_examples, training_labels,
              task_information, costSoFar,
@@ -886,7 +888,7 @@ def impact_sampling_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples,
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
              task_ids, task_categories, training_examples,
              training_labels, task_information, costSoFar,
              budget, job_id)
@@ -961,7 +963,7 @@ def greedy_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
              task_ids, task_categories,
              training_examples, training_labels,
              task_information, costSoFar,
@@ -1192,7 +1194,7 @@ def greedy_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples,
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
              task_ids, task_categories, training_examples,
              training_labels, task_information, costSoFar,
              budget, job_id)
@@ -1248,7 +1250,7 @@ def greedy_controller(task_ids, task_categories,
 
 #Alternate back and forth between precision and recall categories.
 #Then, use the other half of the budget and
-#select a bunch of examples from TACKBP corpus to label.
+#select a bunch of examples from corpus to label.
 #THIS CONTROLLER CAN ONLY BE USED DURING EXPERIMENTS BECAUSE IT REQUIRES
 #GOLD LABELS
 def seed_controller(task_ids, task_categories, training_examples,
@@ -1263,7 +1265,7 @@ def seed_controller(task_ids, task_categories, training_examples,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
@@ -1389,7 +1391,7 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_tackbp(
+         expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,

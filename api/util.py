@@ -707,15 +707,16 @@ def test(job_id, test_examples, test_labels):
 
 
 #Gets examples that are predicted positive
-def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
+def get_unlabeled_examples_from_corpus(task_ids, task_categories,
                                        training_examples, training_labels,
                                        task_information, costSoFar,
                                        budget, job_id):
     
-    print "choosing to find examples from TACKBP and label them"
+    print "choosing to find examples from corpus and label them"
     sys.stdout.flush()
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
+    job = Job.objects.get(id=job_id)
 
     #num_positive_examples_to_label = int(
     #    app.config['CONTROLLER_LABELING_BATCH_SIZE'] / 2.0)
@@ -734,8 +735,8 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
     while True:
         try:
-            tackbp_newswire_corpus = str(requests.get(
-                app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+            corpus = str(requests.get(
+                job.unlabeled_corpus).content).split('\n')
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -757,8 +758,8 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
         if task_category_id == 2:
             used_examples += training_examples[i]
 
-    tackbp_newswire_corpus = set(tackbp_newswire_corpus)-set(used_examples)
-    for sentence in tackbp_newswire_corpus:
+    corpus = set(corpus)-set(used_examples)
+    for sentence in corpus:
         test_examples.append(sentence)
         test_labels.append(0)
 
@@ -826,22 +827,23 @@ def get_unlabeled_examples_from_tackbp(task_ids, task_categories,
 
 
 #Gets random examples
-def get_random_unlabeled_examples_from_tackbp(
+def get_random_unlabeled_examples_from_corpus(
         task_ids, task_categories,
         training_examples, training_labels,
         task_information, costSoFar,
         budget, job_id):
     
-    print "choosing to find examples from TACKBP and label them"
+    print "choosing to find examples from corpus and label them"
     sys.stdout.flush()
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
+    job = Job.objects.get(id = job_id)
     test_examples = []
 
     while True:
         try:
-            tackbp_newswire_corpus = str(requests.get(
-                app.config['TACKBP_NW_09_CORPUS_URL']).content).split('\n')
+            corpus = str(requests.get(
+                job.unlabeled_corpus).content).split('\n')
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -851,9 +853,6 @@ def get_random_unlabeled_examples_from_tackbp(
                 sys.stdout.flush()
                 time.sleep(10)
                 continue
-
-    #tackbp_newswire_corpus = urllib2.urlopen(
-    #    app.config['TACKBP_NW_09_CORPUS_URL'])
 
     #Get all the previous examples that we labeled already
     used_examples = []
@@ -867,11 +866,11 @@ def get_random_unlabeled_examples_from_tackbp(
             used_examples += training_examples[i]
 
 
-    tackbp_newswire_corpus = set(tackbp_newswire_corpus)-set(used_examples)
-    for sentence in tackbp_newswire_corpus:
+    corpus = set(corpus)-set(used_examples)
+    for sentence in corpus:
         test_examples.append(sentence)
 
-    print "Sampling from a TACKBP corpus of size"
+    print "Sampling from a corpus of size"
     print len(test_examples)
     sys.stdout.flush()
 

@@ -58,12 +58,27 @@ class ExperimentApi(Resource):
         budget = int(args['budget'])
         control_strategy = args['control_strategy']
         num_runs = args['num_runs']
+
+        event_name = args['event_name'].lower()
+        
+
+        if event_name == 'death':
+            unlabeled_corpus = app.config['TACKBP_NW_90_CORPUS_URL']
+            test_set_index = 3
+            gold_extractor_name = 'death'
+
+        elif event_name == 'health':
+            unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_HEALTH']
+            gold_extractor_name = app.config[
+                'UCI_NEWS_AGGREGATOR_HEALTH_LABELED']
+            test_set_index = ?
+
         files_for_simulation = {
-            0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_positives'],
-            1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_negatives']}
+                0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/%s_positives' % event_name],
+                1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/%s_negatives' % event_name]}
+
         files_for_simulation = pickle.dumps(files_for_simulation)
 
-         
         experiment = Experiment(
             job_ids = [],
             task_information = pickle.dumps((task_information, budget)),
@@ -71,9 +86,10 @@ class ExperimentApi(Resource):
             control_strategy = control_strategy,
             control_strategy_configuration = '%s' % app.config[
                 'UCB_EXPLORATION_CONSTANT'],
-            test_set = 3,
-            gold_extractor = 'death',
+            test_set = test_set_index,
+            gold_extractor = gold_extractor_name,
             files_for_simulation = files_for_simulation,
+            unlabeled_corpus = unlabeled_corpus,
             learning_curves= {})
 
         #Compute an upper bound on performance
@@ -99,8 +115,8 @@ def run_experiment(experiment_id):
     (task_information, budget) = pickle.loads(experiment.task_information)
 
 
-    if len(Gold_Extractor.objects(name=experiment.gold_extractor)) < 1:
-        train_gold_extractor(experiment.gold_extractor)
+    #if len(Gold_Extractor.objects(name=experiment.gold_extractor)) < 1:
+    #    train_gold_extractor(experiment.gold_extractor)
     
 
     #Test how good the gold extractor is on the test set.
@@ -145,6 +161,7 @@ def run_experiment(experiment_id):
                                                1 : [],
                                                2 : []}),
                   logging_data = pickle.dumps([]),
+                  unlabeled_corpus = experiment.unlabeled_corpus,
                   experiment_id = experiment_id)
 
         #job.model_file.put("placeholder")
