@@ -114,6 +114,9 @@ class Config(object):
     UCI_NEWS_AGGREGATOR_HEALTH = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_corpus'
     UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_labeled_corpus'
     
+
+    EXPERIMENT_WORKER_ACC = 0.9
+
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
@@ -141,6 +144,8 @@ class DevelopmentConfig(Config):
     #TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
     TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-270k'
 
+
+    
 
     
 class Production(Config):

@@ -71,7 +71,7 @@ class ExperimentApi(Resource):
             unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_HEALTH']
             gold_extractor_name = app.config[
                 'UCI_NEWS_AGGREGATOR_HEALTH_LABELED']
-            test_set_index = ?
+            test_set_index = 10
 
         files_for_simulation = {
                 0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/%s_positives' % event_name],

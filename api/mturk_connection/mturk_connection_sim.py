@@ -13,7 +13,7 @@ from schema.experiment import Experiment
 from schema.gold_extractor import Gold_Extractor
 import cPickle
 import urllib2
-from random import sample
+from random import sample, random
 from api.s3_util import insert_connection_into_s3
 import requests
 
@@ -184,7 +184,12 @@ class MTurk_Connection_Sim(MTurk_Connection):
             else:
                 predicted_labels = []
                 for sentence in category_2_sentences:
-                    predicted_labels.append(self.gold_labels[sentence])
+                    #with some probability, add some noise.
+                    if random() < app.config['EXPERIMENT_WORKER_ACC']:
+                        predicted_labels.append(self.gold_labels[sentence])
+                    else:
+                        predicted_labels.append(
+                            1-self.gold_labels[sentence])
 
                 
             for label, worker_id, question_name in zip(

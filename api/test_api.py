@@ -68,6 +68,10 @@ def test_on_held_out_set(job_id, positive_types, test_set):
 
     (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
 
+    ####
+    # Each of these options should return test_examples, test_positive_examples
+    # test_negative_examples and test_labels
+    ####
     if test_set == -1:
         test_positive_examples, test_negative_examples = split_examples(
             task_ids[0:2],
@@ -92,6 +96,21 @@ def test_on_held_out_set(job_id, positive_types, test_set):
         test_examples = test_positive_examples + test_negative_examples
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
+    elif test_set == 10:
+        test_positive_examples = []
+        test_negative_examples = []
+        pos_testfile_name = 'data/test_data/health_pos'
+        neg_testfile_name = 'data/test_data/health_neg'
+        with open(pos_testfile_name, 'r') as pos_testfile:
+            for line in pos_testfile:
+                test_positive_examples.append(line)
+        with open(neg_testfile_name, 'r') as neg_testfile:
+            for line in neg_testfile:
+                test_negative_examples.append(line)
+        test_examples = test_positive_examples + test_negative_examples
+        test_labels = ([1 for e in test_positive_examples] +
+                       [0 for e in test_negative_examples])
+        
     else:
         test_positive_examples = []
         test_negative_examples = []
