@@ -28,7 +28,17 @@ ed.js"></script>
 
     <h2> <b> Learning Curves: </b></h2>
 
+      <select id="domains" name="domains">
+        <option value="death">death</option>
+        <option value="health">health</option>
+
+      </select>
+
+      
+      <button id="analyze">Analyze!</button>
+
     <br/>
+
 
     <!--<button id="analyze">
       Analyze and Get Learning Curves</button>-->
@@ -64,8 +74,13 @@ ed.js"></script>
     var xmlhttp_analyze_experiment = new XMLHttpRequest();
     
     function analyze_all_experiments() {
-	var analyze_experiment_url = '/analyze_all_experiments';
-		
+	var menu = document.getElementById("domains");
+	var selected_domain = menu.options[menu.selectedIndex].value;
+	
+
+	var analyze_experiment_url = '/analyze_all_experiments?domain=';
+	analyze_experiment_url += selected_domain;
+
 	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
         xmlhttp_analyze_experiment.send();
 
@@ -121,8 +136,8 @@ ed.js"></script>
 	}
     };
 
-    //document.getElementById('analyze').onclick = analyze_all_experiments;
-    analyze_all_experiments();
+    document.getElementById('analyze').onclick = analyze_all_experiments;
+    //analyze_all_experiments();
 
 
   </script>

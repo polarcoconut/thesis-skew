@@ -592,20 +592,20 @@ class ExperimentAnalyzeApi(Resource):
                 predicted_precisions, predicted_recalls, predicted_f1s]
 
 
-#all_experiment_analyze_parser = reqparse.RequestParser()
-#all_experiment_analyze_parser.add_argument('experiment_id', 
-#                                           type=str, required=True)
+all_experiment_analyze_parser = reqparse.RequestParser()
+all_experiment_analyze_parser.add_argument('domain', 
+                                           type=str, required=True)
 #all_experiment_analyze_parser.add_argument('job_ids', 
 #                                           type=str, action='append')
 
 class AllExperimentAnalyzeApi(Resource):
     def get(self):
 
-        #args = all_experiment_analyze_parser.parse_args()
-        #experiment_id = args['experiment_id']
+        args = all_experiment_analyze_parser.parse_args()
+        selected_domain = args['domain']
         #job_ids = args['job_ids']
 
-        experiment = Experiment.objects
+        #experiment = Experiment.objects
 
 
         #precision_curves = []
@@ -618,6 +618,11 @@ class AllExperimentAnalyzeApi(Resource):
 
 
         for experiment in Experiment.objects:
+
+            experiment_domain = pickle.loads(experiment.task_information)[0][0]
+            if not experiment_domain == selected_domain:
+                continue
+
             [precisions_avgs, recalls_avgs, f1s_avgs, 
              precisions_stds, recalls_stds, f1s_stds] = get_average_curve(
                  experiment.id)
