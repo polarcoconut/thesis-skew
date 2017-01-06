@@ -48,6 +48,7 @@ experiment_parser.add_argument('event_neg_example_nearmiss',
 experiment_parser.add_argument('budget', type=str, required=True)
 experiment_parser.add_argument('control_strategy', type=str, required=True)
 experiment_parser.add_argument('num_runs', type=int, required=True)
+experiment_parser.add_argument('gpu_device_string', type=str, required=True)
 
 
 class ExperimentApi(Resource):
@@ -58,6 +59,7 @@ class ExperimentApi(Resource):
         budget = int(args['budget'])
         control_strategy = args['control_strategy']
         num_runs = args['num_runs']
+        gpu_device_string = args['gpu_device_string']
 
         event_name = args['event_name'].lower()
         
@@ -90,7 +92,8 @@ class ExperimentApi(Resource):
             gold_extractor = gold_extractor_name,
             files_for_simulation = files_for_simulation,
             unlabeled_corpus = unlabeled_corpus,
-            learning_curves= {})
+            learning_curves= {},
+            gpu_device_string = gpu_device_string)
 
         #Compute an upper bound on performance
         #compute_upper_bound.delay(experiment.gold_extractor, 
@@ -162,7 +165,8 @@ def run_experiment(experiment_id):
                                                2 : []}),
                   logging_data = pickle.dumps([]),
                   unlabeled_corpus = experiment.unlabeled_corpus,
-                  experiment_id = experiment_id)
+                  experiment_id = experiment_id,
+                  gpu_device_string = gpu_device_string)
 
         #job.model_file.put("placeholder")
         #job.model_meta_file.put("placeholder")
@@ -280,7 +284,8 @@ def compute_upper_bound(gold_extractor, test_set_index):
             #shuffle(selected_examples)
 
             model_file_name, vocabulary = train_cnn(
-                selected_examples, expected_labels)
+                selected_examples, expected_labels,
+                '/gpu:0')
             
             #(model_url, model_meta_url,
             # model_key, model_meta_key) = insert_model_into_s3(
@@ -369,7 +374,8 @@ def train_gold_extractor(name_of_new_gold_extractor):
     model_file_name, vocabulary = train_cnn(
         training_positive_examples + training_negative_examples,
         ([1 for e in training_positive_examples] +
-         [0 for e in training_negative_examples]))
+         [0 for e in training_negative_examples]),
+        '/gpu:0')
 
     model_file_handle = open(model_file_name, 'rb')
     #model_binary = model_file_handle.read()

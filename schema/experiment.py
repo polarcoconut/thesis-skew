@@ -22,3 +22,6 @@ class Experiment(db.DynamicDocument):
     
     
     unlabeled_corpus = db.StringField()
+
+    gpu_device_string = db.StringField()
+

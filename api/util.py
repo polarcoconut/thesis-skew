@@ -511,10 +511,13 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
     
 
     if app.config['MODEL'] == 'CNN':
+        job = Job.objects.get(id = job_id)
+        
         model_file_name, vocabulary = train_cnn(
             training_positive_examples + training_negative_examples,
             ([1 for e in training_positive_examples] +
-             [0 for e in training_negative_examples]))
+             [0 for e in training_negative_examples]),
+            job.gpu_device_string)
 
         print "Saving the model"
         print job_id

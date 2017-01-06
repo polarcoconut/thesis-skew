@@ -29,3 +29,5 @@ class Job(db.DynamicDocument):
     logging_data = db.StringField()
 
     unlabeled_corpus = db.StringField()
+
+    gpu_device_string = db.StringField()

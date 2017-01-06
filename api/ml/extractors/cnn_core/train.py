@@ -28,7 +28,7 @@ tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device 
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
     
 
-def train_cnn(training_sentences, training_labels):
+def train_cnn(training_sentences, training_labels, gpu_device_string):
     # Parameters
     # ==================================================
 
@@ -96,6 +96,7 @@ def train_cnn(training_sentences, training_labels):
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
                 num_filters=FLAGS.num_filters,
+                gpu_device_string = gpu_device_string,
                 l2_reg_lambda=FLAGS.l2_reg_lambda)
 
             # Define Training procedure
