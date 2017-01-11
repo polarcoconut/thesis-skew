@@ -9,9 +9,10 @@ import inspect
 from schema.job import Job
 from schema.experiment import Experiment
 import requests
-from util import getLatestCheckpoint, split_examples, parse_answers, retrain
+from util import getLatestCheckpoint, split_examples, parse_answers, retrain, get_cost_of_action
 from crowdjs_util import get_answers, upload_questions
 from test_api import test_on_held_out_set, compute_performance_on_test_set
+
 
 @app.celery.task(name='restart')
 def restart(job_id):
@@ -141,7 +142,13 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 training_examples.append(new_examples)
                 training_labels.append(new_labels)
 
-                if 'experiment_id' in job:
+                cost_of_last_action = get_cost_of_action(task_categories[-2])
+                costSoFar_before_last_action = costSoFar - cost_of_last_action
+                relevant_threshold = costSoFar - (
+                    costSoFar % app.config['EXPERIMENT_MEASUREMENT_INTERVAL'])
+                
+                if (('experiment_id' in job) and 
+                    (costSoFar_before_last_action < relevant_threshold)):
                     print "Computing current performance"
                     sys.stdout.flush() 
                     precision, recall, f1 = compute_performance_on_test_set(

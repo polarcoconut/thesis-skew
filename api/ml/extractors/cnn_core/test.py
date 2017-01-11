@@ -68,7 +68,7 @@ def test_cnn(test_examples, test_labels, checkpoint_file, vocabulary):
 
             # Tensors we want to evaluate
             predictions = graph.get_operation_by_name("output/predictions").outputs[0]
-            normalized_scores = graph.get_operation_by_name("output/normalized_scores").outputs[0]            
+            #normalized_scores = graph.get_operation_by_name("output/normalized_scores").outputs[0]            
 
             # Generate batches for one epoch
             batches = data_helpers.batch_iter(x_test, FLAGS.batch_size, 1, shuffle=False)
@@ -80,8 +80,10 @@ def test_cnn(test_examples, test_labels, checkpoint_file, vocabulary):
             for x_test_batch in batches:
                 batch_predictions = sess.run(predictions, {input_x: x_test_batch, dropout_keep_prob: 1.0})
                 all_predictions = np.concatenate([all_predictions, batch_predictions])
-                batch_normalized_scores = sess.run(normalized_scores, {input_x: x_test_batch, dropout_keep_prob: 1.0})
-                all_normalized_scores = np.concatenate([all_normalized_scores, batch_normalized_scores])
+                #batch_normalized_scores = sess.run(normalized_scores, {input_x: x_test_batch, dropout_keep_prob: 1.0})
+                #for batch_normalized_score in batch_normalized_scores:
+                #    all_normalized_scores.append(batch_normalized_score)
+                #all_normalized_scores += batch_normalized_scores
 
 
     # Print accuracy and fscores

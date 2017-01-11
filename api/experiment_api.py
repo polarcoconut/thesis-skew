@@ -65,7 +65,7 @@ class ExperimentApi(Resource):
         
 
         if event_name == 'death':
-            unlabeled_corpus = app.config['TACKBP_NW_90_CORPUS_URL']
+            unlabeled_corpus = app.config['TACKBP_NW_09_CORPUS_URL']
             test_set_index = 3
             gold_extractor_name = 'death'
 
@@ -128,11 +128,19 @@ def run_experiment(experiment_id):
     print "TESTING HOW GOOD THE GOLD EXTRACTOR IS"
     sys.stdout.flush()
 
-    testfile_name = 'data/test_data/test_strict_new_feature'                
-    (test_labels, test_features, test_examples,                             
-     test_positive_examples,                                                
-     test_negative_examples) = parse_angli_test_data(                       
-         testfile_name, [], experiment.test_set)
+    #testfile_name = 'data/test_data/test_strict_new_feature'                
+    #(test_labels, test_features, test_examples,                             
+    # test_positive_examples,                                                
+    # test_negative_examples) = parse_angli_test_data(                       
+    #     testfile_name, [], experiment.test_set)
+
+    corpus = str(requests.get(
+        experiment.unlabeled_corpus).content).split('\n')
+    test_examples = []
+    test_labels = []
+    for sentence in corpus:
+        test_examples.append(sentence)
+        test_labels.append(0)
 
     gold_extractor = Gold_Extractor.objects.get(name=experiment.gold_extractor)
     model_file_name = write_model_to_file(
@@ -143,13 +151,22 @@ def run_experiment(experiment_id):
                                 model_file_name,
                                 vocabulary)
     
+    print "PROPORTION OF POSITIVES IN DATA"
+    num_positives = 0.0
+    for predicted_label in predicted_labels:
+        if predicted_label == 1:
+            num_positives += 1
+    print num_positives / len(predicted_labels)
+    sys.stdout.flush()
+
     precision, recall, f1 = computeScores(predicted_labels, test_labels)
 
     print "PRECISION, RECALL, F1"
     print precision, recall, f1
     sys.stdout.flush()
+    
+    raise Exception
     """
-
 
     for i in range(experiment.num_runs):
 
@@ -166,7 +183,7 @@ def run_experiment(experiment_id):
                   logging_data = pickle.dumps([]),
                   unlabeled_corpus = experiment.unlabeled_corpus,
                   experiment_id = experiment_id,
-                  gpu_device_string = gpu_device_string)
+                  gpu_device_string = experiment.gpu_device_string)
 
         #job.model_file.put("placeholder")
         #job.model_meta_file.put("placeholder")
@@ -618,15 +635,21 @@ class AllExperimentAnalyzeApi(Resource):
         #recall_curves = []
         #f1_curves = []
         
-        precision_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
-        recall_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
-        f1_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio\n"
+        precision_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio\n"
+        recall_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio\n"
+        f1_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio\n"
 
 
         for experiment in Experiment.objects:
 
             experiment_domain = pickle.loads(experiment.task_information)[0][0]
-            if not experiment_domain == selected_domain:
+            print "Selected Domain"
+            print selected_domain
+            print experiment_domain
+            print pickle.loads(experiment.task_information)
+            sys.stdout.flush()
+
+            if not experiment_domain.lower() == selected_domain.lower():
                 continue
 
             [precisions_avgs, recalls_avgs, f1s_avgs, 
@@ -675,9 +698,9 @@ class AllExperimentAnalyzeApi(Resource):
                     
                     precision_curve += "%f,,,,,,,,,%f,%f\n" % (
                         x, precision_avg, precision_std)
-                    recall_curve += "%f,,,%f,%f,,,,,%f,%f\n" % (
+                    recall_curve += "%f,,,,,,,,,%f,%f\n" % (
                         x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,%f,%f,,,,,%f,%f\n" % (
+                    f1_curve  += "%f,,,,,,,,,%f,%f\n" % (
                         x, f1_avg, f1_std) 
 
             elif experiment.control_strategy == 'round-robin-random-negatives':

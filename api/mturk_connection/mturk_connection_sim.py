@@ -34,48 +34,49 @@ class MTurk_Connection_Sim(MTurk_Connection):
 
         self.modify_data = {}
         self.generate_data = []
-        """
-        generate_files = files_for_simulation[0]
-        for generate_file in generate_files:
-            with open(generate_file, 'r') as generate_file_handle:
-                for line in generate_file_handle:
-                    example = json.loads(line)
-                    #print example
-                    #sys.stdout.flush()
-                    example = example['value'].split('\t')[0]
-                    #print example
-                    #sys.stdout.flush()
- 
-                    self.generate_data.append(example)
-                    self.modify_data[example] = []
-                    
-        shuffle(self.generate_data)
-        print self.generate_data[0:3]
-        print "Done getting generate data ready."
-        sys.stdout.flush()
-        """
-        modify_files = files_for_simulation[1]
-        for modify_file in modify_files:
-            modify_file_handle = urllib2.urlopen(modify_file)
-            for line in modify_file_handle:
-                example = json.loads(line)
-                value = example['value'].split('\t')
-                sentence = value[0]
-                previous_sentence_not_example_of_event = value[1]
-                old_sentence = value[3]
-                if old_sentence not in self.modify_data:
-                    self.modify_data[old_sentence] = []
-                self.modify_data[old_sentence].append(sentence)
-            
-        self.generate_data = self.modify_data.keys()
-        shuffle(self.generate_data)
-
-        print "Done getting generate and modify data ready"
-        sys.stdout.flush()
 
         
 
         if experiment.gold_extractor == 'death':
+            """
+            generate_files = files_for_simulation[0]
+            for generate_file in generate_files:
+                with open(generate_file, 'r') as generate_file_handle:
+                    for line in generate_file_handle:
+                        example = json.loads(line)
+                        #print example
+                        #sys.stdout.flush()
+                        example = example['value'].split('\t')[0]
+                        #print example
+                        #sys.stdout.flush()
+
+                        self.generate_data.append(example)
+                        self.modify_data[example] = []
+
+            shuffle(self.generate_data)
+            print self.generate_data[0:3]
+            print "Done getting generate data ready."
+            sys.stdout.flush()
+            """
+            modify_files = files_for_simulation[1]
+            for modify_file in modify_files:
+                modify_file_handle = urllib2.urlopen(modify_file)
+                for line in modify_file_handle:
+                    example = json.loads(line)
+                    value = example['value'].split('\t')
+                    sentence = value[0]
+                    previous_sentence_not_example_of_event = value[1]
+                    old_sentence = value[3]
+                    if old_sentence not in self.modify_data:
+                        self.modify_data[old_sentence] = []
+                    self.modify_data[old_sentence].append(sentence)
+
+            self.generate_data = self.modify_data.keys()
+            shuffle(self.generate_data)
+
+            print "Done getting generate and modify data ready"
+            sys.stdout.flush()
+
             gold_extractor = Gold_Extractor.objects.get(
                 name=experiment.gold_extractor)
             
@@ -87,12 +88,52 @@ class MTurk_Connection_Sim(MTurk_Connection):
             self.vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
             self.use_gold_extractor = True
         else:
+            
+            generate_files = files_for_simulation[0]
+            for generate_file in generate_files:
+                generate_file_handle = urllib2.urlopen(generate_file)
+                for line in generate_file_handle:
+                    self.generate_data.append(line.rstrip())
+                        
+            shuffle(self.generate_data)
+            #print self.generate_data[0:3]
+            print "Done getting generate data ready."
+            sys.stdout.flush()
+            
+            modify_files = files_for_simulation[1]
+            for modify_file in modify_files:
+                modify_file_handle = urllib2.urlopen(modify_file)
+                for line in modify_file_handle:
+                    example = json.loads(line)
+                    value = example['value'].split('\t')
+                    sentence = value[0]
+                    previous_sentence_not_example_of_event = value[1]
+                    old_sentence = value[3]
+                    if old_sentence not in self.modify_data:
+                        self.modify_data[old_sentence] = []
+                    self.modify_data[old_sentence].append(sentence)
+
+            #self.generate_data = self.modify_data.keys()
+            #shuffle(self.generate_data)
+
+            print "Done getting generate and modify data ready"
+            sys.stdout.flush()
+
             gold_labels = {}
             gold_corpus = str(requests.get(
-                experiment.unlabeled_corpus).content).split('\n')
+                experiment.gold_extractor).content).split('\n')
             for line in gold_corpus:
+                if line == "":
+                    continue
+                #print line
                 line = line.split('\t')
-                example = line[0]
+                #print line
+                example = unicode(line[0], 'utf-8')
+                #example = example.encode('utf-8')
+                #if 'UK current account deficit' in example:
+                #    print example
+                #print example
+
                 label = int(line[1])
                 gold_labels[example] = label
             self.gold_labels = gold_labels
@@ -185,6 +226,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 predicted_labels = []
                 for sentence in category_2_sentences:
                     #with some probability, add some noise.
+                    #print sentence
                     if random() < app.config['EXPERIMENT_WORKER_ACC']:
                         predicted_labels.append(self.gold_labels[sentence])
                     else:

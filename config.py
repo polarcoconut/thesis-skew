@@ -115,8 +115,9 @@ class Config(object):
     UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_labeled_corpus'
     
 
-    EXPERIMENT_WORKER_ACC = 0.9
+    EXPERIMENT_WORKER_ACC = 1.0
 
+    EXPERIMENT_MEASUREMENT_INTERVAL = 10
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True

@@ -225,6 +225,19 @@ def parse_task_information(args):
 
 
 
+def get_cost_of_action(category):
+    if category == 0:
+        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * next_category['price']
+    elif category == 1:
+        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']* next_category['price']
+    elif category == 2:
+        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+
+
+
+
 def getLatestCheckpoint(job_id):
     #read the latest checkpoint
     job = Job.objects.get(id = job_id)
@@ -763,6 +776,8 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
 
     corpus = set(corpus)-set(used_examples)
     for sentence in corpus:
+        if sentence == "":
+            continue
         test_examples.append(sentence)
         test_labels.append(0)
 
@@ -871,6 +886,8 @@ def get_random_unlabeled_examples_from_corpus(
 
     corpus = set(corpus)-set(used_examples)
     for sentence in corpus:
+        if sentence == "":
+            continue
         test_examples.append(sentence)
 
     print "Sampling from a corpus of size"
