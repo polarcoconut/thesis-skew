@@ -4,6 +4,7 @@ import sys
 import json
 import requests
 from app import app
+from schema.experiment import Experiment
 from schema.job import Job
 from schema.gold_extractor import Gold_Extractor
 from crowdjs_util import get_answers, get_questions, get_answers_for_question, get_task_data
@@ -21,6 +22,7 @@ import subprocess
 import re
 import traceback
 import time
+import cPickle
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -225,16 +227,18 @@ def parse_task_information(args):
 
 
 
-def get_cost_of_action(category):
-    if category == 0:
-        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * next_category['price']
-    elif category == 1:
-        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
-            'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']* next_category['price']
-    elif category == 2:
-        app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
-            'CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+def get_cost_of_action(category_id):
 
+    category = app.config['EXAMPLE_CATEGORIES'][category_id]
+
+    if category_id == 0:
+        return app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * category['price']
+    elif category_id == 1:
+        return app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']* category['price']
+    elif category_id == 2:
+        return app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
+            'CONTROLLER_LABELS_PER_QUESTION'] * category['price']
 
 
 
@@ -721,6 +725,94 @@ def test(job_id, test_examples, test_labels):
 
 
 
+def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
+                                                      task_categories,
+                                                      training_examples,
+                                                      training_labels,
+                                                      task_information,
+                                                      costSoFar,
+                                                      budget, job_id):
+        (selected_examples,
+         expected_labels) = get_unlabeled_examples_from_corpus(
+            task_ids, task_categories,
+            training_examples, training_labels,
+            task_information, costSoFar,
+            budget, job_id)
+
+        job = Job.objects.get(id = job_id)
+        experiment = Experiment.objects.get(id=job.experiment_id)
+
+        
+        if not 'https' in experiment.gold_extractor:
+            gold_extractor = Gold_Extractor.objects.get(
+                name=experiment.gold_extractor)
+            model_file_name = write_model_to_file(
+                gold_extractor = gold_extractor.name)
+            vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+            predicted_labels, label_probabilities = test_cnn(
+                selected_examples,
+                [0 for i in selected_examples],
+                model_file_name,
+                vocabulary)
+
+            os.remove(os.path.join(
+                os.getcwd(), model_file_name))
+            os.remove(os.path.join(
+                os.getcwd(),'%s.meta' % model_file_name))
+        else:
+            gold_labels = {}
+            gold_corpus = str(requests.get(
+                experiment.gold_extractor).content).split('\n')
+            for line in gold_corpus:
+                if line == "":
+                    continue
+ 
+                line = line.split('\t')
+                example = line[0]
+                #example = unicode(line[0], 'utf-8')
+                label = int(line[1])
+                gold_labels[example] = label
+                
+            predicted_labels = []
+            for example in selected_examples:
+                predicted_labels.append(gold_labels[example])
+
+        expected_positive_examples = []
+        expected_negative_examples = []
+        for predicted_label, selected_example in zip(predicted_labels,
+                                                 selected_examples):
+            if predicted_label == 1:
+                expected_positive_examples.append(selected_example)
+            elif predicted_label == 0:
+                expected_negative_examples.append(selected_example)
+            else:
+                raise Exception
+                
+
+        selected_examples = []
+        expected_labels = []
+
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+        for pos_example in expected_positive_examples:
+            selected_examples.append(pos_example)
+            expected_labels.append(1)
+
+            temp_num_negatives_wanted = num_negatives_wanted
+            while temp_num_negatives_wanted > 0:
+                if len(expected_negative_examples) > 0:
+                    selected_examples.append(expected_negative_examples.pop())
+                    expected_labels.append(0)
+                    temp_num_negatives_wanted -= 1
+                else:
+                    break
+
+        if len(expected_positive_examples) == 0:
+            selected_examples += sample(expected_negative_examples,
+                                        num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
+
+
+        return selected_examples, expected_labels
 
 #Gets examples that are predicted positive
 def get_unlabeled_examples_from_corpus(task_ids, task_categories,

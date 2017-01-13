@@ -6,7 +6,7 @@ from app import app
 #from ml.extractors.cnn_core.test import test_cnn
 from ml.extractors.cnn_core.computeScores import computeScores
 
-from util import write_model_to_file, retrain, get_unlabeled_examples_from_corpus, get_random_unlabeled_examples_from_corpus, split_examples, test
+from util import write_model_to_file, retrain, get_unlabeled_examples_from_corpus, get_random_unlabeled_examples_from_corpus, split_examples, test,  get_unlabeled_examples_from_corpus_at_fixed_ratio
 from crowdjs_util import make_labeling_crowdjs_task, make_recall_crowdjs_task, make_precision_crowdjs_task
 import urllib2
 from schema.job import Job
@@ -1391,63 +1391,11 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_corpus(
+         expected_labels) = get_unlabeled_examples_from_corpus_at_fixed_ratio(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,
             budget, job_id)
-
-        job = Job.objects.get(id = job_id)
-        experiment = Experiment.objects.get(id=job.experiment_id)
-        gold_extractor = Gold_Extractor.objects.get(
-            name=experiment.gold_extractor)
-        model_file_name = write_model_to_file(
-            gold_extractor = gold_extractor.name) 
-        vocabulary = cPickle.loads(str(gold_extractor.vocabulary))             
-        predicted_labels, label_probabilities = test_cnn(selected_examples,
-                                    [0 for i in selected_examples], 
-                                    model_file_name, 
-                                    vocabulary)
-
-        os.remove(os.path.join(
-            os.getcwd(), model_file_name))
-        os.remove(os.path.join(
-            os.getcwd(),'%s.meta' % model_file_name))
-
- 
-        expected_positive_examples = []
-        expected_negative_examples = []
-        for predicted_label, selected_example in zip(predicted_labels,
-                                                 selected_examples):
-            if predicted_label == 1:
-                expected_positive_examples.append(selected_example)
-            elif predicted_label == 0:
-                expected_negative_examples.append(selected_example)
-            else:
-                raise Exception
-        
-        # For now, put in a ratio of 1 positive : 2 negatives
-        
-        selected_examples = []
-        expected_labels = []
-        num_negatives_wanted = 3
-        for pos_example in expected_positive_examples:
-            selected_examples.append(pos_example)
-            expected_labels.append(1)
-
-            temp_num_negatives_wanted = num_negatives_wanted
-            while temp_num_negatives_wanted > 0:
-                if len(expected_negative_examples) > 0:
-                    selected_examples.append(expected_negative_examples.pop())
-                    expected_labels.append(0)
-                    temp_num_negatives_wanted -= 1
-                else:
-                    break
-
-        if len(expected_positive_examples) == 0:
-            selected_examples += sample(expected_negative_examples, 
-                                        num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
 
         task = make_labeling_crowdjs_task(selected_examples,
                                           expected_labels,

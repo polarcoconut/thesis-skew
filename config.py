@@ -44,6 +44,7 @@ class Config(object):
     CROWDJS_BASE_URL = os.environ['CROWDJS_BASE_URL']
     CROWDJS_GET_ANSWERS_URL = CROWDJS_BASE_URL + '/answers'
     CROWDJS_SUBMIT_ANSWER_URL = CROWDJS_BASE_URL + '/answers'
+    CROWDJS_SUBMIT_BATCH_ANSWER_URL = CROWDJS_BASE_URL + '/answers2'
     CROWDJS_GET_QUESTIONS_URL = CROWDJS_BASE_URL + '/tasks/%s/questions'
     CROWDJS_GET_ANSWERS_FOR_QUESTION_URL = CROWDJS_BASE_URL + '/questions/answers'
 
@@ -118,6 +119,8 @@ class Config(object):
     EXPERIMENT_WORKER_ACC = 1.0
 
     EXPERIMENT_MEASUREMENT_INTERVAL = 10
+    
+    NUM_NEGATIVES_PER_POSITIVE = 3
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True

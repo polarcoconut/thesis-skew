@@ -1,7 +1,7 @@
 from app import app
 import sys
 from mturk_connection import MTurk_Connection
-from api.crowdjs_util import get_next_assignment, submit_answer, get_answers
+from api.crowdjs_util import get_next_assignment, submit_answer, submit_answers, get_answers
 from api.util import parse_answers, write_model_to_file, test
 from api.ml.extractors.cnn_core.test import test_cnn
 from random import shuffle
@@ -37,7 +37,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
 
         
 
-        if experiment.gold_extractor == 'death':
+        if not 'https' in experiment.gold_extractor:
             """
             generate_files = files_for_simulation[0]
             for generate_file in generate_files:
@@ -152,6 +152,8 @@ class MTurk_Connection_Sim(MTurk_Connection):
         category_2_worker_ids = []
         category_2_question_names = []
         
+        question_names = []
+        all_answers = []
         for hit in range(num_hits):
 
             worker_id = str(uuid.uuid1())
@@ -172,9 +174,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 generated_sentence = sample(self.generate_data, 1)[0]
                 answer = (generated_sentence +
                           "\tTrigger\tPast\tFuture\tGeneral\tSimTaboo")
-                submit_answer(task_id, worker_id,
-                              next_assignment_question_name,
-                              answer)
+                all_answers.append([next_assignment_question_name,
+                                    answer])
+                #submit_answer(task_id, worker_id,
+                #              next_assignment_question_name,
+                #              answer)
             elif category_id == 1:
                 
                 #########
@@ -198,10 +202,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 answer = (random_negative + "\tNotPos\tHypOrGen\t" +
                           "no_old_sentence" + "\tSimTaboo")
                 
-                
-                submit_answer(task_id, worker_id,
-                              next_assignment_question_name,
-                              answer)
+                all_answers.append([next_assignment_question_name,
+                                    answer])                
+                #submit_answer(task_id, worker_id,
+                #              next_assignment_question_name,
+                #              answer)
             elif category_id == 2:
 
                 sentence = next_assignment_question_data[10]
@@ -243,8 +248,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 else:
                     answer = "No\tFailing"
                     
-                submit_answer(task_id, worker_id, question_name, answer)
-                              
+                all_answers.append([question_name,answer])                
+                #submit_answer(task_id, worker_id, question_name, answer)
+        
+
+        submit_answers(task_id, worker_id, all_answers)
         #save the connection to the job for later use
         mturk_connection_url = insert_connection_into_s3(cPickle.dumps(self))
         job.mturk_connection = mturk_connection_url

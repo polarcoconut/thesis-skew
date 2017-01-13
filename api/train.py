@@ -142,11 +142,33 @@ def gather(task_information, budget, job_id, checkpoint = None):
                 training_examples.append(new_examples)
                 training_labels.append(new_labels)
 
-                cost_of_last_action = get_cost_of_action(task_categories[-2])
-                costSoFar_before_last_action = costSoFar - cost_of_last_action
-                relevant_threshold = costSoFar - (
-                    costSoFar % app.config['EXPERIMENT_MEASUREMENT_INTERVAL'])
                 
+                #if len(task_ids) == 1:
+                #    costSoFar_before_last_action = 0
+                #else:
+                cost_of_last_action = get_cost_of_action(
+                    task_categories[-1])
+                costSoFar_before_last_action = (costSoFar - 
+                                                cost_of_last_action)
+                
+                print "----------------------------------------------"
+                print "----------------------------------------------"
+                print cost_of_last_action
+                print costSoFar_before_last_action
+                
+                relevant_threshold = costSoFar - (
+                    costSoFar % app.config[
+                        'EXPERIMENT_MEASUREMENT_INTERVAL'])
+                print "-----------------------------------------------"
+                print "-----------------------------------------------"
+
+                print relevant_threshold
+                print "-----------------------------------------------"
+                print "-----------------------------------------------"
+                sys.stdout.flush()
+
+
+
                 if (('experiment_id' in job) and 
                     (costSoFar_before_last_action < relevant_threshold)):
                     print "Computing current performance"

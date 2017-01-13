@@ -3,6 +3,7 @@ import requests
 import pickle
 import sys, traceback
 import time
+import json
 
 
 def submit_answer(task_id, worker_id, question_name, answer):
@@ -34,7 +35,57 @@ def submit_answer(task_id, worker_id, question_name, answer):
             continue
         
 
+def submit_answers(task_id, worker_id, all_answers):
 
+    #all_answers = []
+    #for question_name, answer in zip(question_names, answers):
+    #    all_answers.append([question_name, answer])
+
+    #divide up into batches of 10.
+
+    #all_answers = json.dumps(all_answers)
+
+    for i in range(0, int(len(all_answers) / 10)+1):
+        batch = all_answers[10*i:10*i + 10]
+        batch = json.dumps(batch)
+
+        print "Submitting:"
+        print batch
+        print i
+        print int(len(all_answers) / 10)
+        sys.stdout.flush()
+        
+        headers = {'Authentication-Token': app.config['CROWDJS_API_KEY']}
+        submit_answer_request = {}
+        submit_answer_request['requester_id'] = app.config['CROWDJS_REQUESTER_ID']
+        submit_answer_request['task_id'] = task_id;
+        #submit_answer_request['question_name'] = question_name;
+        submit_answer_request['answers'] = batch;
+        submit_answer_request['worker_id'] = worker_id;
+        submit_answer_request['worker_source'] = 'mturk';
+        #submit_answer_request['value'] = answer;
+
+        while True:
+            try:
+                r = requests.put(app.config['CROWDJS_SUBMIT_BATCH_ANSWER_URL'],
+                                 headers=headers,
+                                 json=submit_answer_request)
+                print "Here is the response"
+                print r.text
+                sys.stdout.flush()
+                #return True
+                break
+            except Exception:
+                print "Exception while communicating with crowdjs:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(60)
+                continue
+ 
+
+    return True
 
 def get_next_assignment(task_id, worker_id):
     assign_crowdjs_url = app.config['CROWDJS_ASSIGN_URL']
