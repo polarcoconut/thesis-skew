@@ -4,6 +4,7 @@ import pickle
 import sys, traceback
 import time
 import json
+from math import ceil
 
 
 def submit_answer(task_id, worker_id, question_name, answer):
@@ -45,8 +46,9 @@ def submit_answers(task_id, worker_id, all_answers):
 
     #all_answers = json.dumps(all_answers)
 
-    for i in range(0, int(len(all_answers) / 10)+1):
-        batch = all_answers[10*i:10*i + 10]
+    batch_size = 1
+    for i in range(0, int(ceil(len(all_answers) / batch_size))):
+        batch = all_answers[batch_size*i:batch_size*i + batch_size]
         batch = json.dumps(batch)
 
         print "Submitting:"

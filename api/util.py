@@ -11,6 +11,7 @@ from crowdjs_util import get_answers, get_questions, get_answers_for_question, g
 from s3_util import insert_model_into_s3, insert_crf_model_into_s3
 from ml.extractors.cnn_core.train import train_cnn
 from ml.extractors.cnn_core.test import test_cnn
+from ml.extractors.lr.lr import train_lr, test_lr
 from ml.extractors.cnn_core.computeScores import computeScores
 from random import sample, shuffle
 from math import floor, ceil
@@ -293,11 +294,11 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
 
             
     answers = get_answers(task_id)
-    print "Getting answers from crowd_js for task %s" % task_id
-    print len(answers)
-    print "Expected number of answers"
-    print wait_until_batch_finished
-    sys.stdout.flush()
+    #print "Getting answers from crowd_js for task %s" % task_id
+    #print len(answers)
+    #print "Expected number of answers"
+    #print wait_until_batch_finished
+    #sys.stdout.flush()
 
     # If the number of answers we have is less than what we expect,
     # don't do anything. If we expect -1 or False, then
@@ -392,8 +393,8 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
         for question in questions:
             question_id = question['_id']['$oid']
             question_ids.append(question_id)
-            print question_id
-            sys.stdout.flush()
+            #print question_id
+            #sys.stdout.flush()
 
         all_answers = get_answers_for_question(question_ids)
         
@@ -404,7 +405,7 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
 
         for answer in all_answers:
             #print answer
-            sys.stdout.flush()
+            #sys.stdout.flush()
             answer_question_id = answer['question']['$oid']
             if not answer_question_id in answers_by_question_id:
                 answers_by_question_id[answer_question_id] = []
@@ -479,8 +480,8 @@ def parse_answers(task_id, category_id, wait_until_batch_finished= -1,
             else:
                 labels.append(0)
     
-    print "Finished parsing the examples and the labels"
-    sys.stdout.flush()
+    #print "Finished parsing the examples and the labels"
+    #sys.stdout.flush()
 
     return examples, labels
 
@@ -527,6 +528,16 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
             positive_types)
     
 
+    if app.config['MODEL'] == 'LR':
+        classifier, vocabulary = train_lr(training_positive_examples + training_negative_examples,
+            ([1 for e in training_positive_examples] +
+             [0 for e in training_negative_examples]))
+
+        job = Job.objects.get(id=job_id)
+        job.vocabulary = pickle.dumps(vocabulary)
+        job.model_file = pickle.dumps(classifier)
+        job.save()
+        
     if app.config['MODEL'] == 'CNN':
         job = Job.objects.get(id = job_id)
         
@@ -647,6 +658,12 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
 def test(job_id, test_examples, test_labels):
     job = Job.objects.get(id = job_id)
 
+    if app.config['MODEL'] == 'LR':
+        vocabulary = pickle.loads(job.vocabulary)
+        model = pickle.loads(job.model_url)
+        predicted_labels, label_probabilities = test_lr(
+            test_examples, test_labels, model, vocabulary)
+
     if app.config['MODEL'] == 'CNN':
         vocabulary = pickle.loads(job.vocabulary)
         temp_file_name = write_model_to_file(job_id)
@@ -734,6 +751,95 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
                                                       budget, job_id):
         (selected_examples,
          expected_labels) = get_unlabeled_examples_from_corpus(
+            task_ids, task_categories,
+            training_examples, training_labels,
+            task_information, costSoFar,
+            budget, job_id)
+
+        job = Job.objects.get(id = job_id)
+        experiment = Experiment.objects.get(id=job.experiment_id)
+
+        
+        if not 'https' in experiment.gold_extractor:
+            gold_extractor = Gold_Extractor.objects.get(
+                name=experiment.gold_extractor)
+            model_file_name = write_model_to_file(
+                gold_extractor = gold_extractor.name)
+            vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+            predicted_labels, label_probabilities = test_cnn(
+                selected_examples,
+                [0 for i in selected_examples],
+                model_file_name,
+                vocabulary)
+
+            os.remove(os.path.join(
+                os.getcwd(), model_file_name))
+            os.remove(os.path.join(
+                os.getcwd(),'%s.meta' % model_file_name))
+        else:
+            gold_labels = {}
+            gold_corpus = str(requests.get(
+                experiment.gold_extractor).content).split('\n')
+            for line in gold_corpus:
+                if line == "":
+                    continue
+ 
+                line = line.split('\t')
+                example = line[0]
+                #example = unicode(line[0], 'utf-8')
+                label = int(line[1])
+                gold_labels[example] = label
+                
+            predicted_labels = []
+            for example in selected_examples:
+                predicted_labels.append(gold_labels[example])
+
+        expected_positive_examples = []
+        expected_negative_examples = []
+        for predicted_label, selected_example in zip(predicted_labels,
+                                                 selected_examples):
+            if predicted_label == 1:
+                expected_positive_examples.append(selected_example)
+            elif predicted_label == 0:
+                expected_negative_examples.append(selected_example)
+            else:
+                raise Exception
+                
+
+        selected_examples = []
+        expected_labels = []
+
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+        for pos_example in expected_positive_examples:
+            selected_examples.append(pos_example)
+            expected_labels.append(1)
+
+            temp_num_negatives_wanted = num_negatives_wanted
+            while temp_num_negatives_wanted > 0:
+                if len(expected_negative_examples) > 0:
+                    selected_examples.append(expected_negative_examples.pop())
+                    expected_labels.append(0)
+                    temp_num_negatives_wanted -= 1
+                else:
+                    break
+
+        if len(expected_positive_examples) == 0:
+            selected_examples += sample(expected_negative_examples,
+                                        num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
+
+
+        return selected_examples, expected_labels
+
+def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
+                                                      task_categories,
+                                                      training_examples,
+                                                      training_labels,
+                                                      task_information,
+                                                      costSoFar,
+                                                      budget, job_id):
+        (selected_examples,
+         expected_labels) = get_random_unlabeled_examples_from_corpus(
             task_ids, task_categories,
             training_examples, training_labels,
             task_information, costSoFar,

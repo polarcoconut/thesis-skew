@@ -31,6 +31,8 @@ ed.js"></script>
       <select id="domains" name="domains">
         <option value="death">death</option>
         <option value="health">health</option>
+        <option value="ent">ent</option>
+        <option value="bus">bus</option>
 
       </select>
 
@@ -49,6 +51,7 @@ ed.js"></script>
     <b>1: Generate Negative Examples, </b>
     <b>2: Label Predicted Positives </b> -->
     <br/>
+    <div id="precision_legend"></div>
     <div id="precision"></div>
 <br/>
     <b>Recall</b>
@@ -57,6 +60,7 @@ ed.js"></script>
     <b>1: Generate Negative Examples, </b>
     <b>2: Label Predicted Positives </b> -->
     <br/>
+    <div id="recall_legend"></div>
     <div id="recall"></div>
 <br/>
     <b>F1</b>
@@ -65,6 +69,7 @@ ed.js"></script>
     <b>1: Generate Negative Examples, </b>
     <b>2: Label Predicted Positives </b> -->
     <br/>
+<div id="f1_legend"></div>
     <div id="f1"></div>
 
 
@@ -106,6 +111,7 @@ ed.js"></script>
                     xlabel: 'Amount Spent',
                     ylabel: 'Precision',
                     legend: 'always',
+		    labelsDiv: 'precision_legend',
 		    connectSeparatedPoints: true,
                 }
             );
@@ -117,6 +123,7 @@ ed.js"></script>
                     xlabel: 'Amount Spent',
                     ylabel: 'Recall',
                     legend: 'always',
+		    labelsDiv: 'recall_legend',
 		    connectSeparatedPoints: true,
 
                 }
@@ -129,6 +136,7 @@ ed.js"></script>
                     xlabel: 'Amount Spent',
                     ylabel: 'F1',
                     legend: 'always',
+		    labelsDiv: 'f1_legend',
 		    connectSeparatedPoints: true
 
 		}

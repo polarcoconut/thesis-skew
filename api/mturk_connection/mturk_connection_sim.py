@@ -174,11 +174,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 generated_sentence = sample(self.generate_data, 1)[0]
                 answer = (generated_sentence +
                           "\tTrigger\tPast\tFuture\tGeneral\tSimTaboo")
-                all_answers.append([next_assignment_question_name,
-                                    answer])
-                #submit_answer(task_id, worker_id,
-                #              next_assignment_question_name,
-                #              answer)
+                #all_answers.append([next_assignment_question_name,
+                #                    answer])
+                submit_answer(task_id, worker_id,
+                              next_assignment_question_name,
+                              answer)
             elif category_id == 1:
                 
                 #########
@@ -202,11 +202,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 answer = (random_negative + "\tNotPos\tHypOrGen\t" +
                           "no_old_sentence" + "\tSimTaboo")
                 
-                all_answers.append([next_assignment_question_name,
-                                    answer])                
-                #submit_answer(task_id, worker_id,
-                #              next_assignment_question_name,
-                #              answer)
+                #all_answers.append([next_assignment_question_name,
+                #                    answer])                
+                submit_answer(task_id, worker_id,
+                              next_assignment_question_name,
+                              answer)
             elif category_id == 2:
 
                 sentence = next_assignment_question_data[10]
@@ -248,11 +248,11 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 else:
                     answer = "No\tFailing"
                     
-                all_answers.append([question_name,answer])                
-                #submit_answer(task_id, worker_id, question_name, answer)
+                #all_answers.append([question_name,answer])                
+                submit_answer(task_id, worker_id, question_name, answer)
         
 
-        submit_answers(task_id, worker_id, all_answers)
+        #submit_answers(task_id, worker_id, all_answers)
         #save the connection to the job for later use
         mturk_connection_url = insert_connection_into_s3(cPickle.dumps(self))
         job.mturk_connection = mturk_connection_url

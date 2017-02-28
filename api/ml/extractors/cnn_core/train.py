@@ -221,7 +221,9 @@ def train_cnn(training_sentences, training_labels, gpu_device_string):
                     print("Saved model checkpoint to {}\n".format(path))
                     break
                 except Exception:
-                    time.sleep(3600)
+                    print "TENSORFLOW COULDNT SAVE THE MODEL"
+                    sys.stdout.flush()
+                    time.sleep(360)
                     continue
                     
             checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)

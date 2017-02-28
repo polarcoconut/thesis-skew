@@ -110,6 +110,51 @@ def test_on_held_out_set(job_id, positive_types, test_set):
         test_examples = test_positive_examples + test_negative_examples
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
+    elif test_set == 11:
+        test_positive_examples = []
+        test_negative_examples = []
+        pos_testfile_name = 'data/test_data/ent_pos'
+        neg_testfile_name = 'data/test_data/ent_neg'
+        with open(pos_testfile_name, 'r') as pos_testfile:
+            for line in pos_testfile:
+                test_positive_examples.append(line)
+        with open(neg_testfile_name, 'r') as neg_testfile:
+            for line in neg_testfile:
+                test_negative_examples.append(line)
+        test_examples = test_positive_examples + test_negative_examples
+        test_labels = ([1 for e in test_positive_examples] +
+                       [0 for e in test_negative_examples])
+    elif test_set == 12:
+        test_positive_examples = []
+        test_negative_examples = []
+        pos_testfile_name = 'data/test_data/bus_pos'
+        neg_testfile_name = 'data/test_data/bus_neg'
+        with open(pos_testfile_name, 'r') as pos_testfile:
+            for line in pos_testfile:
+                test_positive_examples.append(line)
+        with open(neg_testfile_name, 'r') as neg_testfile:
+            for line in neg_testfile:
+                test_negative_examples.append(line)
+        test_examples = test_positive_examples + test_negative_examples
+        test_labels = ([1 for e in test_positive_examples] +
+                       [0 for e in test_negative_examples])
+        
+    elif test_set == 13:
+        test_positive_examples = []
+        test_negative_examples = []
+        pos_testfile_name = 'data/test_data/sci_pos'
+        neg_testfile_name = 'data/test_data/sci_neg'
+        with open(pos_testfile_name, 'r') as pos_testfile:
+            for line in pos_testfile:
+                test_positive_examples.append(line)
+        with open(neg_testfile_name, 'r') as neg_testfile:
+            for line in neg_testfile:
+                test_negative_examples.append(line)
+        test_examples = test_positive_examples + test_negative_examples
+        test_labels = ([1 for e in test_positive_examples] +
+                       [0 for e in test_negative_examples])
+        
+
         
     else:
         test_positive_examples = []

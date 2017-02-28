@@ -57,7 +57,7 @@ print "Loading logging"
 sys.stdout.flush()
 if not app.debug:   
     import logging
-    app.logger.addHandler(logging.StreamHandler())
+    app.logger.addHandler(logging.StreamHandler(sys.stdout))
     app.logger.setLevel(logging.ERROR)
 
 print "Finished loading server."
