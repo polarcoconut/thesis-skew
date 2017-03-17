@@ -31,3 +31,9 @@ class Job(db.DynamicDocument):
     unlabeled_corpus = db.StringField()
 
     gpu_device_string = db.StringField()
+
+
+    test_set = db.StringField()
+    files_for_simulation = db.StringField()
+
+    gold_extractor = db.StringField()

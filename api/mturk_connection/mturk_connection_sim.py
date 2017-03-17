@@ -29,15 +29,16 @@ class MTurk_Connection_Sim(MTurk_Connection):
         self.job_id = job_id
 
         experiment = Experiment.objects.get(id=experiment_id)
-        
-        files_for_simulation = pickle.loads(experiment.files_for_simulation)
+        job = Job.objects.get(id=job_id)
+
+        files_for_simulation = pickle.loads(job.files_for_simulation)
 
         self.modify_data = {}
         self.generate_data = []
 
         
 
-        if not 'https' in experiment.gold_extractor:
+        if not 'https' in job.gold_extractor:
             """
             generate_files = files_for_simulation[0]
             for generate_file in generate_files:
@@ -78,7 +79,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
             sys.stdout.flush()
 
             gold_extractor = Gold_Extractor.objects.get(
-                name=experiment.gold_extractor)
+                name=job.gold_extractor)
             
             model_file_name = write_model_to_file(
                 gold_extractor = gold_extractor.name)
@@ -121,7 +122,7 @@ class MTurk_Connection_Sim(MTurk_Connection):
 
             gold_labels = {}
             gold_corpus = str(requests.get(
-                experiment.gold_extractor).content).split('\n')
+                job.gold_extractor).content).split('\n')
             for line in gold_corpus:
                 if line == "":
                     continue
@@ -196,8 +197,21 @@ class MTurk_Connection_Sim(MTurk_Connection):
                 #USE RANDOM NEGATIVES
                 #########
                 job = Job.objects.get(id=self.job_id)
-                unlabeled_corpus = str(requests.get(
-                    job.unlabeled_corpus).content).split('\n')
+                
+                while True:
+                    try:
+                        r = requests.get(job.unlabeled_corpus).content
+                        break
+                    except Exception:
+                        print "Exception while communicating with S3"
+                        print '-'*60
+                        traceback.print_exc(file=sys.stdout)
+                        print '-'*60
+                        sys.stdout.flush()
+                        time.sleep(60)
+                        continue
+                        
+                unlabeled_corpus = str(r).split('\n')
                 random_negative = sample(unlabeled_corpus, 1)[0]
                 answer = (random_negative + "\tNotPos\tHypOrGen\t" +
                           "no_old_sentence" + "\tSimTaboo")

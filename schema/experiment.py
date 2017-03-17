@@ -2,6 +2,8 @@ from app import db
 
 class Experiment(db.DynamicDocument):
 
+    status = db.StringField()
+
     task_information = db.StringField()
 
     job_ids = db.ListField()
@@ -15,13 +17,9 @@ class Experiment(db.DynamicDocument):
     
     #Pickled dictionary where key is category id and value is
     #list of file names
-    files_for_simulation = db.StringField()
-    
-
-    test_set = db.IntField()
-    
-    
-    unlabeled_corpus = db.StringField()
 
     gpu_device_string = db.StringField()
 
+    exceptions = db.ListField()
+
+    dataset_skew = db.StringField()

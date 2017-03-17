@@ -5,6 +5,7 @@ import string
 import pickle
 from app import app
 from train import gather, restart, gather_status
+from train_simulate import gather_sim
 import sys
 import uuid
 from schema.job import Job
@@ -14,11 +15,12 @@ from util import parse_task_information, retrain, getLatestCheckpoint, split_exa
 from crowdjs_util import get_task_data
 from ml.extractors.cnn_core.parse import parse_angli_test_data
 from ml.extractors.cnn_core.train import train_cnn
-from api.s3_util import insert_connection_into_s3
+from api.s3_util import insert_connection_into_s3, generate_dataset
 import time
 from api.mturk_connection.mturk_connection import MTurk_Connection
 from api.mturk_connection.mturk_connection_real import MTurk_Connection_Real
 from api.mturk_connection.mturk_connection_sim import MTurk_Connection_Sim
+from api.mturk_connection.mturk_connection_super_sim import MTurk_Connection_Super_Sim
 import cPickle
 from ml.extractors.cnn_core.parse import parse_angli_test_data
 from ml.extractors.cnn_core.test import test_cnn
@@ -26,6 +28,9 @@ from ml.extractors.cnn_core.computeScores import computeScores
 import requests
 from random import sample, shuffle
 import pprint
+import sys, os, traceback, time, re
+import inspect
+import psutil
 
 import numpy as np
 
@@ -53,6 +58,8 @@ experiment_parser.add_argument('gpu_device_string', type=str, required=True)
 
 class ExperimentApi(Resource):
     def post(self):
+      
+        
         args = experiment_parser.parse_args()
         task_information = parse_task_information(args)
                 
@@ -62,70 +69,45 @@ class ExperimentApi(Resource):
         gpu_device_string = args['gpu_device_string']
 
         event_name = args['event_name'].lower()
-        
 
-        if event_name == 'death':
-            unlabeled_corpus = app.config['TACKBP_NW_09_CORPUS_URL']
-            test_set_index = 3
-            gold_extractor_name = 'death'
+        ratios = [1]
+        #ratios = [1,2,3,5,9,49,99]
 
-        elif event_name == 'health':
-            unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_HEALTH']
-            gold_extractor_name = app.config[
-                'UCI_NEWS_AGGREGATOR_HEALTH_LABELED']
-            test_set_index = 10
-        elif event_name == 'ent':
-            unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_ENT']
-            gold_extractor_name = app.config[
-                'UCI_NEWS_AGGREGATOR_ENT_LABELED']
-            test_set_index = 11
-        elif event_name == 'bus':
-            unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_BUS']
-            gold_extractor_name = app.config[
-                'UCI_NEWS_AGGREGATOR_BUS_LABELED']
-            test_set_index = 12
-        elif event_name == 'sci':
-            unlabeled_corpus = app.config['UCI_NEWS_AGGREGATOR_SCI']
-            gold_extractor_name = app.config[
-                'UCI_NEWS_AGGREGATOR_SCI_LABELED']
-            test_set_index = 13
+        for num_of_negatives_per_positive in ratios:
+ 
 
-        files_for_simulation = {
-                0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/%s_positives' % event_name],
-                1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/%s_negatives' % event_name]}
+            experiment = Experiment(
+                job_ids = [],
+                task_information = pickle.dumps((task_information, budget)),
+                num_runs = num_runs,
+                control_strategy = control_strategy,
+                control_strategy_configuration = '%s,%s,%s' % (
+                    app.config['UCB_EXPLORATION_CONSTANT'], 
+                    app.config['MODEL'],
+                    num_of_negatives_per_positive), 
+                learning_curves= {},
+                gpu_device_string = gpu_device_string,
+                status = 'Running',
+                dataset_skew = num_of_negatives_per_positive)
 
-        files_for_simulation = pickle.dumps(files_for_simulation)
+            #Compute an upper bound on performance
+            #compute_upper_bound.delay(experiment.gold_extractor, 
+            #                          experiment.test_set)
+            #raise Exception
 
-        experiment = Experiment(
-            job_ids = [],
-            task_information = pickle.dumps((task_information, budget)),
-            num_runs = num_runs,
-            control_strategy = control_strategy,
-            control_strategy_configuration = '%s,%s' % (app.config[
-                'UCB_EXPLORATION_CONSTANT'], app.config['MODEL']), 
-            test_set = test_set_index,
-            gold_extractor = gold_extractor_name,
-            files_for_simulation = files_for_simulation,
-            unlabeled_corpus = unlabeled_corpus,
-            learning_curves= {},
-            gpu_device_string = gpu_device_string)
+            experiment.save()
 
-        #Compute an upper bound on performance
-        #compute_upper_bound.delay(experiment.gold_extractor, 
-        #                          experiment.test_set)
-        #raise Exception
+            experiment_id = str(experiment.id)
 
-        experiment.save()
-        
-        experiment_id = str(experiment.id)
-        
-        run_experiment.delay(experiment_id)
-        
-        return redirect(url_for(
-            'experiment_status',  
-            experiment_id = experiment_id))
+            #run_experiment.delay(experiment_id)
+            run_experiment(experiment_id)
 
-@app.celery.task(name='experiment')
+            return redirect(url_for(
+                'experiment_status',  
+                experiment_id = experiment_id))
+
+
+#@app.celery.task(name='experiment')
 def run_experiment(experiment_id):
 
     experiment = Experiment.objects.get(id = experiment_id)        
@@ -184,8 +166,6 @@ def run_experiment(experiment_id):
     """
 
     for i in range(experiment.num_runs):
-
-
         job = Job(task_information = experiment.task_information,
                   num_training_examples_in_model = -1,
                   current_hit_ids = [],
@@ -196,7 +176,6 @@ def run_experiment(experiment_id):
                                                1 : [],
                                                2 : []}),
                   logging_data = pickle.dumps([]),
-                  unlabeled_corpus = experiment.unlabeled_corpus,
                   experiment_id = experiment_id,
                   gpu_device_string = experiment.gpu_device_string)
 
@@ -205,25 +184,135 @@ def run_experiment(experiment_id):
         job.save()
 
         job_id = str(job.id)
-
-        mturk_connection_url = insert_connection_into_s3(cPickle.dumps(
-            MTurk_Connection_Sim(experiment_id, job_id)))
-        job.mturk_connection = mturk_connection_url
-        job.save()
-
-        
         experiment.job_ids.append(job_id)
         experiment.learning_curves[job_id] = []
         experiment.save()
 
-        lock_key = job.id        
-        acquire_lock = lambda: app.redis.setnx(lock_key, '1')
-        release_lock = lambda: app.redis.delete(lock_key)
 
-        acquire_lock()
-        gather(task_information, budget, job_id)
+        start_job.delay(experiment_id, experiment, 
+                        job_id, job,
+                        task_information, budget)
+        print "DONE SPAWNING JOB NUMBER"
+        print i
+        sys.stdout.flush()
+        #release_lock()
+        
+
+@app.celery.task(name='start-job')
+def start_job(experiment_id, experiment, 
+              job_id, job,
+              task_information, budget):
+
+    #Only set the dataset after you start the job.
+    if event_name == 'death':
+        unlabeled_corpus = app.config['TACKBP_NW_09_CORPUS_URL']
+        test_set_index = "3"
+        gold_extractor_name = 'death'
+        files_for_simulation = {
+            0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_positives' % event_name],
+            1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_negatives' % event_name]}
+        files_for_simulation = pickle.dumps(files_for_simulation)
+    else:
+
+        (positive_crowd_examples_url, 
+         negative_crowd_examples_url,
+         unlabeled_corpus_url, 
+         labeled_corpus_url,
+         positive_testing_examples_url, 
+         negative_testing_examples_url) =
+        generate_dataset(event_name, 
+                         experiment.num_of_negatives_per_positive) 
+        
+        files_for_simulation = {0 : positive_crowd_examples_url,
+                                1 : negative_crowd_examples_url}
+        unlabeled_corpus = unlabeled_corpus_url
+        gold_extractor_name = labeled_corpus_url
+        test_set_index = (positive_testing_examples_url,
+                          negative_testing_examples_url)
+
+    job.test_set = test_set_index,
+    job.gold_extractor = gold_extractor_name,
+    job.files_for_simulation = files_for_simulation,
+    job.unlabeled_corpus = unlabeled_corpus,
+    job.save()
+
+    ##########
+    # save the mturk connection 
+    ##########
+
+    #mturk_connection_url = insert_connection_into_s3(cPickle.dumps(
+    #    MTurk_Connection_Sim(experiment_id, job_id)))
+    #mturk_connection_url = insert_connection_into_s3(cPickle.dumps(
+    #    MTurk_Connection_Super_Sim(experiment_id, job_id)))
+    #job.mturk_connection = mturk_connection_url
+    #job.save()
+
+
+    lock_key = job.id        
+    acquire_lock = lambda: app.redis.setnx(lock_key, '1')
+    release_lock = lambda: app.redis.delete(lock_key)
+
+    acquire_lock()
+    #gather(task_information, budget, job_id)
+    print "SPAWNING JOB"
+    sys.stdout.flush()
+    #app.celery.send_task("gathersim", args = [
+    #    task_information, budget, job_id,
+    #    MTurk_Connection_Super_Sim(experiment_id, job_id)])
+
+    try:
+        gather_sim(task_information, budget, job_id,
+                   MTurk_Connection_Super_Sim(experiment_id, job_id))
+    except Exception:
+        print "Exception:"
+        print '-'*60
+        traceback.print_exc(file=sys.stdout)
+        experiment.exceptions.append(traceback.format_exc())
+        job.exceptions.append(traceback.format_exc())
+
+        local_variables = inspect.trace()[-1][0].f_locals
+        pprint.pprint(local_variables)
+        experiment.exceptions.append(pprint.pformat(local_variables))
+        experiment.save()
+        job.exceptions.append(pprint.pformat(local_variables))
+        job.save()
+
+        print '-'*60
+        print "Killing background processes"
+
+        celery_processes = []
+        for proc in psutil.process_iter():
+            try:
+                if proc.name() == "celery":
+                    celery_processes.append(proc)
+            except psutil.NoSuchProcess:
+                pass
+
+        celery_processes = sorted(celery_processes,
+                                  key= lambda proc: proc.create_time,
+                                  reverse=True)
+
+        print [(proc.name(),
+                proc.create_time) for proc in celery_processes]
+
+        for proc in celery_processes:
+            if proc.pid == os.getpid():
+                continue
+                proc.kill()
+    finally:
         release_lock()
 
+    #Check if the experiment is done.
+    for job_id in experiment.job_ids:
+        job = Job.objects.get(id = job_id)
+        if job.status == 'Running':
+            return None
+    
+    experiment.status = 'Finished'
+    experiment.save()
+    
+    return None
+    
 @app.celery.task(name='compute_upper_bound')
 def compute_upper_bound(gold_extractor, test_set_index):
 
@@ -633,6 +722,9 @@ class ExperimentAnalyzeApi(Resource):
 all_experiment_analyze_parser = reqparse.RequestParser()
 all_experiment_analyze_parser.add_argument('domain', 
                                            type=str, required=True)
+all_experiment_analyze_parser.add_argument('classifier', 
+                                           type=str, required=True)
+
 #all_experiment_analyze_parser.add_argument('job_ids', 
 #                                           type=str, action='append')
 
@@ -644,6 +736,7 @@ class AllExperimentAnalyzeApi(Resource):
 
         args = all_experiment_analyze_parser.parse_args()
         selected_domain = args['domain']
+        selected_classifier = args['classifier']
         #job_ids = args['job_ids']
 
         #experiment = Experiment.objects
@@ -661,13 +754,30 @@ class AllExperimentAnalyzeApi(Resource):
         for experiment in Experiment.objects:
 
             experiment_domain = pickle.loads(experiment.task_information)[0][0]
-            print "Selected Domain"
-            print selected_domain
-            print experiment_domain
-            print pickle.loads(experiment.task_information)
-            sys.stdout.flush()
+            experiment_csc = experiment.control_strategy_configuration.split(
+                ',')
+
+            #print "Selected Domain"
+            #print selected_domain
+            #print experiment_domain
+            #print pickle.loads(experiment.task_information)
+            #sys.stdout.flush()
 
             if not experiment_domain.lower() == selected_domain.lower():
+                continue
+
+            if len(experiment_csc) >= 2:
+                print "Experiment configuration"
+                print experiment_csc
+                sys.stdout.flush()
+                
+                experiment_classifier = experiment_csc[1]
+            else:
+                experiment_classifier = 'cnn'
+
+                
+            if not (experiment_classifier.lower()==
+                    selected_classifier.lower()):
                 continue
 
             [precisions_avgs, recalls_avgs, f1s_avgs, 
@@ -676,9 +786,12 @@ class AllExperimentAnalyzeApi(Resource):
                  experiment.id)
             
             manual_xaxis = True
-            if (selected_domain == 'health' or 
-                selected_domain == 'ent' or 
-                selected_domain == 'bus'):
+            if (selected_domain.lower() == 'health' or 
+                selected_domain.lower() == 'ent' or 
+                selected_domain.lower() == 'bus' or
+                selected_domain.lower() == 'sci' or
+                (selected_classifier.lower() == 'lr' and 
+                 selected_domain.lower() == 'death')):
 
                 x_axis = costSoFars_avgs
                 print "USING AUTOMATIC X AXIS"

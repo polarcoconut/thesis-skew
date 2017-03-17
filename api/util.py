@@ -497,7 +497,7 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
             training_positive_examples = [], training_negative_examples = []):
 
     if training_positive_examples == [] and training_negative_examples == []:
-        print "Training a CNN"
+        print "Training a classiifer"
         sys.stdout.flush()
 
         job = Job.objects.get(id = job_id)
@@ -529,7 +529,8 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
     
 
     if app.config['MODEL'] == 'LR':
-        classifier, vocabulary = train_lr(training_positive_examples + training_negative_examples,
+        classifier, vocabulary = train_lr(
+            training_positive_examples + training_negative_examples,
             ([1 for e in training_positive_examples] +
              [0 for e in training_negative_examples]))
 
@@ -537,6 +538,11 @@ def retrain(job_id, positive_types, task_ids_to_train = [],
         job.vocabulary = pickle.dumps(vocabulary)
         job.model_file = pickle.dumps(classifier)
         job.save()
+
+        print "Model saved"
+        sys.stdout.flush()
+
+        return True
         
     if app.config['MODEL'] == 'CNN':
         job = Job.objects.get(id = job_id)
@@ -660,10 +666,11 @@ def test(job_id, test_examples, test_labels):
 
     if app.config['MODEL'] == 'LR':
         vocabulary = pickle.loads(job.vocabulary)
-        model = pickle.loads(job.model_url)
+        model = pickle.loads(job.model_file)
         predicted_labels, label_probabilities = test_lr(
             test_examples, test_labels, model, vocabulary)
 
+        return predicted_labels
     if app.config['MODEL'] == 'CNN':
         vocabulary = pickle.loads(job.vocabulary)
         temp_file_name = write_model_to_file(job_id)
@@ -749,6 +756,10 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
                                                       task_information,
                                                       costSoFar,
                                                       budget, job_id):
+
+        print "GETTING UNLABELED EXAMPLES FROM CORPUS AT FIXED RATIO"
+        sys.stdout.flush()
+
         (selected_examples,
          expected_labels) = get_unlabeled_examples_from_corpus(
             task_ids, task_categories,
@@ -760,9 +771,9 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         experiment = Experiment.objects.get(id=job.experiment_id)
 
         
-        if not 'https' in experiment.gold_extractor:
+        if not 'https' in job.gold_extractor:
             gold_extractor = Gold_Extractor.objects.get(
-                name=experiment.gold_extractor)
+                name=job.gold_extractor)
             model_file_name = write_model_to_file(
                 gold_extractor = gold_extractor.name)
             vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
@@ -779,7 +790,7 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         else:
             gold_labels = {}
             gold_corpus = str(requests.get(
-                experiment.gold_extractor).content).split('\n')
+                job.gold_extractor).content).split('\n')
             for line in gold_corpus:
                 if line == "":
                     continue
@@ -849,9 +860,9 @@ def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         experiment = Experiment.objects.get(id=job.experiment_id)
 
         
-        if not 'https' in experiment.gold_extractor:
+        if not 'https' in job.gold_extractor:
             gold_extractor = Gold_Extractor.objects.get(
-                name=experiment.gold_extractor)
+                name=job.gold_extractor)
             model_file_name = write_model_to_file(
                 gold_extractor = gold_extractor.name)
             vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
@@ -868,7 +879,7 @@ def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         else:
             gold_labels = {}
             gold_corpus = str(requests.get(
-                experiment.gold_extractor).content).split('\n')
+                job.gold_extractor).content).split('\n')
             for line in gold_corpus:
                 if line == "":
                     continue
@@ -942,7 +953,34 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
         num_positive_examples_to_label)
     
 
-    retrain(job_id, ['all'])
+    training_positive_examples = []
+    training_negative_examples = []
+    for training_example_set, training_label_set in zip(
+            training_examples, training_labels):
+        #print "TRAINING EXAMPLE SET"
+        #print training_example_set
+        #print training_label_set
+        #sys.stdout.flush()
+
+        for (training_example,
+             training_label) in zip(training_example_set,
+                                    training_label_set):
+            if training_label == 1:
+                training_positive_examples.append(training_example)
+            elif training_label == 0:
+                training_negative_examples.append(training_example)
+            else:
+                print "This condition should not have happened"
+                sys.stdout.flush()
+                raise Exception
+
+    #print training_positive_examples
+    #print training_negative_examples
+    #sys.stdout.flush()
+
+    retrain(job_id, ['all'], [],
+            training_positive_examples, 
+            training_negative_examples)
 
     test_examples = []
     test_labels = []

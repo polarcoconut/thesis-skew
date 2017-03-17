@@ -120,7 +120,7 @@ def label_only_US_constant_ratio_controller(task_ids, task_categories,
         job = Job.objects.get(id = job_id)
         experiment = Experiment.objects.get(id=job.experiment_id)
         gold_extractor = Gold_Extractor.objects.get(
-            name=experiment.gold_extractor)
+            name=job.gold_extractor)
         model_file_name = write_model_to_file(
             gold_extractor = gold_extractor.name) 
         vocabulary = cPickle.loads(str(gold_extractor.vocabulary))             
@@ -1274,7 +1274,10 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
         return next_category['id'], task, num_hits, num_hits * next_category['price']
 
     if len(task_categories) % 5 >= 1 and len(task_categories) % 5 <= 3:
+        print "choosing the PRECISION category"
+        sys.stdout.flush()
 
+        
         last_batch = training_examples[-1]
         next_category = app.config['EXAMPLE_CATEGORIES'][1]
 
@@ -1283,11 +1286,20 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * app.config[
             'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']
         
+        print num_hits
+        print next_category['price']
+        print app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE']
+        print app.config['CONTROLLER_GENERATE_BATCH_SIZE']
+        sys.stdout.flush()
+
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
     if len(task_categories) % 5  == 4:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
+        print "choosing the LABEL category"
+        sys.stdout.flush()
+
         (selected_examples, 
          expected_labels) = get_unlabeled_examples_from_corpus_at_fixed_ratio(
             task_ids, task_categories,

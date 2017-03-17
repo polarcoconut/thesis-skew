@@ -63,113 +63,96 @@ class CrossValidationExtractorApi(Resource):
 def test_on_held_out_set(job_id, positive_types, test_set):
     job = Job.objects.get(id = job_id)
                 
-    checkpoint = getLatestCheckpoint(job_id)
-    (task_information, budget) = pickle.loads(job.task_information)
+    if len(test_set) == 2:
+        #Otherwise, if the test set contains urls
+        (positive_testing_examples_url,
+         negative_testing_examples_url) = test_set
+        while True:
+            try:
+                r = requests.get(positive_testing_examples_url).content
+                break
+            except Exception:
+                print "Exception while communicating with S3"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(60)
+                continue
+                    
+                test_positive_examples = str(r).split('\n')
 
-    (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+        while True:
+            try:
+                r = requests.get(positive_testing_examples_url).content
+                break
+            except Exception:
+                print "Exception while communicating with S3"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(60)
+                continue
+                    
+                test_negative_examples = str(r).split('\n')
 
-    ####
-    # Each of these options should return test_examples, test_positive_examples
-    # test_negative_examples and test_labels
-    ####
-    if test_set == -1:
-        test_positive_examples, test_negative_examples = split_examples(
-            task_ids[0:2],
-            task_categories[0:2], positive_types)
         test_examples = test_positive_examples + test_negative_examples
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
-    elif test_set >= 0 and test_set <= 4:
-        relations = ['nationality', 'born', 'lived', 'died', 'travel']
-        amount_of_data = [1898, 496, 3897, 1493, 1992]
-        testfile_name = 'data/test_data/test_strict_new_feature'
-        (test_labels, test_features, test_examples,
-         test_positive_examples,
-         test_negative_examples) = parse_angli_test_data(
-             testfile_name, [], test_set)
-    elif test_set >= 5 and test_set <= 9:
-        relations = ['transfermoney', 'broadcast', 'attack', 'contact',
-                     'transferownership']
-        testfile_name = 'data/test_data/testEvents'
-        relation = relations[test_set-5]
-        test_positive_examples, test_negative_examples = parse_tackbp_test_data(testfile_name, relation)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-    elif test_set == 10:
-        test_positive_examples = []
-        test_negative_examples = []
-        pos_testfile_name = 'data/test_data/health_pos'
-        neg_testfile_name = 'data/test_data/health_neg'
-        with open(pos_testfile_name, 'r') as pos_testfile:
-            for line in pos_testfile:
-                test_positive_examples.append(line)
-        with open(neg_testfile_name, 'r') as neg_testfile:
-            for line in neg_testfile:
-                test_negative_examples.append(line)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-    elif test_set == 11:
-        test_positive_examples = []
-        test_negative_examples = []
-        pos_testfile_name = 'data/test_data/ent_pos'
-        neg_testfile_name = 'data/test_data/ent_neg'
-        with open(pos_testfile_name, 'r') as pos_testfile:
-            for line in pos_testfile:
-                test_positive_examples.append(line)
-        with open(neg_testfile_name, 'r') as neg_testfile:
-            for line in neg_testfile:
-                test_negative_examples.append(line)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-    elif test_set == 12:
-        test_positive_examples = []
-        test_negative_examples = []
-        pos_testfile_name = 'data/test_data/bus_pos'
-        neg_testfile_name = 'data/test_data/bus_neg'
-        with open(pos_testfile_name, 'r') as pos_testfile:
-            for line in pos_testfile:
-                test_positive_examples.append(line)
-        with open(neg_testfile_name, 'r') as neg_testfile:
-            for line in neg_testfile:
-                test_negative_examples.append(line)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-        
-    elif test_set == 13:
-        test_positive_examples = []
-        test_negative_examples = []
-        pos_testfile_name = 'data/test_data/sci_pos'
-        neg_testfile_name = 'data/test_data/sci_neg'
-        with open(pos_testfile_name, 'r') as pos_testfile:
-            for line in pos_testfile:
-                test_positive_examples.append(line)
-        with open(neg_testfile_name, 'r') as neg_testfile:
-            for line in neg_testfile:
-                test_negative_examples.append(line)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
-        
 
-        
     else:
-        test_positive_examples = []
-        test_negative_examples = []
-        pos_testfile_name = 'data/test_data/self_generated/death_pos'
-        neg_testfile_name = 'data/test_data/self_generated/death_neg'
-        with open(pos_testfile_name, 'r') as pos_testfile:
-            for line in pos_testfile:
-                test_positive_examples.append(line)
-        with open(neg_testfile_name, 'r') as neg_testfile:
-            for line in neg_testfile:
-                test_negative_examples.append(line)
-        test_examples = test_positive_examples + test_negative_examples
-        test_labels = ([1 for e in test_positive_examples] +
-                       [0 for e in test_negative_examples])
+        test_set = int(test_set)
+        ####
+        # Each of these options should return
+        # test_examples, test_positive_examples
+        # test_negative_examples and test_labels
+        ####
+        if test_set == -1:
+            checkpoint = getLatestCheckpoint(job_id)
+            (task_information, budget) = pickle.loads(job.task_information)        
+            (task_ids, task_categories, costSoFar) = pickle.loads(checkpoint)
+
+            test_positive_examples, test_negative_examples = split_examples(
+                task_ids[0:2],
+                task_categories[0:2], positive_types)
+            test_examples = test_positive_examples + test_negative_examples
+            test_labels = ([1 for e in test_positive_examples] +
+                           [0 for e in test_negative_examples])
+        elif test_set >= 0 and test_set <= 4:
+            relations = ['nationality', 'born', 'lived', 'died', 'travel']
+            amount_of_data = [1898, 496, 3897, 1493, 1992]
+            testfile_name = 'data/test_data/test_strict_new_feature'
+            (test_labels, test_features, test_examples,
+             test_positive_examples,
+             test_negative_examples) = parse_angli_test_data(
+                 testfile_name, [], test_set)
+        elif test_set >= 5 and test_set <= 9:
+            relations = ['transfermoney', 'broadcast', 'attack', 'contact',
+                         'transferownership']
+            testfile_name = 'data/test_data/testEvents'
+            relation = relations[test_set-5]
+            (test_positive_examples, 
+             test_negative_examples) = parse_tackbp_test_data(testfile_name, 
+                                                              relation)
+            test_examples = test_positive_examples + test_negative_examples
+            test_labels = ([1 for e in test_positive_examples] +
+                           [0 for e in test_negative_examples])
+    #else:
+        #This is to test using generated examples from the crowd
+    #    test_positive_examples = []
+    #    test_negative_examples = []
+    #    pos_testfile_name = 'data/test_data/self_generated/death_pos'
+    #    neg_testfile_name = 'data/test_data/self_generated/death_neg'
+    #    with open(pos_testfile_name, 'r') as pos_testfile:
+    #        for line in pos_testfile:
+    #            test_positive_examples.append(line)
+    #    with open(neg_testfile_name, 'r') as neg_testfile:
+    #        for line in neg_testfile:
+    #            test_negative_examples.append(line)
+    #    test_examples = test_positive_examples + test_negative_examples
+    #    test_labels = ([1 for e in test_positive_examples] +
+    #                   [0 for e in test_negative_examples])
 
 
 
@@ -212,7 +195,9 @@ def test_on_held_out_set(job_id, positive_types, test_set):
 
 
 
-def compute_performance_on_test_set(job_id, task_ids, experiment):
+def compute_performance_on_test_set(job_id, task_ids, experiment,
+                                    training_positive_examples = [], 
+                                    training_negative_examples =[]):
 
     number_of_times_to_test = 3
     precisions = []
@@ -223,11 +208,14 @@ def compute_performance_on_test_set(job_id, task_ids, experiment):
     #    test_set_index = 3
 
     for i in range(number_of_times_to_test):
-        retrain(job_id, ['all'], task_ids)
+        retrain(job_id, ['all'], task_ids, 
+                training_positive_examples, 
+                training_negative_examples)
+        job = Job.objects.get(id=job_id)
         (true_positives, false_positives,
          true_negatives, false_negatives,
          [precision, recall, f1]) = test_on_held_out_set(
-             job_id, ['all'], experiment.test_set)
+             job_id, ['all'], job.test_set)
         precisions.append(precision)
         recalls.append(recall)
         f1s.append(f1)

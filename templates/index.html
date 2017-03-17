@@ -20,6 +20,7 @@
 	<option value="7"> Health </option>
 	<option value="8"> Ent </option>
 	<option value="9"> Bus </option>
+	<option value="10"> Sci </option>
 
       </select>
       <br/>
@@ -57,7 +58,7 @@
       <label> Control Strategy: </label>
       <select id="control_strategy" name="control_strategy" form="theform">
 	<option value="round-robin-random-negatives">round-robin</option>
-	<option value="round-robin-constant-ratio">round-robin-constant-ratio</option>
+	<option value="round-robin-constant-ratio" selected>round-robin-constant-ratio</option>
 	<option value="round-robin-constant-ratio-random-labeling">round-robin-constant-ratio-random-labeling</option>
 	<option value="round-robin-no-negate">
 	  round-robin-no-negate</option>
@@ -133,9 +134,11 @@
       var event_8 = ["Ent", "Any event that has to do with entertainment.", "Positive Example 1", "Positive Example 1 Trigger", "Positive Example 2", "Positive Example 2 Trigger", "Positive Near-Miss", "Different Event", "Failing of Event" ]
       var event_9 = ["Bus", "Any event that has to do with business.", "Positive Example 1", "Positive Example 1 Trigger", "Positive Example 2", "Positive Example 2 Trigger", "Positive Near-Miss", "Different Event", "Failing of Event" ]
 
+      var event_10 = ["Sci", "Any event that has to do with science.", "Positive Example 1", "Positive Example 1 Trigger", "Positive Example 2", "Positive Example 2 Trigger", "Positive Near-Miss", "Different Event", "Failing of Event" ]
+
       var event_examples = [event_0, event_1, event_2, event_3,
 			    event_4, event_5, event_6, event_7,
-			   event_8, event_9]
+			   event_8, event_9, event_10]
 
 
       function showSelectedExample() {
