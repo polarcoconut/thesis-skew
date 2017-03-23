@@ -22,4 +22,6 @@ class Experiment(db.DynamicDocument):
 
     exceptions = db.ListField()
 
-    dataset_skew = db.StringField()
+    dataset_skew = db.IntField()
+    
+    

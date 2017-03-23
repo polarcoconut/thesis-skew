@@ -160,3 +160,7 @@ api.add_resource(ExperimentAnalyzeApi, '/analyze_experiment')
 from api.experiment_api import AllExperimentAnalyzeApi
 api.add_resource(AllExperimentAnalyzeApi, '/analyze_all_experiments')
 
+
+from api.experiment_api import SkewAnalyzeApi
+api.add_resource(SkewAnalyzeApi, '/skew_analyze')
+

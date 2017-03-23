@@ -44,6 +44,8 @@ ed.js"></script>
        
       <button id="analyze">Analyze!</button>
 
+      <button id="skew-analyze">Skew-Analyze!</button>
+
     <br/>
 
 
@@ -158,6 +160,92 @@ ed.js"></script>
     };
 
     document.getElementById('analyze').onclick = analyze_all_experiments;
+    //analyze_all_experiments();
+
+
+    var xmlhttp_skew_analyze = new XMLHttpRequest();
+    
+    function skew_analyze() {
+	var menu = document.getElementById("domains");
+	var selected_domain = menu.options[menu.selectedIndex].value;
+
+	var classifier_menu = document.getElementById("classifiers");
+	var selected_classifier = classifier_menu.options[
+	    classifier_menu.selectedIndex].value;
+	
+	
+
+	var skew_analyze_url = '/skew_analyze?domain=';
+	skew_analyze_url += selected_domain;
+
+	skew_analyze_url += '&classifier=';
+	skew_analyze_url += selected_classifier;
+
+	xmlhttp_skew_analyze.open("GET", skew_analyze_url, true);
+        xmlhttp_skew_analyze.send();
+
+    }
+
+    xmlhttp_skew_analyze.onreadystatechange = function() {
+	if (xmlhttp_skew_analyze.readyState == 4 &&
+	    xmlhttp_skew_analyze.status == 200) {
+	    console.log(xmlhttp_skew_analyze.responseText);
+	    console.log(JSON.parse(xmlhttp_skew_analyze.responseText));
+	    var analysis  = JSON.parse(
+                xmlhttp_skew_analyze.responseText);
+
+            var precision_curve = analysis[0];
+            var recall_curve = analysis[1];
+            var f1_curve = analysis[2];
+
+            g_precision = new Dygraph(
+                document.getElementById("precision"),
+                precision_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Skew: Number of Negatives Per Positive',
+                    ylabel: 'Precision AOC',
+                    legend: 'always',
+		    labelsDiv: 'precision_legend',
+		    connectSeparatedPoints: true,
+		    drawPoints:true,
+		    axes : {x : {logscale : true}}
+                }
+            );
+            g_recall = new Dygraph(
+                document.getElementById("recall"),
+                recall_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Skew: Number of Negatives Per Positive',
+                    ylabel: 'Recall AOC',
+                    legend: 'always',
+		    labelsDiv: 'recall_legend',
+		    connectSeparatedPoints: true,
+		    drawPoints:true,
+		    axes : {x : {logscale : true}}
+
+                }
+            );
+            g_f1 = new Dygraph(
+                document.getElementById("f1"),
+                f1_curve,
+                {
+                    errorBars: true,
+                    xlabel: 'Skew: Number of Negatives Per Positive',
+                    ylabel: 'F1 AOC',
+                    legend: 'always',
+		    labelsDiv: 'f1_legend',
+		    connectSeparatedPoints: true,
+		    drawPoints:true,
+		    axes : {x : {logscale : true}}
+
+		}
+	    );
+	}
+    };
+
+    document.getElementById('skew-analyze').onclick = skew_analyze;
     //analyze_all_experiments();
 
 

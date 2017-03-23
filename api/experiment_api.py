@@ -59,6 +59,13 @@ experiment_parser.add_argument('gpu_device_string', type=str, required=True)
 class ExperimentApi(Resource):
     def post(self):
       
+
+        #Clean up code
+        #for job in Job.objects():
+        #    if not job.status == 'Finished':
+        #        job.delete()
+        #return None
+            
         
         args = experiment_parser.parse_args()
         task_information = parse_task_information(args)
@@ -70,8 +77,8 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        ratios = [1]
-        #ratios = [1,2,3,5,9,49,99]
+        #ratios = [1]
+        ratios = [1,2,3,5,9,49,99]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -100,15 +107,15 @@ class ExperimentApi(Resource):
             experiment_id = str(experiment.id)
 
             #run_experiment.delay(experiment_id)
-            run_experiment(experiment_id)
+            run_experiment(experiment_id, event_name)
 
-            return redirect(url_for(
-                'experiment_status',  
-                experiment_id = experiment_id))
+        return redirect(url_for(
+            'experiment_status',  
+            experiment_id = experiment_id))
 
 
 #@app.celery.task(name='experiment')
-def run_experiment(experiment_id):
+def run_experiment(experiment_id, event_name):
 
     experiment = Experiment.objects.get(id = experiment_id)        
 
@@ -191,7 +198,8 @@ def run_experiment(experiment_id):
 
         start_job.delay(experiment_id, experiment, 
                         job_id, job,
-                        task_information, budget)
+                        task_information, budget,
+                        event_name)
         print "DONE SPAWNING JOB NUMBER"
         print i
         sys.stdout.flush()
@@ -201,7 +209,8 @@ def run_experiment(experiment_id):
 @app.celery.task(name='start-job')
 def start_job(experiment_id, experiment, 
               job_id, job,
-              task_information, budget):
+              task_information, budget,
+              event_name):
 
     #Only set the dataset after you start the job.
     if event_name == 'death':
@@ -211,7 +220,6 @@ def start_job(experiment_id, experiment,
         files_for_simulation = {
             0: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_positives' % event_name],
             1: ['https://s3-us-west-2.amazonaws.com/extremest-extraction-data-for-simulation/death_negatives' % event_name]}
-        files_for_simulation = pickle.dumps(files_for_simulation)
     else:
 
         (positive_crowd_examples_url, 
@@ -219,21 +227,26 @@ def start_job(experiment_id, experiment,
          unlabeled_corpus_url, 
          labeled_corpus_url,
          positive_testing_examples_url, 
-         negative_testing_examples_url) =
-        generate_dataset(event_name, 
-                         experiment.num_of_negatives_per_positive) 
+         negative_testing_examples_url) = generate_dataset(
+             event_name, 
+             experiment.dataset_skew) 
         
-        files_for_simulation = {0 : positive_crowd_examples_url,
-                                1 : negative_crowd_examples_url}
+        files_for_simulation = {0 : [positive_crowd_examples_url],
+                                1 : [negative_crowd_examples_url]}
         unlabeled_corpus = unlabeled_corpus_url
         gold_extractor_name = labeled_corpus_url
-        test_set_index = (positive_testing_examples_url,
+        test_set_index = (positive_testing_examples_url + "\t" +
                           negative_testing_examples_url)
 
-    job.test_set = test_set_index,
-    job.gold_extractor = gold_extractor_name,
-    job.files_for_simulation = files_for_simulation,
-    job.unlabeled_corpus = unlabeled_corpus,
+
+    print gold_extractor_name
+    print unlabeled_corpus
+    sys.stdout.flush()
+
+    job.test_set = test_set_index
+    job.gold_extractor = gold_extractor_name
+    job.files_for_simulation = pickle.dumps(files_for_simulation)
+    job.unlabeled_corpus = unlabeled_corpus
     job.save()
 
     ##########
@@ -766,7 +779,7 @@ class AllExperimentAnalyzeApi(Resource):
             if not experiment_domain.lower() == selected_domain.lower():
                 continue
 
-            if len(experiment_csc) >= 2:
+            if len(experiment_csc) >= 3:
                 print "Experiment configuration"
                 print experiment_csc
                 sys.stdout.flush()
@@ -1077,3 +1090,158 @@ def get_average_curve(experiment_id):
     return [precisions_avgs, recalls_avgs, f1s_avgs, 
             precisions_stds, recalls_stds, f1s_stds,
             costSoFars_avgs, costSoFars_stds]
+
+
+
+def get_average_aoc(experiment_id):
+
+    experiment = Experiment.objects.get(id=experiment_id)
+    job_ids = experiment.job_ids
+    precisions = []
+    recalls = []
+    f1s = []
+    
+    print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
+    print experiment.control_strategy
+
+
+    #get_num_examples_labeled.delay(experiment_id)
+ 
+    len_longest_curve = 0
+    #first figure out the longest curve
+
+
+    
+
+    for job_id in job_ids:
+        learning_curve = experiment.learning_curves[job_id]
+        if len(learning_curve) > len_longest_curve:
+            len_longest_curve = len(learning_curve)
+            print len(learning_curve)
+
+    precision_curve_aocs = []
+    recall_curve_aocs = []
+    f1_curve_aocs = []
+
+    for job_id in job_ids:
+        learning_curve = experiment.learning_curves[job_id]           
+        precisions = []
+        recalls = []
+        f1s = []
+        costSoFars = []
+        for point in learning_curve:
+            task_id, precision, recall, f1, action, costSoFar = point
+            precisions.append(precision)
+            recalls.append(recall)
+            f1s.append(f1)
+            costSoFars.append(costSoFar)
+
+        precision_curve_aocs.append(np.trapz(precisions, costSoFars))
+        recall_curve_aocs.append(np.trapz(recalls, costSoFars))
+        f1_curve_aocs.append(np.trapz(f1s, costSoFars))
+
+    precision_aoc_avg = np.mean(precision_curve_aocs)
+    recall_aoc_avg = np.mean(recall_curve_aocs)
+    f1_aoc_avg = np.mean(f1_curve_aocs)
+
+    precision_aoc_std = (np.std(precision_curve_aocs) / 
+                         sqrt(len(precision_curve_aocs)))
+    recall_aoc_std = (np.std(recall_curve_aocs)  / 
+                      sqrt(len(recall_curve_aocs)))
+    f1_aoc_std = (np.std(f1_curve_aocs)  / 
+                      sqrt(len(f1_curve_aocs)))
+
+    return [precision_aoc_avg, recall_aoc_avg, f1_aoc_avg,
+            precision_aoc_std, recall_aoc_std, f1_aoc_std]
+
+
+class SkewAnalyzeApi(Resource):
+    def get(self):
+
+        print "Constructing Graphs"
+        sys.stdout.flush()
+
+        args = all_experiment_analyze_parser.parse_args()
+        selected_domain = args['domain']
+        selected_classifier = args['classifier']
+        #job_ids = args['job_ids']
+
+        #experiment = Experiment.objects
+
+
+        #precision_curves = []
+        #recall_curves = []
+        #f1_curves = []
+        
+        precision_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
+        recall_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
+        f1_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
+
+
+        for experiment in Experiment.objects:
+
+            experiment_domain = pickle.loads(experiment.task_information)[0][0]
+            experiment_csc = experiment.control_strategy_configuration.split(
+                ',')
+
+            #print "Selected Domain"
+            #print selected_domain
+            #print experiment_domain
+            #print pickle.loads(experiment.task_information)
+            #sys.stdout.flush()
+
+            if not experiment_domain.lower() == selected_domain.lower():
+                continue
+
+            if len(experiment_csc) >= 3:
+                print "Experiment configuration"
+                print experiment_csc
+                sys.stdout.flush()
+                
+                experiment_classifier = experiment_csc[1]
+                experiment_skew = float(experiment_csc[2])
+            else:
+                continue
+                
+            if not (experiment_classifier.lower()==
+                    selected_classifier.lower()):
+                continue
+
+            [precision_aoc, recall_aoc, f1_aoc, 
+             precision_std, recall_std, f1_std] = get_average_aoc(
+                 experiment.id)
+
+            print "Computed stuff"
+            print [precision_aoc, recall_aoc, f1_aoc, 
+                   precision_std, recall_std, f1_std]
+            sys.stdout.flush()
+                
+        
+
+            if experiment.control_strategy == 'label-only-constant-ratio':
+                    
+                precision_curve += "%f,,,,,,,,,%f,%f,,\n" % (
+                    experiment_skew, precision_aoc, precision_std)
+                recall_curve += "%f,,,,,,,,,%f,%f,,\n" % (
+                    experiment_skew, recall_aoc, recall_std) 
+                f1_curve  += "%f,,,,,,,,,%f,%f,,\n" % (
+                    experiment_skew, f1_aoc, f1_std) 
+            if experiment.control_strategy == 'round-robin-constant-ratio':
+
+                precision_curve += "%f,,,,,,,%f,%f,,,,\n" % (
+                    experiment_skew, precision_aoc, precision_std)
+                recall_curve += "%f,,,,,,,%f,%f,,,,\n" % (
+                    experiment_skew, recall_aoc, recall_std) 
+                f1_curve  += "%f,,,,,,,%f,%f,,,,\n" % (
+                    experiment_skew, f1_aoc, f1_std) 
+
+            if experiment.control_strategy == 'seed3':
+                precision_curve += "%f,%f,%f,,,,,,,,,,\n" % (
+                    experiment_skew, precision_aoc, precision_std)
+                recall_curve += "%f,%f,%f,,,,,,,,,,\n" % (
+                    experiment_skew, recall_aoc, recall_std) 
+                f1_curve  += "%f,%f,%f,,,,,,,,,,\n" % (
+                    experiment_skew, f1_aoc, f1_std) 
+                    
+                
+        return [precision_curve, recall_curve, f1_curve]

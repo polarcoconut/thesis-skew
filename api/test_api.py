@@ -12,6 +12,9 @@ from ml.extractors.cnn_core.parse import parse_angli_test_data, parse_tackbp_tes
 from util import write_model_to_file, getLatestCheckpoint, split_examples, retrain, test
 from schema.job import Job
 import numpy as np
+import traceback
+import time
+import requests
 
 test_parser = reqparse.RequestParser()
 test_parser.add_argument('job_id', type=str, required=True)
@@ -63,6 +66,7 @@ class CrossValidationExtractorApi(Resource):
 def test_on_held_out_set(job_id, positive_types, test_set):
     job = Job.objects.get(id = job_id)
                 
+    test_set = test_set.split('\t')
     if len(test_set) == 2:
         #Otherwise, if the test set contains urls
         (positive_testing_examples_url,
@@ -80,11 +84,11 @@ def test_on_held_out_set(job_id, positive_types, test_set):
                 time.sleep(60)
                 continue
                     
-                test_positive_examples = str(r).split('\n')
+        test_positive_examples = str(r).split('\n')
 
         while True:
             try:
-                r = requests.get(positive_testing_examples_url).content
+                r = requests.get(negative_testing_examples_url).content
                 break
             except Exception:
                 print "Exception while communicating with S3"
@@ -95,14 +99,14 @@ def test_on_held_out_set(job_id, positive_types, test_set):
                 time.sleep(60)
                 continue
                     
-                test_negative_examples = str(r).split('\n')
+        test_negative_examples = str(r).split('\n')
 
         test_examples = test_positive_examples + test_negative_examples
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
 
     else:
-        test_set = int(test_set)
+        test_set = int(test_set[0])
         ####
         # Each of these options should return
         # test_examples, test_positive_examples

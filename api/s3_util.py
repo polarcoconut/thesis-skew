@@ -154,44 +154,46 @@ def generate_dataset(interested_category,
     # ratio * num_positive_examples < len(negative_examples)
 
 
-    num_positive_examples = min(len(negative_examples) / ratio,
-                                len(positive_examples))
+
+    num_positive_examples = min(
+        len(negative_examples) / num_of_negatives_per_positive,
+        len(positive_examples) - num_crowd_positives)
 
 
-    positive_examples = sample(positive_examples, num_positive_examples)
+    positive_examples = sample(positive_examples, num_positive_examples + num_crowd_positives)
 
     crowd_positive_examples = positive_examples[0:num_crowd_positives]
-    corpus_positive_examples = positive_examples[num_crowd_positives:num_positive_examples - num_test_examples]
-    testing_positive_examples = positive_examples[num_positive_examples - num_test_examples:]
+    corpus_positive_examples = positive_examples[num_crowd_positives:len(positive_examples) - num_test_examples]
+    testing_positive_examples = positive_examples[len(positive_examples) - num_test_examples:]
 
     #number_of_negatives_per_positive = (1.0 * len(negative_examples)) / (num_positive_examples - num_crowd_positives)
 
     print "Number of negative examples per positive example"
-    print number_of_negatives_per_positive
+    print num_of_negatives_per_positive
 
     #Make all the files
     dataset_id = uuid.uuid1()
     
-    filename_positive_crowd_examples = 
+    filename_positive_crowd_examples = (
         'temp_datasets/%s_positives_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
-    filename_negative_crowd_examples =
+            interested_category, num_of_negatives_per_positive, dataset_id))
+    filename_negative_crowd_examples = (
         'temp_datasets/%s_negatives_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
+            interested_category, num_of_negatives_per_positive, dataset_id))
     
-    filename_unlabeled_corpus = 
+    filename_unlabeled_corpus = (
         'temp_datasets/%s_corpus_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
-    filename_labeled_corpus = 
+            interested_category, num_of_negatives_per_positive, dataset_id))
+    filename_labeled_corpus = (
         'temp_datasets/%s_labeled_corpus_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
+            interested_category, num_of_negatives_per_positive, dataset_id))
 
-    filename_positive_testing_examples = 
+    filename_positive_testing_examples = (
         'temp_datasets/%s_pos_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
-    filename_negative_testing_examples =
+            interested_category, num_of_negatives_per_positive, dataset_id))
+    filename_negative_testing_examples = (
         'temp_datasets/%s_neg_%d_%s' % (
-            interested_category, number_of_negatives_per_positive, dataset_id)
+            interested_category, num_of_negatives_per_positive, dataset_id))
 
     output_file_positive_crowd_examples = open(
         filename_positive_crowd_examples,'w')
@@ -217,7 +219,7 @@ def generate_dataset(interested_category,
         output_file_unlabeled_corpus.write('%s\n' % ex)
         output_file_labeled_corpus.write('%s\t1\n' % ex)
 
-    for ex in range(int(number_of_negatives_per_positive *
+    for i in range(int(num_of_negatives_per_positive *
                         len(corpus_positive_examples))):
         next_negative_example = negative_examples.pop()
         output_file_unlabeled_corpus.write('%s\n' %
@@ -229,14 +231,18 @@ def generate_dataset(interested_category,
     for ex in testing_positive_examples:
         output_file_positive_testing_examples.write('%s\n' % ex)
 
-    for ex in negative_examples:
-        output_file_negative_testing_examples.write('%s\n' % ex)
+    for i in range(int(num_of_negatives_per_positive *
+                        len(testing_positive_examples))):
+        next_negative_example = negative_examples.pop()
+        output_file_negative_testing_examples.write('%s\n' % 
+                                                    next_negative_example)
 
 
 
     output_file_positive_crowd_examples.close()
     output_file_negative_crowd_examples.close()
     output_file_unlabeled_corpus.close()
+    output_file_labeled_corpus.close()
     output_file_positive_testing_examples.close()
     output_file_negative_testing_examples.close()
 
@@ -247,33 +253,33 @@ def generate_dataset(interested_category,
     bucket = s3.get_bucket("extremest-extraction-data-for-simulation")
 
     s3_key = bucket.new_key(filename_positive_crowd_examples)
-    s3_key.set_contents_from_filename(output_file_positive_crowd_examples)
+    s3_key.set_contents_from_filename(filename_positive_crowd_examples)
     s3_key.make_public()
     positive_crowd_examples_url = s3_key.generate_url(3600000)
 
     s3_key = bucket.new_key(filename_negative_crowd_examples)
-    s3_key.set_contents_from_filename(output_file_negative_crowd_examples)
+    s3_key.set_contents_from_filename(filename_negative_crowd_examples)
     s3_key.make_public()
     negative_crowd_examples_url = s3_key.generate_url(3600000)
 
     s3_key = bucket.new_key(filename_unlabeled_corpus)
-    s3_key.set_contents_from_filename(output_file_unlabeled_corpus)
+    s3_key.set_contents_from_filename(filename_unlabeled_corpus)
     s3_key.make_public()
     unlabeled_corpus_url = s3_key.generate_url(3600000)
 
     s3_key = bucket.new_key(filename_labeled_corpus)
-    s3_key.set_contents_from_filename(output_file_labeled_corpus)
+    s3_key.set_contents_from_filename(filename_labeled_corpus)
     s3_key.make_public()
     labeled_corpus_url = s3_key.generate_url(3600000)
 
 
     s3_key = bucket.new_key(filename_positive_testing_examples)
-    s3_key.set_contents_from_filename(output_file_positive_testing_examples)
+    s3_key.set_contents_from_filename(filename_positive_testing_examples)
     s3_key.make_public()
     positive_testing_examples_url = s3_key.generate_url(3600000)
 
     s3_key = bucket.new_key(filename_negative_testing_examples)
-    s3_key.set_contents_from_filename(output_file_negative_testing_examples)
+    s3_key.set_contents_from_filename(filename_negative_testing_examples)
     s3_key.make_public()
     negative_testing_examples_url = s3_key.generate_url(3600000)
 
