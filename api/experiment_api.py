@@ -760,10 +760,35 @@ class AllExperimentAnalyzeApi(Resource):
         #precision_curves = []
         #recall_curves = []
         #f1_curves = []
+
+        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only']
         
-        precision_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-        recall_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-        f1_curve = "Amount Spent,Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
+        
+        strategy_names = {
+            'seed3' : 'Seed-Bounded-Ratio',
+            'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
+            'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
+            'label-only' : 'Label-Only'}
+
+        strategy_indexes = {}
+        curve_labels = "Skew (Number of Negatives Per Positive)"
+        line_item = ""
+
+        current_index = 0
+        for strategy in strategies_to_include:
+            strategy_indexes[strategy] = current_index
+            current_index += 1
+            line_item += ",,"
+            curve_labels += (",%s" % strategy)
+
+        curve_labels += "\n"
+        line_item = line_item[0:-1]
+        line_item += "\n"
+
+        precision_curve = curve_labels
+        recall_curve  = curve_labels
+        f1_curve = curve_labels
+        
 
 
         for experiment in Experiment.objects:
@@ -797,203 +822,48 @@ class AllExperimentAnalyzeApi(Resource):
                     selected_classifier.lower()):
                 continue
 
+
+
             [precisions_avgs, recalls_avgs, f1s_avgs, 
              precisions_stds, recalls_stds, f1s_stds,
              costSoFars_avgs, costSoFars_std] = get_average_curve(
                  experiment.id)
-            
-            manual_xaxis = True
-            if (selected_domain.lower() == 'health' or 
-                selected_domain.lower() == 'ent' or 
-                selected_domain.lower() == 'bus' or
-                selected_domain.lower() == 'sci' or
-                (selected_classifier.lower() == 'lr' and 
-                 selected_domain.lower() == 'death')):
 
-                x_axis = costSoFars_avgs
-                print "USING AUTOMATIC X AXIS"
-                print x_axis
-                sys.stdout.flush()
+            x_axis = costSoFars_avgs
 
-                manual_xaxis = False
+            if not str(experiment.control_strategy) in strategy_names:
+                continue
+            strategy_key = strategy_names[str(experiment.control_strategy)]
+            starting_index = strategy_indexes[strategy_key] * 2 
 
-            """
-            if experiment.control_strategy == 'round-robin':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, len(f1s_avgs)+1):
-                        if i % 3 == 1:
-                            x_axis.append(x_axis[i-1] + 7.5)
-                            #x_axis.append(x_axis[i-1] + 1)
+            for (x,precision_avg,recall_avg,
+                 f1_avg,precision_std,recall_std,f1_std) in zip(
+                     x_axis,
+                     precisions_avgs, recalls_avgs, f1s_avgs,
+                     precisions_stds, recalls_stds, f1s_stds):
+                
+                precision_curve += (
+                    ("%f," % x) + 
+                    line_item[0:starting_index] +
+                    ("%f" % precision_avg) +
+                    line_item[starting_index:starting_index+1] +
+                    ("%f" % precision_std) +
+                    line_item[starting_index+1:])
+                recall_curve += (
+                    ("%f," % x) + 
+                    line_item[0:starting_index] +
+                    ("%f" % recall_avg) +
+                    line_item[starting_index:starting_index+1] +
+                    ("%f" % recall_std) +
+                    line_item[starting_index+1:])
+                f1_curve += (
+                    ("%f," % x) + 
+                    line_item[0:starting_index] +
+                    ("%f" % f1_avg) +
+                    line_item[starting_index:starting_index+1] +
+                    ("%f" % f1_std) +
+                    line_item[starting_index+1:])
 
-                        elif i % 3 == 2:
-                            x_axis.append(x_axis[i-1] + 5)
-                            #x_axis.append(x_axis[i-1] + 1)
-                        elif i %3 == 0:
-                            x_axis.append(x_axis[i-1] + 1.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                    x_axis = x_axis[1:len(x_axis)]
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,,,%f,%f,,,,,,,,\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,,,%f,%f,,,,,,,,\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,%f,%f,,,,,,,,\n" % (x, f1_avg, f1_std) 
-            """
-            if experiment.control_strategy == 'label-only-constant-ratio':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, len(f1s_avgs)+1):
-                        x_axis.append(x_axis[i-1] + 1.5)
-
-                    x_axis = x_axis[1:len(x_axis)]
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,,,,,,,,,%f,%f,,\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,,,,,,,,,%f,%f,,\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,,,,,,,%f,%f,,\n" % (
-                        x, f1_avg, f1_std) 
-            """
-            elif experiment.control_strategy == 'round-robin-random-negatives':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, len(f1s_avgs)+1):
-                        if i % 3 == 1:
-                            x_axis.append(x_axis[i-1] + 7.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                        elif i % 3 == 2:
-                            x_axis.append(x_axis[i-1] + 0.01)
-                            #x_axis.append(x_axis[i-1] + 1)
-                        elif i %3 == 0:
-                            x_axis.append(x_axis[i-1] + 1.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                    x_axis = x_axis[1:len(x_axis)]
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,,,,,%f,%f,,,,,,\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,,,,,%f,%f,,,,,,\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,,,%f,%f,,,,,,\n" % (x, f1_avg, f1_std) 
-            """
-            if experiment.control_strategy == 'round-robin-constant-ratio':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, len(f1s_avgs)+1):
-                        if i % 5 == 1:
-                            x_axis.append(x_axis[i-1] + 7.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                        elif i % 5 >= 2 and i % 5 <= 4:
-                            x_axis.append(x_axis[i-1] + 0.01)
-                            #x_axis.append(x_axis[i-1] + 1)
-                        elif i % 5 == 0:
-                            x_axis.append(x_axis[i-1] + 1.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                    x_axis = x_axis[1:len(x_axis)]
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,,,,,,,%f,%f,,,,\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,,,,,,,%f,%f,,,,\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,,,,,%f,%f,,,,\n" % (x, f1_avg, f1_std) 
-            """
-            elif experiment.control_strategy == 'round-robin-constant-ratio-random-labeling':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, len(f1s_avgs)+1):
-                        if i % 5 == 1:
-                            x_axis.append(x_axis[i-1] + 7.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                        elif i % 5 >= 2 and i % 5 <= 4:
-                            x_axis.append(x_axis[i-1] + 0.01)
-                            #x_axis.append(x_axis[i-1] + 1)
-                        elif i % 5 == 0:
-                            x_axis.append(x_axis[i-1] + 1.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-
-                    x_axis = x_axis[1:len(x_axis)]
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,,,,,,,,,,,%f,%f\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,,,,,,,,,,,%f,%f\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,,,,,,,,,,,%f,%f\n" % (x, f1_avg, f1_std) 
-            """
-
-            if experiment.control_strategy == 'seed3':
-                if manual_xaxis:
-                    x_axis = [0.0]
-                    for i in range(1, 11):
-                        print "X-AXIS"
-                        print x_axis
-                        if i % 2 == 1:
-                            x_axis.append(x_axis[i-1] + 7.5)
-                            #x_axis.append(x_axis[i-1] + 1)
-                        elif i % 2 == 0:
-                            #x_axis.append(x_axis[i-1] + 5)
-                            x_axis.append(x_axis[i-1] + 0.001)
-                            #x_axis.append(x_axis[i-1] + 0)
-
-
-                    for i in range(11, len(f1s_avgs)+1):
-                        x_axis.append(x_axis[i-1] + 1.5)
-                        #x_axis.append(x_axis[i-1] + 1)
-
-                    x_axis = x_axis[1:len(x_axis)]
-
-
-                for (x,precision_avg,recall_avg,
-                     f1_avg,precision_std,recall_std,f1_std) in zip(
-                         x_axis,
-                         precisions_avgs, recalls_avgs, f1s_avgs,
-                         precisions_stds, recalls_stds, f1s_stds):
-                    
-                    
-                    precision_curve += "%f,%f,%f,,,,,,,,,,\n" % (
-                        x, precision_avg, precision_std)
-                    recall_curve += "%f,%f,%f,,,,,,,,,,\n" % (
-                        x, recall_avg, recall_std) 
-                    f1_curve  += "%f,%f,%f,,,,,,,,,,\n" % (x, f1_avg, f1_std) 
-                    
-            #precision_curves.append(precision_curve)
-            #recall_curves.append(recall_curve)
-            #f1_curves.append(f1_curve)
                 
         return [precision_curve, recall_curve, f1_curve]
 
@@ -1130,12 +1000,39 @@ def get_average_aoc(experiment_id):
         recalls = []
         f1s = []
         costSoFars = []
+
         for point in learning_curve:
             task_id, precision, recall, f1, action, costSoFar = point
             precisions.append(precision)
             recalls.append(recall)
             f1s.append(f1)
-            costSoFars.append(costSoFar)
+            #costSoFars.append(costSoFar)
+        
+        #if (experiment.control_strategy == 'label-only' or
+        #    experiment.control_strategy == 'label-only-constant-ratio'):
+        #    costSoFars = [7,14,20,27,34,40,47,54,60,67,67]
+        #elif experiment.control_strategy == 'round-robin-constant-ratio':
+        #    costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
+        #elif experiment.control_strategy == 'seed3':
+        #    costSoFars = [2,3,8,15,22,28,35,42,48,55,55]
+
+        if (experiment.control_strategy == 'label-only' or
+            experiment.control_strategy == 'label-only-constant-ratio'):
+            costSoFars = [7,14,20]
+            precisions = precisions[0:3]
+            recalls = recalls[0:3]
+            f1s = f1s[0:3]
+        elif experiment.control_strategy == 'round-robin-constant-ratio':
+            costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
+            precisions = precisions[0:11]
+            recalls = recalls[0:11]
+            f1s = f1s[0:11]
+        elif experiment.control_strategy == 'seed3':
+            costSoFars = [2,3,8,15,22]
+            precisions = precisions[0:5]
+            recalls = recalls[0:5]
+            f1s = f1s[0:5]
+
 
         precision_curve_aocs.append(np.trapz(precisions, costSoFars))
         recall_curve_aocs.append(np.trapz(recalls, costSoFars))
