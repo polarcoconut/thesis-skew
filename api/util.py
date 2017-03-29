@@ -749,6 +749,7 @@ def test(job_id, test_examples, test_labels):
 
 
 
+#GET PREDICTED POSITIVES AT A FIXED RATIO
 def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
                                                       task_categories,
                                                       training_examples,
@@ -820,7 +821,11 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         selected_examples = []
         expected_labels = []
 
-        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+            num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+        else:
+            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+
         for pos_example in expected_positive_examples:
             selected_examples.append(pos_example)
             expected_labels.append(1)
@@ -909,7 +914,11 @@ def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         selected_examples = []
         expected_labels = []
 
-        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+            num_negatives_wanted = len(expected_negative_examples)
+        else:
+            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+
         for pos_example in expected_positive_examples:
             selected_examples.append(pos_example)
             expected_labels.append(1)

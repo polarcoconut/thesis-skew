@@ -88,10 +88,11 @@ class ExperimentApi(Resource):
                 task_information = pickle.dumps((task_information, budget)),
                 num_runs = num_runs,
                 control_strategy = control_strategy,
-                control_strategy_configuration = '%s,%s,%s' % (
+                control_strategy_configuration = '%s,%s,%s,%s' % (
                     app.config['UCB_EXPLORATION_CONSTANT'], 
                     app.config['MODEL'],
-                    num_of_negatives_per_positive), 
+                    num_of_negatives_per_positive,
+                    app.config['NUM_NEGATIVES_PER_POSITIVE']), 
                 learning_curves= {},
                 gpu_device_string = gpu_device_string,
                 status = 'Running',
@@ -184,7 +185,8 @@ def run_experiment(experiment_id, event_name):
                                                2 : []}),
                   logging_data = pickle.dumps([]),
                   experiment_id = experiment_id,
-                  gpu_device_string = experiment.gpu_device_string)
+                  gpu_device_string = experiment.gpu_device_string,
+                  dataset_skew = experiment.dataset_skew)
 
         #job.model_file.put("placeholder")
         #job.model_meta_file.put("placeholder")
@@ -780,6 +782,8 @@ class AllExperimentAnalyzeApi(Resource):
                 continue
 
             if len(experiment_csc) >= 3:
+                continue
+            if len(experiment_csc) >= 2:
                 print "Experiment configuration"
                 print experiment_csc
                 sys.stdout.flush()
@@ -1105,19 +1109,16 @@ def get_average_aoc(experiment_id):
     print experiment.control_strategy
 
 
-    #get_num_examples_labeled.delay(experiment_id)
  
-    len_longest_curve = 0
+    #len_longest_curve = 0
     #first figure out the longest curve
-
-
     
 
-    for job_id in job_ids:
-        learning_curve = experiment.learning_curves[job_id]
-        if len(learning_curve) > len_longest_curve:
-            len_longest_curve = len(learning_curve)
-            print len(learning_curve)
+    #for job_id in job_ids:
+    #    learning_curve = experiment.learning_curves[job_id]
+    #    if len(learning_curve) > len_longest_curve:
+    #        len_longest_curve = len(learning_curve)
+    #        print len(learning_curve)
 
     precision_curve_aocs = []
     recall_curve_aocs = []
@@ -1164,19 +1165,41 @@ class SkewAnalyzeApi(Resource):
         args = all_experiment_analyze_parser.parse_args()
         selected_domain = args['domain']
         selected_classifier = args['classifier']
-        #job_ids = args['job_ids']
-
-        #experiment = Experiment.objects
 
 
-        #precision_curves = []
-        #recall_curves = []
-        #f1_curves = []
+        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only']
         
+        
+        strategy_names = {
+            'seed3' : 'Seed-Bounded-Ratio',
+            'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
+            'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
+            'label-only' : 'Label-Only'}
+
+        strategy_indexes = {}
+        curve_labels = "Skew (Number of Negatives Per Positive)"
+        line_item = ""
+
+        current_index = 0
+        for strategy in strategies_to_include:
+            strategy_indexes[strategy] = current_index
+            current_index += 1
+            line_item += ",,"
+            curve_labels += (",%s" % strategy)
+
+        curve_labels += "\n"
+        line_item = line_item[0:-1]
+        line_item += "\n"
+
+        precision_curve = curve_labels
+        recall_curve  = curve_labels
+        f1_curve = curve_labels
+
+        """
         precision_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
         recall_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
         f1_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-
+        """
 
         for experiment in Experiment.objects:
 
@@ -1216,32 +1239,33 @@ class SkewAnalyzeApi(Resource):
                    precision_std, recall_std, f1_std]
             sys.stdout.flush()
                 
-        
+            if not str(experiment.control_strategy) in strategy_names:
+                continue
+            strategy_key = strategy_names[str(experiment.control_strategy)]
 
-            if experiment.control_strategy == 'label-only-constant-ratio':
-                    
-                precision_curve += "%f,,,,,,,,,%f,%f,,\n" % (
-                    experiment_skew, precision_aoc, precision_std)
-                recall_curve += "%f,,,,,,,,,%f,%f,,\n" % (
-                    experiment_skew, recall_aoc, recall_std) 
-                f1_curve  += "%f,,,,,,,,,%f,%f,,\n" % (
-                    experiment_skew, f1_aoc, f1_std) 
-            if experiment.control_strategy == 'round-robin-constant-ratio':
+            starting_index = strategy_indexes[strategy_key] * 2 
+            precision_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % precision_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % precision_std) +
+                line_item[starting_index+1:])
+            recall_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % recall_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % recall_std) +
+                line_item[starting_index+1:])
+            f1_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % f1_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % f1_std) +
+                line_item[starting_index+1:])
 
-                precision_curve += "%f,,,,,,,%f,%f,,,,\n" % (
-                    experiment_skew, precision_aoc, precision_std)
-                recall_curve += "%f,,,,,,,%f,%f,,,,\n" % (
-                    experiment_skew, recall_aoc, recall_std) 
-                f1_curve  += "%f,,,,,,,%f,%f,,,,\n" % (
-                    experiment_skew, f1_aoc, f1_std) 
-
-            if experiment.control_strategy == 'seed3':
-                precision_curve += "%f,%f,%f,,,,,,,,,,\n" % (
-                    experiment_skew, precision_aoc, precision_std)
-                recall_curve += "%f,%f,%f,,,,,,,,,,\n" % (
-                    experiment_skew, recall_aoc, recall_std) 
-                f1_curve  += "%f,%f,%f,,,,,,,,,,\n" % (
-                    experiment_skew, f1_aoc, f1_std) 
-                    
                 
+
         return [precision_curve, recall_curve, f1_curve]

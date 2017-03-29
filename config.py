@@ -26,7 +26,9 @@ class Config(object):
         'host': host,
         'port': int(port),
         'username' : dbuser,
-        'password' : dbpass}
+        'password' : dbpass,
+        'connectTimeoutMS': 0,
+        'socketTimeoutMS' : 0}
 
     SECRET_KEY = 'super-secret'
     SECURITY_REGISTERABLE = True
@@ -129,6 +131,8 @@ class Config(object):
 
     EXPERIMENT_MEASUREMENT_INTERVAL = 10
     
+    #If num_negatives_per_positive is negative, then use the native
+    #skew.
     NUM_NEGATIVES_PER_POSITIVE = 3
     
 class DevelopmentConfig(Config):

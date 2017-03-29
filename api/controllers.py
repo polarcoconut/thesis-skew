@@ -146,11 +146,14 @@ def label_only_US_constant_ratio_controller(task_ids, task_categories,
             else:
                 raise Exception
 
-        # For now, put in a ratio of 1 positive : 2 negatives
-
         selected_examples = []
         expected_labels = []
-        num_negatives_wanted = 3
+
+        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+            num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+        else:
+            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+
         for pos_example in expected_positive_examples:
             selected_examples.append(pos_example)
             expected_labels.append(1)
@@ -1209,8 +1212,15 @@ def seed_controller(task_ids, task_categories, training_examples,
 
     print "Seed Controller activated."
     sys.stdout.flush()
+
+    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+        num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+    else:
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
         
-    if len(task_categories) >= 12:
+    task_categories_per_cycle = num_negatives_wanted + 1
+        
+    if len(task_categories) >= task_categories_per_cycle * 3:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 
@@ -1226,7 +1236,7 @@ def seed_controller(task_ids, task_categories, training_examples,
  
         return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
-    if len(task_categories) % 4 == 0:
+    if len(task_categories) % task_categories_per_cycle == 0:
 
         print "choosing the RECALL category"
         sys.stdout.flush()
@@ -1238,7 +1248,11 @@ def seed_controller(task_ids, task_categories, training_examples,
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return next_category['id'], task, num_hits, num_hits * next_category['price']
 
-    if len(task_categories) % 4 >= 1 and len(task_categories) % 4 <= 3:
+
+
+    if (len(task_categories) % task_categories_per_cycle >= 1 and 
+        (len(task_categories) % task_categories_per_cycle <= 
+         num_negatives_wanted)):
 
         last_batch = training_examples[-1]
         next_category = app.config['EXAMPLE_CATEGORIES'][1]
@@ -1261,8 +1275,14 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
     print "RRCR Controller activated."
     sys.stdout.flush()
         
+    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+        num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+    else:
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
 
-    if len(task_categories) % 5 == 0:
+    task_categories_per_cycle = num_negatives_wanted + 2
+
+    if len(task_categories) % task_categories_per_cycle == 0:
         print "choosing the RECALL category"
         sys.stdout.flush()
     
@@ -1273,7 +1293,10 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return next_category['id'], task, num_hits, num_hits * next_category['price']
 
-    if len(task_categories) % 5 >= 1 and len(task_categories) % 5 <= 3:
+
+    if (len(task_categories) % task_categories_per_cycle >= 1 and 
+        (len(task_categories) % task_categories_per_cycle <= 
+         num_negatives_wanted)):
         print "choosing the PRECISION category"
         sys.stdout.flush()
 
@@ -1294,7 +1317,7 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
 
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
-    if len(task_categories) % 5  == 4:
+    if len(task_categories) % task_categories_per_cycle  == 4:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         print "choosing the LABEL category"
@@ -1323,9 +1346,15 @@ def round_robin_constant_ratio_random_labeling_controller(
 
     print "RRCRRL Controller activated."
     sys.stdout.flush()
+
+    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+        num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+    else:
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+    task_categories_per_cycle = num_negatives_wanted + 2
         
 
-    if len(task_categories) % 5 == 0:
+    if len(task_categories) % task_categories_per_cycle == 0:
         print "choosing the RECALL category"
         sys.stdout.flush()
     
@@ -1336,7 +1365,11 @@ def round_robin_constant_ratio_random_labeling_controller(
         num_hits = app.config['CONTROLLER_GENERATE_BATCH_SIZE']
         return next_category['id'], task, num_hits, num_hits * next_category['price']
 
-    if len(task_categories) % 5 >= 1 and len(task_categories) % 5 <= 3:
+
+
+    if (len(task_categories) % task_categories_per_cycle >= 1 and 
+        (len(task_categories) % task_categories_per_cycle <= 
+         num_negatives_wanted)):
 
         last_batch = training_examples[-1]
         next_category = app.config['EXAMPLE_CATEGORIES'][1]
@@ -1348,7 +1381,7 @@ def round_robin_constant_ratio_random_labeling_controller(
         
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
-    if len(task_categories) % 5  == 4:
+    if len(task_categories) % task_categories_per_cycle  == 4:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
         (selected_examples, 

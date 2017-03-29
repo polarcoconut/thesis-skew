@@ -37,3 +37,5 @@ class Job(db.DynamicDocument):
     files_for_simulation = db.StringField()
 
     gold_extractor = db.StringField()
+
+    dataset_skew = db.IntField()
