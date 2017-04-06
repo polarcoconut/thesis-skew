@@ -77,8 +77,8 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        #ratios = [1]
-        ratios = [1,2,3,5,9,49,99]
+        ratios = [1]
+        #ratios = [1,2,3,5,9,49,99]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -739,6 +739,8 @@ all_experiment_analyze_parser.add_argument('domain',
                                            type=str, required=True)
 all_experiment_analyze_parser.add_argument('classifier', 
                                            type=str, required=True)
+all_experiment_analyze_parser.add_argument('skew', 
+                                           type=str, required=True)
 
 #all_experiment_analyze_parser.add_argument('job_ids', 
 #                                           type=str, action='append')
@@ -752,6 +754,7 @@ class AllExperimentAnalyzeApi(Resource):
         args = all_experiment_analyze_parser.parse_args()
         selected_domain = args['domain']
         selected_classifier = args['classifier']
+        selected_skew = int(args['skew'])
         #job_ids = args['job_ids']
 
         #experiment = Experiment.objects
@@ -761,17 +764,19 @@ class AllExperimentAnalyzeApi(Resource):
         #recall_curves = []
         #f1_curves = []
 
-        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only']
+        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only', 'UCB', 'Attenberg et al']
         
         
         strategy_names = {
             'seed3' : 'Seed-Bounded-Ratio',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
-            'label-only' : 'Label-Only'}
+            'label-only' : 'Label-Only',
+            'ucb-constant-ratio' : 'UCB',
+            'guided-learning' : 'Attenberg et al'}
 
         strategy_indexes = {}
-        curve_labels = "Skew (Number of Negatives Per Positive)"
+        curve_labels = "Cost"
         line_item = ""
 
         current_index = 0
@@ -807,12 +812,22 @@ class AllExperimentAnalyzeApi(Resource):
                 continue
 
             if len(experiment_csc) >= 3:
+                print "Experiment configuration has >= 4 components"
+                print experiment_csc
+                print int(experiment_csc[2])
+                sys.stdout.flush()
+                experiment_classifier = experiment_csc[1]
+                # Use the experiment with a dataset skew of 1:99.
+                if not int(experiment_csc[2]) == selected_skew:
+                    print "NOT THE RIGHT SKEW"
+                    sys.stdout.flush()
+                    continue
+            elif len(experiment_csc) < 3:
                 continue
-            if len(experiment_csc) >= 2:
+            elif len(experiment_csc) == 2:
                 print "Experiment configuration"
                 print experiment_csc
-                sys.stdout.flush()
-                
+                sys.stdout.flush()                
                 experiment_classifier = experiment_csc[1]
             else:
                 experiment_classifier = 'cnn'
@@ -836,6 +851,12 @@ class AllExperimentAnalyzeApi(Resource):
             strategy_key = strategy_names[str(experiment.control_strategy)]
             starting_index = strategy_indexes[strategy_key] * 2 
 
+
+            print "Experiment configuration"
+            print experiment_csc
+            sys.stdout.flush()
+                
+            
             for (x,precision_avg,recall_avg,
                  f1_avg,precision_std,recall_std,f1_std) in zip(
                      x_axis,
@@ -1006,7 +1027,7 @@ def get_average_aoc(experiment_id):
             precisions.append(precision)
             recalls.append(recall)
             f1s.append(f1)
-            #costSoFars.append(costSoFar)
+            costSoFars.append(costSoFar)
         
         #if (experiment.control_strategy == 'label-only' or
         #    experiment.control_strategy == 'label-only-constant-ratio'):
@@ -1016,6 +1037,7 @@ def get_average_aoc(experiment_id):
         #elif experiment.control_strategy == 'seed3':
         #    costSoFars = [2,3,8,15,22,28,35,42,48,55,55]
 
+        """
         if (experiment.control_strategy == 'label-only' or
             experiment.control_strategy == 'label-only-constant-ratio'):
             costSoFars = [7,14,20]
@@ -1032,7 +1054,7 @@ def get_average_aoc(experiment_id):
             precisions = precisions[0:5]
             recalls = recalls[0:5]
             f1s = f1s[0:5]
-
+        """
 
         precision_curve_aocs.append(np.trapz(precisions, costSoFars))
         recall_curve_aocs.append(np.trapz(recalls, costSoFars))
@@ -1052,6 +1074,11 @@ def get_average_aoc(experiment_id):
     return [precision_aoc_avg, recall_aoc_avg, f1_aoc_avg,
             precision_aoc_std, recall_aoc_std, f1_aoc_std]
 
+skew_experiment_analyze_parser = reqparse.RequestParser()
+skew_experiment_analyze_parser.add_argument('domain', 
+                                           type=str, required=True)
+skew_experiment_analyze_parser.add_argument('classifier', 
+                                           type=str, required=True)
 
 class SkewAnalyzeApi(Resource):
     def get(self):
@@ -1059,19 +1086,21 @@ class SkewAnalyzeApi(Resource):
         print "Constructing Graphs"
         sys.stdout.flush()
 
-        args = all_experiment_analyze_parser.parse_args()
+        args = skew_experiment_analyze_parser.parse_args()
         selected_domain = args['domain']
         selected_classifier = args['classifier']
 
 
-        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only']
+        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only', 'UCB', 'Attenberg et al']
         
         
         strategy_names = {
             'seed3' : 'Seed-Bounded-Ratio',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
-            'label-only' : 'Label-Only'}
+            'label-only' : 'Label-Only',
+            'ucb-constant-ratio' : 'UCB',
+            'guided-learning': 'Attenberg et al'}
 
         strategy_indexes = {}
         curve_labels = "Skew (Number of Negatives Per Positive)"

@@ -105,6 +105,12 @@ def test_on_held_out_set(job_id, positive_types, test_set):
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
 
+        print "HERE IS THE TEST SET"
+        print test_examples
+        print test_labels
+        sys.stdout.flush()
+
+
     else:
         test_set = int(test_set[0])
         ####

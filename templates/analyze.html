@@ -28,7 +28,7 @@ ed.js"></script>
 
     <h2> <b> Learning Curves: </b></h2>
 
-      <select id="domains" name="domains">
+      Domain: <select id="domains" name="domains">
         <option value="death">death</option>
         <option value="health">health</option>
         <option value="ent">ent</option>
@@ -36,11 +36,20 @@ ed.js"></script>
         <option value="sci">sci</option>
       </select>
 
-      <select id="classifiers" name="classifiers">
+     Classifier:  <select id="classifiers" name="classifiers">
         <option value="CNN">CNN</option>
         <option value="LR">LR</option>
       </select>
 
+      Number of Negatives Per Positive: <select id="skew" name="skew">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="9">9</option>
+        <option value="49">49</option>
+        <option value="99">99</option>
+      </select>
        
       <button id="analyze">Analyze!</button>
 
@@ -92,6 +101,10 @@ ed.js"></script>
 	var classifier_menu = document.getElementById("classifiers");
 	var selected_classifier = classifier_menu.options[
 	    classifier_menu.selectedIndex].value;
+
+	var skew_menu = document.getElementById("skew");
+	var selected_skew = skew_menu.options[
+	    skew_menu.selectedIndex].value;
 	
 	
 
@@ -100,6 +113,9 @@ ed.js"></script>
 
 	analyze_experiment_url += '&classifier=';
 	analyze_experiment_url += selected_classifier;
+
+	analyze_experiment_url += '&skew=';
+	analyze_experiment_url += selected_skew;
 
 	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
         xmlhttp_analyze_experiment.send();
@@ -127,6 +143,7 @@ ed.js"></script>
                     ylabel: 'Precision',
                     legend: 'always',
 		    labelsDiv: 'precision_legend',
+		    drawPoints:true,
 		    connectSeparatedPoints: true,
                 }
             );
@@ -139,6 +156,7 @@ ed.js"></script>
                     ylabel: 'Recall',
                     legend: 'always',
 		    labelsDiv: 'recall_legend',
+		    drawPoints:true,
 		    connectSeparatedPoints: true,
 
                 }
@@ -152,6 +170,7 @@ ed.js"></script>
                     ylabel: 'F1',
                     legend: 'always',
 		    labelsDiv: 'f1_legend',
+		    drawPoints:true,
 		    connectSeparatedPoints: true
 
 		}
