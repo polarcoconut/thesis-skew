@@ -1184,7 +1184,8 @@ def get_US_unlabeled_examples_from_corpus(
                 time.sleep(10)
                 continue
 
-    #Get all the previous examples that we labeled already
+    #Get all the previous examples that we labeled already and do not 
+    #include them.
     used_examples = []
     for i, task_category in zip(range(len(task_categories)), task_categories):
         #This check is because some data in the database is inconsistent
