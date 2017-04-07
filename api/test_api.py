@@ -40,7 +40,8 @@ class TestExtractorApi(Resource):
         print test_sentence
         sys.stdout.flush()
 
-        predicted_labels = test(job_id, [test_sentence], [0])
+        predicted_labels, label_probabilities = test(
+            job_id, [test_sentence], [0])
 
         print "predicted_labels"
         print predicted_labels
@@ -105,10 +106,10 @@ def test_on_held_out_set(job_id, positive_types, test_set):
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])
 
-        print "HERE IS THE TEST SET"
-        print test_examples
-        print test_labels
-        sys.stdout.flush()
+        #print "HERE IS THE TEST SET"
+        #print test_examples
+        #print test_labels
+        #sys.stdout.flush()
 
 
     else:
@@ -166,11 +167,12 @@ def test_on_held_out_set(job_id, positive_types, test_set):
 
 
 
-    predicted_labels = test(job_id,test_examples,test_labels)
+    predicted_labels, label_probabilities = test(
+        job_id,test_examples,test_labels)
 
-    print "predicted_labels"
-    print predicted_labels
-    sys.stdout.flush()
+    #print "predicted_labels"
+    #print predicted_labels
+    #sys.stdout.flush()
 
     precision, recall, f1 = computeScores(predicted_labels, test_labels)
 

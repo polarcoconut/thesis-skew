@@ -62,7 +62,7 @@ class ExperimentApi(Resource):
 
         #Clean up code
         #for job in Job.objects():
-        #    if not job.status == 'Finished':
+        #    if job.control_strategy == 'ucb-constant-ratio':
         #        job.delete()
         #return None
             
@@ -77,8 +77,8 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        ratios = [1]
-        #ratios = [1,2,3,5,9,49,99]
+        #ratios = [99]
+        ratios = [1,2,3,5,9,49,99]
 
         for num_of_negatives_per_positive in ratios:
  

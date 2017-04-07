@@ -670,7 +670,7 @@ def test(job_id, test_examples, test_labels):
         predicted_labels, label_probabilities = test_lr(
             test_examples, test_labels, model, vocabulary)
 
-        return predicted_labels
+        return predicted_labels, label_probabilities
     if app.config['MODEL'] == 'CNN':
         vocabulary = pickle.loads(job.vocabulary)
         temp_file_name = write_model_to_file(job_id)
@@ -683,7 +683,7 @@ def test(job_id, test_examples, test_labels):
         os.remove(os.path.join(
             os.getcwd(),'%s.meta' % temp_file_name))
 
-        return predicted_labels
+        return predicted_labels, label_probabilities
     elif app.config['MODEL'] == 'CRF':
         model_folder = write_crf_model_to_file(job_id)
 
@@ -745,7 +745,7 @@ def test(job_id, test_examples, test_labels):
         print predicted_labels
         sys.stdout.flush()
 
-        return predicted_labels
+        return predicted_labels, []
 
 
 
@@ -847,6 +847,47 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
 
         return selected_examples, expected_labels
 
+
+
+
+def get_gold_labels(job, selected_labels):
+
+    if not 'https' in job.gold_extractor:
+        gold_extractor = Gold_Extractor.objects.get(
+            name=job.gold_extractor)
+        model_file_name = write_model_to_file(
+            gold_extractor = gold_extractor.name)
+        vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
+        predicted_labels, label_probabilities = test_cnn(
+            selected_examples,
+            [0 for i in selected_examples],
+            model_file_name,
+            vocabulary)
+
+        os.remove(os.path.join(
+            os.getcwd(), model_file_name))
+        os.remove(os.path.join(
+            os.getcwd(),'%s.meta' % model_file_name))
+    else:
+        gold_labels = {}
+        gold_corpus = str(requests.get(
+            job.gold_extractor).content).split('\n')
+        for line in gold_corpus:
+            if line == "":
+                continue
+
+            line = line.split('\t')
+            example = line[0]
+            #example = unicode(line[0], 'utf-8')
+            label = int(line[1])
+            gold_labels[example] = label
+
+        predicted_labels = []
+        for example in selected_examples:
+            predicted_labels.append(gold_labels[example])
+    
+    return predicted_labels
+
 def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
                                                       task_categories,
                                                       training_examples,
@@ -864,40 +905,7 @@ def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         job = Job.objects.get(id = job_id)
         experiment = Experiment.objects.get(id=job.experiment_id)
 
-        
-        if not 'https' in job.gold_extractor:
-            gold_extractor = Gold_Extractor.objects.get(
-                name=job.gold_extractor)
-            model_file_name = write_model_to_file(
-                gold_extractor = gold_extractor.name)
-            vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-            predicted_labels, label_probabilities = test_cnn(
-                selected_examples,
-                [0 for i in selected_examples],
-                model_file_name,
-                vocabulary)
-
-            os.remove(os.path.join(
-                os.getcwd(), model_file_name))
-            os.remove(os.path.join(
-                os.getcwd(),'%s.meta' % model_file_name))
-        else:
-            gold_labels = {}
-            gold_corpus = str(requests.get(
-                job.gold_extractor).content).split('\n')
-            for line in gold_corpus:
-                if line == "":
-                    continue
- 
-                line = line.split('\t')
-                example = line[0]
-                #example = unicode(line[0], 'utf-8')
-                label = int(line[1])
-                gold_labels[example] = label
-                
-            predicted_labels = []
-            for example in selected_examples:
-                predicted_labels.append(gold_labels[example])
+        predicted_labels = get_gold_labels(job, selected_examples)
 
         expected_positive_examples = []
         expected_negative_examples = []
@@ -1030,7 +1038,7 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
 
     job = Job.objects.get(id = job_id)
 
-    predicted_labels = test(
+    predicted_labels, label_probabilities = test(
         job_id,
         test_examples,
         test_labels)
@@ -1148,3 +1156,83 @@ def get_random_unlabeled_examples_from_corpus(
     return selected_examples, expected_labels
 
 
+#Gets random examples
+def get_US_unlabeled_examples_from_corpus(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id):
+    
+    print "choosing to find examples from corpus and label them"
+    sys.stdout.flush()
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+
+    job = Job.objects.get(id = job_id)
+    test_examples = []
+
+    while True:
+        try:
+            corpus = str(requests.get(
+                job.unlabeled_corpus).content).split('\n')
+            break
+        except Exception:
+                print "Exception while communicating with S3:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
+    #Get all the previous examples that we labeled already
+    used_examples = []
+    for i, task_category in zip(range(len(task_categories)), task_categories):
+        #This check is because some data in the database is inconsistent
+        if isinstance(task_category, dict):
+            task_category_id = task_category['id']
+        else:
+            task_category_id = task_category
+        if task_category_id == 2:
+            used_examples += training_examples[i]
+
+
+    corpus = set(corpus)-set(used_examples)
+    for sentence in corpus:
+        if sentence == "":
+            continue
+        test_examples.append(sentence)
+
+    print "Sampling from a corpus of size"
+    print len(test_examples)
+    sys.stdout.flush()
+
+    training_positive_examples, training_negative_examples = split_examples(
+        task_ids, task_categories, ['all'])
+
+    retrain(job_id, ['all'], [],
+            training_positive_examples, 
+            training_negative_examples)
+
+    predicted_labels, label_probabilities = test(
+        job_id,
+        test_examples,
+        [0 for ex in test_examples])
+
+
+    examples_in_decreasing_uncertainty = sorted(
+        zip(test_examples, label_probabilities),
+        key=lambda x: max(x[1]))
+    
+
+    print "HERE ARE THE EXAMPLES IN DECREASING UNCERTAINTY"
+    print examples_in_decreasing_uncertainty
+    sys.stdout.flush()
+
+
+    expected_labels = [0 for i in range(
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
+        
+
+    return (examples_in_decreasing_uncertainty[
+        0:app.config['CONTROLLER_LABELING_BATCH_SIZE']], 
+            expected_labels)

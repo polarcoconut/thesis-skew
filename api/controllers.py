@@ -65,7 +65,28 @@ def label_only_controller(task_ids, task_categories, training_examples,
     
     return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
-def label_only_constant_ratio_controller(task_ids, task_categories,
+def label_only_controller(task_ids, task_categories, training_examples,
+                      training_labels, task_information,
+                      costSoFar, budget, job_id):
+
+
+    next_category = app.config['EXAMPLE_CATEGORIES'][2]
+    
+    (selected_examples, 
+     expected_labels) = get_random_unlabeled_examples_from_corpus(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id)
+    
+    task = make_labeling_crowdjs_task(selected_examples,
+                                      expected_labels,
+                                      task_information)
+    
+    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+
+
+def label_only_US_controller(task_ids, task_categories,
                                         training_examples,
                                         training_labels, task_information,
                                         costSoFar, budget, job_id):
@@ -73,104 +94,12 @@ def label_only_constant_ratio_controller(task_ids, task_categories,
     next_category = app.config['EXAMPLE_CATEGORIES'][2]
 
     (selected_examples, 
-     expected_labels) =  get_random_unlabeled_examples_from_corpus_at_fixed_ratio(
+     expected_labels) =  get_US_unlabeled_examples_from_corpus(
         task_ids, task_categories,
         training_examples, training_labels,
         task_information, costSoFar,
         budget, job_id)
 
-
-    task = make_labeling_crowdjs_task(selected_examples,
-                                      expected_labels,
-                                      task_information)
-
-    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
-
-
-
-def label_only_US_constant_ratio_controller(task_ids, task_categories,
-                                            training_examples,
-                                            training_labels, task_information,
-                                            costSoFar, budget, job_id):
-    
-    next_category = app.config['EXAMPLE_CATEGORIES'][2]
-
-    active_learning_threshold = app.config['AL_THRESHOLD']
-    #Figure out how many positive examples we currently have
-    
-    num_current_pos_examples, num_current_neg_examples = split_examples(
-        task_ids, task_categories, ['all'])
-    
-    if num_current_pos_examples >= active_learning_threshold:
-        (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_corpus(
-            task_ids, task_categories,
-            training_examples, training_labels,
-            task_information, costSoFar,
-            budget, job_id)
-
-    elif num_current_pos_examples < active_learning_threshold:
-        (selected_examples, 
-         expected_labels) = get_random_unlabeled_examples_from_corpus(
-            task_ids, task_categories,
-            training_examples, training_labels,
-            task_information, costSoFar,
-            budget, job_id)
-
-        job = Job.objects.get(id = job_id)
-        experiment = Experiment.objects.get(id=job.experiment_id)
-        gold_extractor = Gold_Extractor.objects.get(
-            name=job.gold_extractor)
-        model_file_name = write_model_to_file(
-            gold_extractor = gold_extractor.name) 
-        vocabulary = cPickle.loads(str(gold_extractor.vocabulary))             
-        predicted_labels, label_probabilities = test_cnn(selected_examples,
-                                    [0 for i in selected_examples], 
-                                    model_file_name, 
-                                    vocabulary)
-
-        os.remove(os.path.join(
-            os.getcwd(), model_file_name))
-        os.remove(os.path.join(
-            os.getcwd(),'%s.meta' % model_file_name))
-
-
-        expected_positive_examples = []
-        expected_negative_examples = []
-        for predicted_label, selected_example in zip(predicted_labels,
-                                                 selected_examples):
-            if predicted_label == 1:
-                expected_positive_examples.append(selected_example)
-            elif predicted_label == 0:
-                expected_negative_examples.append(selected_example)
-            else:
-                raise Exception
-
-        selected_examples = []
-        expected_labels = []
-
-        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
-            num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
-        else:
-            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
-
-        for pos_example in expected_positive_examples:
-            selected_examples.append(pos_example)
-            expected_labels.append(1)
-
-            temp_num_negatives_wanted = num_negatives_wanted
-            while temp_num_negatives_wanted > 0:
-                if len(expected_negative_examples) > 0:
-                    selected_examples.append(expected_negative_examples.pop())
-                    expected_labels.append(0)
-                    temp_num_negatives_wanted -= 1
-                else:
-                    break
-
-        if len(expected_positive_examples) == 0:
-            selected_examples += sample(expected_negative_examples, 
-                                        num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
 
     task = make_labeling_crowdjs_task(selected_examples,
                                       expected_labels,
@@ -505,8 +434,9 @@ def seed_controller(task_ids, task_categories, training_examples,
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        num_hits = (app.config['CONTROLLER_GENERATE_BATCH_SIZE'] *
-                    num_negatives_wanted)
+        num_hits = (
+            app.config['CONTROLLER_GENERATE_BATCH_SIZE'] *
+            app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
         
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
@@ -552,8 +482,9 @@ def round_robin_constant_ratio_controller(task_ids, task_categories,
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        num_hits = (app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
-                    num_negatives_wanted)
+        num_hits = (
+            app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
+            app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
         
 
         return next_category['id'], task, num_hits, num_hits*next_category['price']
@@ -618,8 +549,9 @@ def round_robin_constant_ratio_random_labeling_controller(
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        num_hits = (app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
-                    num_negatives_wanted)
+        num_hits = (
+            app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
+            app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
 
         return next_category['id'], task, num_hits, num_hits*next_category['price']
 
@@ -657,9 +589,9 @@ def ucb_controller(task_ids, task_categories,
             0 : app.config['EXAMPLE_CATEGORIES'][0]['price'], 
             1 : 0, 
             2: 0}
-        extra_job_state['last_action'] = None
     else:
-        last_action = extra_job_state['last_action']
+
+        last_action = task_categories[-1]
         empirical_skew = 0.0
         #Update the mean costs from the last action
         extra_job_state['action_counts'][last_action] += 1
@@ -670,7 +602,7 @@ def ucb_controller(task_ids, task_categories,
             #empirical_skew /= len(training_labels[-1])
 
             if empirical_skew == 0:
-                empirical_skew = 0.1
+                empirical_skew = 1
 
             empirical_cost_of_positive = (
                 app.config['EXAMPLE_CATEGORIES'][2]['price']  *
@@ -688,37 +620,43 @@ def ucb_controller(task_ids, task_categories,
             extra_job_state['action_mean_costs'][2] = (
                 ((extra_job_state['action_counts'][2] - 1) * old_mean_cost +
                  empirical_cost_of_positive) / 
-                extra_job_state['action_counts'][2])
+                extra_job_state['action_counts'][2])            
+           
+        else:
+            if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+                num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
+            else:
+                num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+
+            #Count the number of times we've called the precision category
+            number_of_precision_actions = 0
+            i = -1
+            while task_categories[i] == 1:
+                number_of_precision_actions += 1
+                i -= 1
+
+            if number_of_precision_actions < num_negatives_wanted:
+                print "choosing the PRECISION category"
+                sys.stdout.flush()
+                            
+                last_batch = training_examples[-1]
+                next_category = app.config['EXAMPLE_CATEGORIES'][1]
+                
+                task = make_precision_crowdjs_task(last_batch, 
+                                                   task_information)
+                
+                num_hits = (
+                    app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
+                    app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
+                
+                return next_category['id'], task, num_hits, num_hits*next_category['price'] 
             
-
-    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
-        num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
-    else:
-        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
-
-    if extra_job_state['last_action'] == 0:
-        print "choosing the PRECISION category"
-        sys.stdout.flush()
-
-        
-        last_batch = training_examples[-1]
-        next_category = app.config['EXAMPLE_CATEGORIES'][1]
-
-        task = make_precision_crowdjs_task(last_batch, task_information)
-
-        num_hits = app.config[
-            'CONTROLLER_GENERATE_BATCH_SIZE'] * num_negatives_wanted
-        
-        extra_job_state['last_action'] = 1
-        return next_category['id'], task, num_hits, num_hits*next_category['price']
 
     #Compute the upper confidence bounds
 
     selected_action = None
     
-    if extra_job_state['action_counts'][0] == 0:
-        selected_action = 0
-    elif extra_job_state['action_counts'][2] == 0:
+    if extra_job_state['action_counts'][2] == 0:
         selected_action = 2
     else:
 
@@ -751,7 +689,6 @@ def ucb_controller(task_ids, task_categories,
         else:
             selected_action = 2
 
-    extra_job_state['last_action'] = selected_action
 
     if selected_action == 0:
         print "choosing the RECALL category"
@@ -769,21 +706,37 @@ def ucb_controller(task_ids, task_categories,
     else:
         next_category = app.config['EXAMPLE_CATEGORIES'][2]
         
-        print "choosing the LABEL category"
-        sys.stdout.flush()
+        if extra_job_state['action_counts'][2] == 0:
+        
+            (selected_examples, 
+             expected_labels) = get_random_unlabeled_examples_from_corpus_at_fixed_ratio(
+                 task_ids, task_categories,
+                 training_examples, training_labels,
+                 task_information, costSoFar,
+                 budget, job_id)
+            
+            task = make_labeling_crowdjs_task(selected_examples,
+                                              expected_labels,
+                                              task_information)
+            
+            return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+            
+        else:            
+            print "choosing the LABEL category"
+            sys.stdout.flush()
+            
+            (selected_examples, 
+             expected_labels) = get_unlabeled_examples_from_corpus_at_fixed_ratio(
+                 task_ids, task_categories,
+                 training_examples, training_labels,
+                 task_information, costSoFar,
+                 budget, job_id)
 
-        (selected_examples, 
-         expected_labels) = get_unlabeled_examples_from_corpus_at_fixed_ratio(
-            task_ids, task_categories,
-            training_examples, training_labels,
-            task_information, costSoFar,
-            budget, job_id)
-
-        task = make_labeling_crowdjs_task(selected_examples,
-                                          expected_labels,
-                                          task_information)
+            task = make_labeling_crowdjs_task(selected_examples,
+                                              expected_labels,
+                                              task_information)
  
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+            return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
 
 
@@ -828,8 +781,9 @@ def guided_learning_constant_ratio_controller(
 
         task = make_precision_crowdjs_task(last_batch, task_information)
 
-        num_hits = (app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
-                    num_negatives_wanted)
+        num_hits = (
+            app.config['CONTROLLER_GENERATE_BATCH_SIZE'] * 
+            app.config['CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
         
 
         return next_category['id'], task, num_hits, num_hits*next_category['price']
