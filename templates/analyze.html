@@ -49,8 +49,22 @@ ed.js"></script>
         <option value="9">9</option>
         <option value="49">49</option>
         <option value="99">99</option>
+        <option value="499">499</option>
+        <option value="999">999</option>
       </select>
-       
+    
+    <br/>
+    Strategies to include:<br/>
+    <input type="checkbox" name="strategy" value="Seed-PositiveLabeling-Bounded-Ratio">Seed-PositiveLabeling-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="Seed-ActiveLabeling">Seed-ActiveLabeling</input> <br/>
+
+    <input type="checkbox" name="strategy" value="Round-Robin-Bounded-Ratio">Round-Robin-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="RandomLabel-Only-Bounded-Ratio">RandomLabel-Only-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="RandomLabel-Only">RandomLabel-Only</input> <br/>
+    <input type="checkbox" name="strategy" value="UCB">UCB</input> <br/>
+    <input type="checkbox" name="strategy" value="Thompson">Thompson</input> <br/>
+    <input type="checkbox" name="strategy" value="Attenberg et al">Attenberg et al</input> <br/>
+
       <button id="analyze">Analyze!</button>
 
       <button id="skew-analyze">Skew-Analyze!</button>
@@ -117,11 +131,30 @@ ed.js"></script>
 	analyze_experiment_url += '&skew=';
 	analyze_experiment_url += selected_skew;
 
+
+	var checkboxes = document.getElementsByName("strategy");
+	// loop over them all
+	var none_checked = true;
+	for (var i=0; i<checkboxes.length; i++) {
+	    // And stick the checked ones onto an array...
+	    if (checkboxes[i].checked) {
+		none_checked = false;
+		analyze_experiment_url += '&strategies=';
+		analyze_experiment_url += checkboxes[i].value;
+	    }
+	}
+	if (none_checked) {
+	    for (var i=0; i<checkboxes.length; i++) {
+		analyze_experiment_url += '&strategies=';
+		analyze_experiment_url += checkboxes[i].value;
+	    }
+	}
+
 	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
         xmlhttp_analyze_experiment.send();
 
     }
-
+    
     xmlhttp_analyze_experiment.onreadystatechange = function() {
 	if (xmlhttp_analyze_experiment.readyState == 4 &&
 	    xmlhttp_analyze_experiment.status == 200) {
@@ -199,6 +232,27 @@ ed.js"></script>
 
 	skew_analyze_url += '&classifier=';
 	skew_analyze_url += selected_classifier;
+
+
+
+	var checkboxes = document.getElementsByName("strategy");
+	// loop over them all
+	var none_checked = true;
+	for (var i=0; i<checkboxes.length; i++) {
+	    // And stick the checked ones onto an array...
+	    if (checkboxes[i].checked) {
+		none_checked = false;
+		skew_analyze_url += '&strategies=';
+		skew_analyze_url += checkboxes[i].value;
+	    }
+	}
+	if (none_checked) {
+	    for (var i=0; i<checkboxes.length; i++) {
+		skew_analyze_url += '&strategies=';
+		skew_analyze_url += checkboxes[i].value;
+	    }
+	}
+
 
 	xmlhttp_skew_analyze.open("GET", skew_analyze_url, true);
         xmlhttp_skew_analyze.send();

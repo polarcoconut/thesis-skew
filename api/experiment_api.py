@@ -62,7 +62,8 @@ class ExperimentApi(Resource):
 
         #Clean up code
         #for job in Job.objects():
-        #    if job.control_strategy == 'ucb-constant-ratio':
+        #    if not job.status == 'Finished':
+            #if job.control_strategy == 'ucb-constant-ratio':
         #        job.delete()
         #return None
             
@@ -78,7 +79,8 @@ class ExperimentApi(Resource):
         event_name = args['event_name'].lower()
 
         #ratios = [99]
-        ratios = [1,2,3,5,9,49,99]
+        ratios = [999]
+        #ratios = [1,2,3,5,9,49,99,499,999]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -742,8 +744,8 @@ all_experiment_analyze_parser.add_argument('classifier',
 all_experiment_analyze_parser.add_argument('skew', 
                                            type=str, required=True)
 
-#all_experiment_analyze_parser.add_argument('job_ids', 
-#                                           type=str, action='append')
+all_experiment_analyze_parser.add_argument('strategies', 
+                                           type=str, action='append')
 
 class AllExperimentAnalyzeApi(Resource):
     def get(self):
@@ -755,25 +757,19 @@ class AllExperimentAnalyzeApi(Resource):
         selected_domain = args['domain']
         selected_classifier = args['classifier']
         selected_skew = int(args['skew'])
-        #job_ids = args['job_ids']
 
-        #experiment = Experiment.objects
-
-
-        #precision_curves = []
-        #recall_curves = []
-        #f1_curves = []
-
-        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only', 'UCB', 'Attenberg et al']
-        
+        strategies_to_include = args['strategies']
         
         strategy_names = {
-            'seed3' : 'Seed-Bounded-Ratio',
+            'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
+            'seed3_us' : 'Seed-ActiveLabeling',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
-            'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
-            'label-only' : 'Label-Only',
+            'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
+            'label-only' : 'RandomLabel-Only',
             'ucb-constant-ratio' : 'UCB',
-            'guided-learning' : 'Attenberg et al'}
+            'thompson-constant-ratio' : 'Thompson',
+            'guided-learning': 'Attenberg et al'}
+
 
         strategy_indexes = {}
         curve_labels = "Cost"
@@ -846,9 +842,12 @@ class AllExperimentAnalyzeApi(Resource):
 
             x_axis = costSoFars_avgs
 
-            if not str(experiment.control_strategy) in strategy_names:
-                continue
+
             strategy_key = strategy_names[str(experiment.control_strategy)]
+
+            if not strategy_key in strategies_to_include:
+                continue
+
             starting_index = strategy_indexes[strategy_key] * 2 
 
 
@@ -1017,10 +1016,10 @@ def get_average_aoc(experiment_id):
 
     for job_id in job_ids:
         learning_curve = experiment.learning_curves[job_id]           
-        precisions = []
-        recalls = []
-        f1s = []
-        costSoFars = []
+        precisions = [0.0]
+        recalls = [0.0]
+        f1s = [0.0]
+        costSoFars = [0.0]
 
         for point in learning_curve:
             task_id, precision, recall, f1, action, costSoFar = point
@@ -1079,6 +1078,8 @@ skew_experiment_analyze_parser.add_argument('domain',
                                            type=str, required=True)
 skew_experiment_analyze_parser.add_argument('classifier', 
                                            type=str, required=True)
+skew_experiment_analyze_parser.add_argument('strategies', 
+                                           type=str, action='append')
 
 class SkewAnalyzeApi(Resource):
     def get(self):
@@ -1090,16 +1091,18 @@ class SkewAnalyzeApi(Resource):
         selected_domain = args['domain']
         selected_classifier = args['classifier']
 
-
-        strategies_to_include = ['Seed-Bounded-Ratio','Round-Robin-Bounded-Ratio','Label-Only-Bounded-Ratio', 'Label-Only', 'UCB', 'Attenberg et al']
+        strategies_to_include = args['strategies']
+        
         
         
         strategy_names = {
-            'seed3' : 'Seed-Bounded-Ratio',
+            'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
+            'seed3_us' : 'Seed-ActiveLabeling',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
-            'label-only-constant-ratio' : 'Label-Only-Bounded-Ratio',
-            'label-only' : 'Label-Only',
+            'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
+            'label-only' : 'RandomLabel-Only',
             'ucb-constant-ratio' : 'UCB',
+            'thompson-constant-ratio' : 'Thompson',
             'guided-learning': 'Attenberg et al'}
 
         strategy_indexes = {}
@@ -1121,11 +1124,6 @@ class SkewAnalyzeApi(Resource):
         recall_curve  = curve_labels
         f1_curve = curve_labels
 
-        """
-        precision_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-        recall_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-        f1_curve = "Skew (Number of Negatives Per Positive),Seed,Round-Robin-Crowd-Negatives,Round-Robin-Random-Negatives,Round-Robin-Constant-Ratio,Label-Only-Constant-Ratio,Round-Robin-Constant-Ratio-Random-Labeling\n"
-        """
 
         for experiment in Experiment.objects:
 
@@ -1165,9 +1163,10 @@ class SkewAnalyzeApi(Resource):
                    precision_std, recall_std, f1_std]
             sys.stdout.flush()
                 
-            if not str(experiment.control_strategy) in strategy_names:
-                continue
             strategy_key = strategy_names[str(experiment.control_strategy)]
+
+            if not strategy_key in strategies_to_include:
+                continue
 
             starting_index = strategy_indexes[strategy_key] * 2 
             precision_curve += (

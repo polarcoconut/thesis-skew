@@ -85,6 +85,10 @@ def insert_connection_into_s3(connection_pickle):
 
 def generate_dataset(interested_category,
                      num_of_negatives_per_positive):
+    
+    ###
+    #THIS IS THE NEWS AGGREGATOR DATASET FROM THE UCI ML REPO
+    ###
     input_file = open('temp_datasets/newsCorpora.csv', 'r')
     categories = {'bus' : 'b', 
                   'sci':'t', 

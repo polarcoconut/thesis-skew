@@ -24,6 +24,8 @@ import re
 import traceback
 import time
 import cPickle
+from Queue import PriorityQueue
+import heapq
 
 #old_taboo_words is a python pickle that is actually a dictionary
 #mapping words to the number of times
@@ -850,7 +852,7 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
 
 
 
-def get_gold_labels(job, selected_labels):
+def get_gold_labels(job, selected_examples):
 
     if not 'https' in job.gold_extractor:
         gold_extractor = Gold_Extractor.objects.get(
@@ -1207,8 +1209,20 @@ def get_US_unlabeled_examples_from_corpus(
     print len(test_examples)
     sys.stdout.flush()
 
-    training_positive_examples, training_negative_examples = split_examples(
-        task_ids, task_categories, ['all'])
+
+    training_positive_examples = []
+    training_negative_examples = []
+    for training_example_set, training_label_set in zip(training_examples,
+                                                        training_labels):
+        for training_example, training_label in zip(training_example_set,
+                                                    training_label_set):
+            if training_label == 1:
+                training_positive_examples.append(training_example)
+            elif training_label == 0:
+                training_negative_examples.append(training_example)
+            else:
+                raise Exception
+
 
     retrain(job_id, ['all'], [],
             training_positive_examples, 
@@ -1220,13 +1234,30 @@ def get_US_unlabeled_examples_from_corpus(
         [0 for ex in test_examples])
 
 
-    examples_in_decreasing_uncertainty = sorted(
-        zip(test_examples, label_probabilities),
-        key=lambda x: max(x[1]))
+    pq = [-2.0 for i in range(app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
+    heapq.heapify(pq)
+
+    
+    for test_example, label_probability in zip(test_examples, 
+                                               label_probabilities):
+        #print "EXAMPLE BEING INSERTED"
+        #print max(label_probability)
+        #sys.stdout.flush()
+
+        heapq.heappushpop(pq, (-1.0 * max(label_probability), test_example))
+
+
+    #examples_in_decreasing_uncertainty = []
+    #for i in range(app.config['CONTROLLER_LABELING_BATCH_SIZE']):
+    #    examples_in_decreasing_uncertainty.append(pq.get()[1])
+
+    #examples_in_decreasing_uncertainty = sorted(
+    #    zip(test_examples, label_probabilities),
+    #    key=lambda x: max(x[1]))
     
 
     print "HERE ARE THE EXAMPLES IN DECREASING UNCERTAINTY"
-    print examples_in_decreasing_uncertainty
+    print heapq.nlargest(app.config['CONTROLLER_LABELING_BATCH_SIZE'], pq)
     sys.stdout.flush()
 
 
@@ -1234,6 +1265,13 @@ def get_US_unlabeled_examples_from_corpus(
         app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
         
 
-    return (examples_in_decreasing_uncertainty[
-        0:app.config['CONTROLLER_LABELING_BATCH_SIZE']], 
+    #Get a batch
+    #most_uncertain_examples = [
+    #    ex for (ex, probs) in 
+    #examples_in_decreasing_uncertainty[
+    #        0:app.config['CONTROLLER_LABELING_BATCH_SIZE']]]
+
+    
+    return  ([ex for (p, ex) in heapq.nlargest(
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'], pq)],
             expected_labels)
