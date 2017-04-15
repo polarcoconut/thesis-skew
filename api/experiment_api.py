@@ -66,7 +66,18 @@ class ExperimentApi(Resource):
             #if job.control_strategy == 'ucb-constant-ratio':
         #        job.delete()
         #return None
-            
+    
+        #test_document_1 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
+        #test_document_2 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
+
+        #test_document_1.num_training_examples_in_model = -1
+        #test_document_1.save()
+        
+        #print "TESTING"
+        #print test_document_2.num_training_examples_in_model
+        #sys.stdout.flush()
+                                          
+        #return None
         
         args = experiment_parser.parse_args()
         task_information = parse_task_information(args)
@@ -78,7 +89,7 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        #ratios = [99]
+        #ratios = [2]
         ratios = [999]
         #ratios = [1,2,3,5,9,49,99,499,999]
 
@@ -294,6 +305,8 @@ def start_job(experiment_id, experiment,
         job.exceptions.append(pprint.pformat(local_variables))
         job.save()
 
+        # NEVER MIND DONT KILL ALL THE OTHER PROCESSES
+        """
         print '-'*60
         print "Killing background processes"
 
@@ -316,6 +329,7 @@ def start_job(experiment_id, experiment,
             if proc.pid == os.getpid():
                 continue
                 proc.kill()
+        """
     finally:
         release_lock()
 
@@ -766,9 +780,10 @@ class AllExperimentAnalyzeApi(Resource):
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
             'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB',
+            'ucb-constant-ratio' : 'UCB(Gen-LabelPos)',
+            'ucb-us' : 'UCB(Gen-LabelActive)',
             'thompson-constant-ratio' : 'Thompson',
-            'guided-learning': 'Attenberg et al'}
+            'guided-learning': 'Guided-Learning'}
 
 
         strategy_indexes = {}
@@ -1101,9 +1116,11 @@ class SkewAnalyzeApi(Resource):
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
             'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB',
+            'ucb-constant-ratio' : 'UCB(Gen-LabelPos)',
+            'ucb-us' : 'UCB(Gen-LabelActive)',
             'thompson-constant-ratio' : 'Thompson',
-            'guided-learning': 'Attenberg et al'}
+            'guided-learning': 'Guided-Learning'}
+
 
         strategy_indexes = {}
         curve_labels = "Skew (Number of Negatives Per Positive)"

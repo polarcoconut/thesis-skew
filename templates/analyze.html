@@ -26,11 +26,11 @@ ed.js"></script>
   <body>
 
 
-    <h2> <b> Learning Curves: </b></h2>
+    <h2> <b> Results: </b></h2>
 
       Domain: <select id="domains" name="domains">
         <option value="death">death</option>
-        <option value="health">health</option>
+        <option value="health" selected>health</option>
         <option value="ent">ent</option>
         <option value="bus">bus</option>
         <option value="sci">sci</option>
@@ -38,10 +38,27 @@ ed.js"></script>
 
      Classifier:  <select id="classifiers" name="classifiers">
         <option value="CNN">CNN</option>
-        <option value="LR">LR</option>
+        <option value="LR" selected>LR</option>
       </select>
 
-      Number of Negatives Per Positive: <select id="skew" name="skew">
+     
+    <br/>
+    Strategies to include:<br/>
+    <input type="checkbox" name="strategy" value="Seed-PositiveLabeling-Bounded-Ratio">Seed-PositiveLabeling-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="Seed-ActiveLabeling">Seed-ActiveLabeling</input> <br/>
+
+    <input type="checkbox" name="strategy" value="Round-Robin-Bounded-Ratio">Round-Robin-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="RandomLabel-Only-Bounded-Ratio">RandomLabel-Only-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="RandomLabel-Only">RandomLabel-Only</input> <br/>
+    <input type="checkbox" name="strategy" value="UCB(Gen-LabelPos)">UCB(Gen-LabelPos)</input> <br/>
+    <input type="checkbox" name="strategy" value="UCB(Gen-LabelActive)">UCB(Gen-LabelActive)</input> <br/>
+    <input type="checkbox" name="strategy" value="Thompson">Thompson</input> <br/>
+    <input type="checkbox" name="strategy" value="Guided Learning">Guided Learning</input> <br/>
+
+
+      <button id="skew-analyze">Skew-Analyze!</button>
+<hr/>
+      Skew: Number of Negatives Per Positive: <select id="skew" name="skew">
         <option value="1">1</option>
         <option value="2">2</option>
         <option value="3">3</option>
@@ -52,25 +69,11 @@ ed.js"></script>
         <option value="499">499</option>
         <option value="999">999</option>
       </select>
-    
-    <br/>
-    Strategies to include:<br/>
-    <input type="checkbox" name="strategy" value="Seed-PositiveLabeling-Bounded-Ratio">Seed-PositiveLabeling-Bounded-Ratio</input> <br/>
-    <input type="checkbox" name="strategy" value="Seed-ActiveLabeling">Seed-ActiveLabeling</input> <br/>
 
-    <input type="checkbox" name="strategy" value="Round-Robin-Bounded-Ratio">Round-Robin-Bounded-Ratio</input> <br/>
-    <input type="checkbox" name="strategy" value="RandomLabel-Only-Bounded-Ratio">RandomLabel-Only-Bounded-Ratio</input> <br/>
-    <input type="checkbox" name="strategy" value="RandomLabel-Only">RandomLabel-Only</input> <br/>
-    <input type="checkbox" name="strategy" value="UCB">UCB</input> <br/>
-    <input type="checkbox" name="strategy" value="Thompson">Thompson</input> <br/>
-    <input type="checkbox" name="strategy" value="Attenberg et al">Attenberg et al</input> <br/>
+      <button id="analyze">Draw Individual Learning Curve</button>
 
-      <button id="analyze">Analyze!</button>
 
-      <button id="skew-analyze">Skew-Analyze!</button>
-
-    <br/>
-
+<hr/>
 
     <!--<button id="analyze">
       Analyze and Get Learning Curves</button>-->
