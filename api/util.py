@@ -750,8 +750,9 @@ def test(job_id, test_examples, test_labels):
         return predicted_labels, []
 
 
-
+####
 #GET PREDICTED POSITIVES AT A FIXED RATIO
+####
 def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
                                                       task_categories,
                                                       training_examples,
@@ -760,96 +761,21 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
                                                       costSoFar,
                                                       budget, job_id):
 
-        print "GETTING UNLABELED EXAMPLES FROM CORPUS AT FIXED RATIO"
-        sys.stdout.flush()
+    print "GETTING UNLABELED EXAMPLES FROM CORPUS AT FIXED RATIO"
+    sys.stdout.flush()
 
-        (selected_examples,
-         expected_labels) = get_unlabeled_examples_from_corpus(
-            task_ids, task_categories,
-            training_examples, training_labels,
-            task_information, costSoFar,
-            budget, job_id)
+    (selected_examples,
+     expected_labels) = get_unlabeled_examples_from_corpus(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id)
 
-        job = Job.objects.get(id = job_id)
-        experiment = Experiment.objects.get(id=job.experiment_id)
-
-        
-        if not 'https' in job.gold_extractor:
-            gold_extractor = Gold_Extractor.objects.get(
-                name=job.gold_extractor)
-            model_file_name = write_model_to_file(
-                gold_extractor = gold_extractor.name)
-            vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-            predicted_labels, label_probabilities = test_cnn(
-                selected_examples,
-                [0 for i in selected_examples],
-                model_file_name,
-                vocabulary)
-
-            os.remove(os.path.join(
-                os.getcwd(), model_file_name))
-            os.remove(os.path.join(
-                os.getcwd(),'%s.meta' % model_file_name))
-        else:
-            gold_labels = {}
-            gold_corpus = str(requests.get(
-                job.gold_extractor).content).split('\n')
-            for line in gold_corpus:
-                if line == "":
-                    continue
- 
-                line = line.split('\t')
-                example = line[0]
-                #example = unicode(line[0], 'utf-8')
-                label = int(line[1])
-                gold_labels[example] = label
-                
-            predicted_labels = []
-            for example in selected_examples:
-                predicted_labels.append(gold_labels[example])
-
-        expected_positive_examples = []
-        expected_negative_examples = []
-        for predicted_label, selected_example in zip(predicted_labels,
-                                                 selected_examples):
-            if predicted_label == 1:
-                expected_positive_examples.append(selected_example)
-            elif predicted_label == 0:
-                expected_negative_examples.append(selected_example)
-            else:
-                raise Exception
-                
-
-        selected_examples = []
-        expected_labels = []
-
-        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
-            num_negatives_wanted = Job.objects.get(id=job_id).dataset_skew
-        else:
-            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
-
-        for pos_example in expected_positive_examples:
-            selected_examples.append(pos_example)
-            expected_labels.append(1)
-
-            temp_num_negatives_wanted = num_negatives_wanted
-            while temp_num_negatives_wanted > 0:
-                if len(expected_negative_examples) > 0:
-                    selected_examples.append(expected_negative_examples.pop())
-                    expected_labels.append(0)
-                    temp_num_negatives_wanted -= 1
-                else:
-                    break
-
-        if len(expected_positive_examples) == 0:
-            selected_examples += sample(expected_negative_examples,
-                                        num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
+    job = Job.objects.get(id = job_id)
+    experiment = Experiment.objects.get(id=job.experiment_id)
 
 
-        return selected_examples, expected_labels
-
-
+    return bound_ratio_of_examples(selected_examples, job_id)
 
 
 def get_gold_labels(job, selected_examples):
@@ -890,6 +816,55 @@ def get_gold_labels(job, selected_examples):
     
     return predicted_labels
 
+
+def bound_ratio_of_examples(selected_examples, job_id):
+
+    job = Job.objects.get(id = job_id)
+    experiment = Experiment.objects.get(id=job.experiment_id)
+
+    predicted_labels = get_gold_labels(job, selected_examples)
+
+    expected_positive_examples = []
+    expected_negative_examples = []
+    for predicted_label, selected_example in zip(predicted_labels,
+                                             selected_examples):
+        if predicted_label == 1:
+            expected_positive_examples.append(selected_example)
+        elif predicted_label == 0:
+            expected_negative_examples.append(selected_example)
+        else:
+            raise Exception
+
+
+    selected_examples = []
+    expected_labels = []
+
+    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+        num_negatives_wanted = len(expected_negative_examples)
+    else:
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+
+    for pos_example in expected_positive_examples:
+        selected_examples.append(pos_example)
+        expected_labels.append(1)
+
+        temp_num_negatives_wanted = num_negatives_wanted
+        while temp_num_negatives_wanted > 0:
+            if len(expected_negative_examples) > 0:
+                selected_examples.append(expected_negative_examples.pop())
+                expected_labels.append(0)
+                temp_num_negatives_wanted -= 1
+            else:
+                break
+
+    if len(expected_positive_examples) == 0:
+        selected_examples += sample(expected_negative_examples,
+                                    num_negatives_wanted)
+        expected_labels += [0 for i in range(num_negatives_wanted)]
+
+    return selected_examples, expected_labels
+
+
 def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
                                                       task_categories,
                                                       training_examples,
@@ -897,60 +872,18 @@ def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
                                                       task_information,
                                                       costSoFar,
                                                       budget, job_id):
-        (selected_examples,
-         expected_labels) = get_random_unlabeled_examples_from_corpus(
-            task_ids, task_categories,
-            training_examples, training_labels,
-            task_information, costSoFar,
-            budget, job_id)
-
-        job = Job.objects.get(id = job_id)
-        experiment = Experiment.objects.get(id=job.experiment_id)
-
-        predicted_labels = get_gold_labels(job, selected_examples)
-
-        expected_positive_examples = []
-        expected_negative_examples = []
-        for predicted_label, selected_example in zip(predicted_labels,
-                                                 selected_examples):
-            if predicted_label == 1:
-                expected_positive_examples.append(selected_example)
-            elif predicted_label == 0:
-                expected_negative_examples.append(selected_example)
-            else:
-                raise Exception
-                
-
-        selected_examples = []
-        expected_labels = []
-
-        if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
-            num_negatives_wanted = len(expected_negative_examples)
-        else:
-            num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
-
-        for pos_example in expected_positive_examples:
-            selected_examples.append(pos_example)
-            expected_labels.append(1)
-
-            temp_num_negatives_wanted = num_negatives_wanted
-            while temp_num_negatives_wanted > 0:
-                if len(expected_negative_examples) > 0:
-                    selected_examples.append(expected_negative_examples.pop())
-                    expected_labels.append(0)
-                    temp_num_negatives_wanted -= 1
-                else:
-                    break
-
-        if len(expected_positive_examples) == 0:
-            selected_examples += sample(expected_negative_examples,
-                                        num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
-
-
-        return selected_examples, expected_labels
-
+    (selected_examples,
+     expected_labels) = get_random_unlabeled_examples_from_corpus(
+         task_ids, task_categories,
+         training_examples, training_labels,
+         task_information, costSoFar,
+         budget, job_id)
+    
+    return bound_ratio_of_examples(selected_examples, 
+                                   job_id)
+######
 #Gets examples that are predicted positive
+######
 def get_unlabeled_examples_from_corpus(task_ids, task_categories,
                                        training_examples, training_labels,
                                        task_information, costSoFar,
@@ -1158,7 +1091,25 @@ def get_random_unlabeled_examples_from_corpus(
     return selected_examples, expected_labels
 
 
-#Gets random examples
+def get_US_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
+                                                      task_categories,
+                                                      training_examples,
+                                                      training_labels,
+                                                      task_information,
+                                                      costSoFar,
+                                                      budget, job_id):
+    (selected_examples,
+     expected_labels) = get_US_unlabeled_examples_from_corpus(
+         task_ids, task_categories,
+         training_examples, training_labels,
+         task_information, costSoFar,
+         budget, job_id)
+    
+    return bound_ratio_of_examples(selected_examples,
+                                   job_id)
+
+
+#Gets examples by uncertainty sampling
 def get_US_unlabeled_examples_from_corpus(
         task_ids, task_categories,
         training_examples, training_labels,

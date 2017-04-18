@@ -90,8 +90,8 @@ class ExperimentApi(Resource):
         event_name = args['event_name'].lower()
 
         #ratios = [2]
-        ratios = [999]
-        #ratios = [1,2,3,5,9,49,99,499,999]
+        #ratios = [999]
+        ratios = [1,2,3,5,9,49,99,499,999]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -777,11 +777,13 @@ class AllExperimentAnalyzeApi(Resource):
         strategy_names = {
             'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
             'seed3_us' : 'Seed-ActiveLabeling',
+            'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
             'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB(Gen-LabelPos)',
-            'ucb-us' : 'UCB(Gen-LabelActive)',
+            'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
+            'ucb-us' : 'UCB(GenPos-LabelActive)',
+            'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
             'thompson-constant-ratio' : 'Thompson',
             'guided-learning': 'Guided-Learning'}
 
@@ -1113,11 +1115,13 @@ class SkewAnalyzeApi(Resource):
         strategy_names = {
             'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
             'seed3_us' : 'Seed-ActiveLabeling',
+            'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
             'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
             'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
             'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB(Gen-LabelPos)',
-            'ucb-us' : 'UCB(Gen-LabelActive)',
+            'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
+            'ucb-us' : 'UCB(GenPos-LabelActive)',
+            'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
             'thompson-constant-ratio' : 'Thompson',
             'guided-learning': 'Guided-Learning'}
 
