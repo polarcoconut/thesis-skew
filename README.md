@@ -2,6 +2,7 @@ extremest-extraction
 ==============
 
 ## Development configuration
+- Dependencies: Scikit-learn
 - Create and activate a Python virtual environment. 
 - Load application dependencies into the Python virtual environment by running `pip install -r requirements.txt`.
 - Set up a MongoDB database. One option is to create a free Heroku instance with a MongoLab sandbox add-on.

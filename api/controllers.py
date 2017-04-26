@@ -19,7 +19,6 @@ import cPickle
 from ml.extractors.cnn_core.test import test_cnn
 import os
 from sklearn.model_selection import KFold
-import statsmodels.api as sm
 from scipy import stats
 
 

@@ -61,16 +61,33 @@ class ExperimentApi(Resource):
       
 
         #Clean up code
+        """
         for experiment in Experiment.objects():
+
             
             config = experiment.control_strategy_configuration.split(',')
-            
+            if len(config) == 4:
+                new_config = "2.0,"
+                new_config += config[1]
+                new_config += ","
+                new_config += config[2]
+                new_config += ","
+                new_config += config[3]
+                experiment.control_strategy_configuration = new_config
+            elif len(config) == 3:
+                new_config = "2.0,"
+                new_config += config[1]
+                new_config += ","
+                new_config += config[2]
+                experiment.control_strategy_configuration = new_config
+            experiment.save()
+
         #for job in Job.objects():
              #if not job.status == 'Finished':
             #if job.control_strategy == 'thompson-constant-ratio':
         #        job.delete()
-        #return None
-    
+        return None
+        """
         #test_document_1 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
         #test_document_2 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
 
@@ -825,6 +842,8 @@ class AllExperimentAnalyzeApi(Resource):
                 print int(experiment_csc[2])
                 sys.stdout.flush()
                 experiment_classifier = experiment_csc[1]
+                experiment_ucb_constant = experiment_csc[0]
+
                 # Use the experiment with a dataset skew of 1:99.
                 if not int(experiment_csc[2]) == selected_skew:
                     print "NOT THE RIGHT SKEW"
@@ -856,6 +875,16 @@ class AllExperimentAnalyzeApi(Resource):
 
 
             strategy_key = strategy_names[str(experiment.control_strategy)]
+
+            if (experiment.control_strategy == 'ucb-constant-ratio' or
+                experiment.control_strategy == 'ucb-us' or
+                experiment.control_strategy == 'ucb-us-pp' or
+                experiment.control_strategy == 'ucb-us-constant-ratio'):
+                strategy_key += "-"
+                strategy_key += experiment_ucb_constant
+                print "STRATEGY KEY"
+                print strategy_key
+                sys.stdout.flush()
 
             if not strategy_key in strategies_to_include:
                 continue
@@ -1276,7 +1305,12 @@ class SkewAnalyzeApi(Resource):
                 experiment.control_strategy == 'ucb-us' or
                 experiment.control_strategy == 'ucb-us-pp' or
                 experiment.control_strategy == 'ucb-us-constant-ratio'):
+                strategy_key += "-"
                 strategy_key += experiment_ucb_constant
+                print "STRATEGY KEY"
+                print strategy_key
+                sys.stdout.flush()
+
 
             if not strategy_key in strategies_to_include:
                 continue
