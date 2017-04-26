@@ -14,6 +14,8 @@ class Experiment(db.DynamicDocument):
     num_runs = db.IntField()
 
     learning_curves = db.DictField()
+
+    statistics = db.DictField()
     
     #Pickled dictionary where key is category id and value is
     #list of file names

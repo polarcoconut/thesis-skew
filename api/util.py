@@ -761,7 +761,7 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
                                                       costSoFar,
                                                       budget, job_id):
 
-    print "GETTING UNLABELED EXAMPLES FROM CORPUS AT FIXED RATIO"
+    print "GETTING PREDICTED POSITIVES FROM CORPUS AT FIXED RATIO"
     sys.stdout.flush()
 
     (selected_examples,
@@ -772,9 +772,7 @@ def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids,
         budget, job_id)
 
     job = Job.objects.get(id = job_id)
-    experiment = Experiment.objects.get(id=job.experiment_id)
-
-
+ 
     return bound_ratio_of_examples(selected_examples, job_id)
 
 
@@ -798,8 +796,21 @@ def get_gold_labels(job, selected_examples):
             os.getcwd(),'%s.meta' % model_file_name))
     else:
         gold_labels = {}
-        gold_corpus = str(requests.get(
-            job.gold_extractor).content).split('\n')
+
+        while True:
+            try:
+                gold_corpus = str(requests.get(
+                    job.gold_extractor).content).split('\n')
+                break
+            except Exception:
+                print "Exception while communicating with S3:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
+                sys.stdout.flush()
+                time.sleep(10)
+                continue
+
         for line in gold_corpus:
             if line == "":
                 continue
@@ -858,9 +869,14 @@ def bound_ratio_of_examples(selected_examples, job_id):
                 break
 
     if len(expected_positive_examples) == 0:
-        selected_examples += sample(expected_negative_examples,
-                                    num_negatives_wanted)
-        expected_labels += [0 for i in range(num_negatives_wanted)]
+        if num_negatives_wanted > len(expected_negative_examples):
+            selected_examples += expected_negative_examples
+            expected_labels += [
+                0 for i in range(len(expected_negative_examples))]
+        else:
+            selected_examples += sample(expected_negative_examples,
+                                        num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
 
     return selected_examples, expected_labels
 
@@ -1210,6 +1226,62 @@ def get_US_unlabeled_examples_from_corpus(
     print "HERE ARE THE EXAMPLES IN DECREASING UNCERTAINTY"
     print heapq.nlargest(app.config['CONTROLLER_LABELING_BATCH_SIZE'], pq)
     sys.stdout.flush()
+
+
+    expected_labels = [0 for i in range(
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
+        
+
+    #Get a batch
+    #most_uncertain_examples = [
+    #    ex for (ex, probs) in 
+    #examples_in_decreasing_uncertainty[
+    #        0:app.config['CONTROLLER_LABELING_BATCH_SIZE']]]
+
+    
+    return  ([ex for (p, ex) in heapq.nlargest(
+        app.config['CONTROLLER_LABELING_BATCH_SIZE'], pq)],
+            expected_labels)
+
+#Gets examples predicted as positive with ties broken by uncertainty sampling
+def get_US_PP_unlabeled_examples_from_corpus(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id):
+    
+    print "applying uncertainty sampling to predicted positives"
+    sys.stdout.flush()
+ 
+    (selected_examples,
+     expected_labels) = get_unlabeled_examples_from_corpus(
+        task_ids, task_categories,
+        training_examples, training_labels,
+        task_information, costSoFar,
+        budget, job_id)
+
+
+    predicted_labels, label_probabilities = test(
+        job_id,
+        selected_examples,
+        [0 for ex in selected_examples])
+
+
+    pq = [-2.0 for i in range(app.config['CONTROLLER_LABELING_BATCH_SIZE'])]
+    heapq.heapify(pq)
+
+    
+    for selected_example, label_probability in zip(selected_examples, 
+                                               label_probabilities):
+
+        heapq.heappushpop(pq, (-1.0 * max(label_probability), 
+                               selected_example))
+
+    
+
+    #print "HERE ARE THE EXAMPLES IN DECREASING UNCERTAINTY"
+    #print heapq.nlargest(app.config['CONTROLLER_LABELING_BATCH_SIZE'], pq)
+    #sys.stdout.flush()
 
 
     expected_labels = [0 for i in range(

@@ -61,9 +61,13 @@ class ExperimentApi(Resource):
       
 
         #Clean up code
+        for experiment in Experiment.objects():
+            
+            config = experiment.control_strategy_configuration.split(',')
+            
         #for job in Job.objects():
-        #    if not job.status == 'Finished':
-            #if job.control_strategy == 'ucb-constant-ratio':
+             #if not job.status == 'Finished':
+            #if job.control_strategy == 'thompson-constant-ratio':
         #        job.delete()
         #return None
     
@@ -89,9 +93,10 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        #ratios = [2]
+        ratios = [2]
         #ratios = [999]
-        ratios = [1,2,3,5,9,49,99,499,999]
+        #ratios = [1,2,3,5,9,49,99,499,999]
+        #ratios = [1,9,49,99,499,999]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -107,6 +112,7 @@ class ExperimentApi(Resource):
                     num_of_negatives_per_positive,
                     app.config['NUM_NEGATIVES_PER_POSITIVE']), 
                 learning_curves= {},
+                statistics = {},
                 gpu_device_string = gpu_device_string,
                 status = 'Running',
                 dataset_skew = num_of_negatives_per_positive)
@@ -208,6 +214,7 @@ def run_experiment(experiment_id, event_name):
         job_id = str(job.id)
         experiment.job_ids.append(job_id)
         experiment.learning_curves[job_id] = []
+        experiment.statistics[job_id] = []
         experiment.save()
 
 
@@ -774,19 +781,7 @@ class AllExperimentAnalyzeApi(Resource):
 
         strategies_to_include = args['strategies']
         
-        strategy_names = {
-            'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
-            'seed3_us' : 'Seed-ActiveLabeling',
-            'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
-            'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
-            'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
-            'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
-            'ucb-us' : 'UCB(GenPos-LabelActive)',
-            'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
-            'thompson-constant-ratio' : 'Thompson',
-            'guided-learning': 'Guided-Learning'}
-
+        strategy_names = app.config['STRATEGY_NAMES']
 
         strategy_indexes = {}
         curve_labels = "Cost"
@@ -949,8 +944,8 @@ def get_average_curve(experiment_id):
     recalls = []
     f1s = []
     
-    print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
-    print experiment.control_strategy
+    #print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
+    #print experiment.control_strategy
 
 
     #get_num_examples_labeled.delay(experiment_id)
@@ -1012,8 +1007,8 @@ def get_average_aoc(experiment_id):
     recalls = []
     f1s = []
     
-    print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
-    print experiment.control_strategy
+    #print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
+    #print experiment.control_strategy
 
 
  
@@ -1090,6 +1085,92 @@ def get_average_aoc(experiment_id):
     return [precision_aoc_avg, recall_aoc_avg, f1_aoc_avg,
             precision_aoc_std, recall_aoc_std, f1_aoc_std]
 
+
+
+
+def analyze_statistics(experiment_id, output_file):
+
+    experiment = Experiment.objects.get(id=experiment_id)
+    job_ids = experiment.job_ids
+    
+    print "ANALYZING THE STATISTICS"
+    print experiment.control_strategy
+
+
+    first_quartile_skews = []
+    all_skews = []
+    last_quartile_skews = []
+
+    percentage_of_labeling_actions_all = []
+    max_length_of_actions = 0
+    for job_id in job_ids:
+        stats = experiment.statistics[job_id]           
+        costSoFars = []
+
+        percentage_of_labeling_actions = []
+        num_labeling_actions = 0.0
+        num_generate_actions = 0.0
+
+        for point in stats:
+            costSoFar, action, num_positives, num_negatives = point
+            
+            if action == 2:
+                num_labeling_actions += 1
+            else:
+                num_generate_actions += 1
+            percentage_of_labeling_actions.append(
+                num_labeling_actions / (num_labeling_actions + 
+                                        num_generate_actions))
+            
+
+            if action == 2:
+                empirical_skew = 1.0 * num_positives / (num_positives + 
+                                                  num_negatives)
+                costSoFars.append(costSoFar)
+                if costSoFar <= 25:
+                    first_quartile_skews.append(empirical_skew)
+                    all_skews.append(empirical_skew)
+                elif costSoFar > 25 and costSoFar <= 75:
+                    all_skews.append(empirical_skew)
+                if costSoFar > 75:
+                    last_quartile_skews.append(empirical_skew)
+                    all_skews.append(empirical_skew)
+        
+        percentage_of_labeling_actions_all.append(
+            percentage_of_labeling_actions)
+        max_length_of_actions = max(max_length_of_actions, 
+                                    len(percentage_of_labeling_actions))
+    first_quartile_skews_avg = np.mean(first_quartile_skews)
+    all_skews_avg = np.mean(all_skews)
+    last_quartile_skews_avg = np.mean(last_quartile_skews)
+
+    first_quartile_skews_std = (np.std(first_quartile_skews) / 
+                                sqrt(len(first_quartile_skews)))
+    all_skews_std = (np.std(all_skews) / 
+                     sqrt(len(all_skews)))
+    last_quartile_skews_std = (np.std(last_quartile_skews) / 
+                               sqrt(len(last_quartile_skews)))
+    
+    print "PERCENTAGE OF LABELING ACTIONS"
+    average_percentage_of_labeling_actions = []
+    for i in range(max_length_of_actions):
+        average_percentages = []
+        for curve in percentage_of_labeling_actions_all:
+            if i >= len(curve):
+                continue
+            average_percentages.append(curve[i])
+        average_percentage_of_labeling_actions.append(
+            np.mean(average_percentages))
+        output_file.write(",%f" % np.mean(average_percentages))
+    output_file.write("\n")
+    
+    print average_percentage_of_labeling_actions
+    sys.stdout.flush()
+    
+    return [first_quartile_skews_avg, first_quartile_skews_std,
+            all_skews_avg, all_skews_std,
+            last_quartile_skews_avg, last_quartile_skews_std]
+
 skew_experiment_analyze_parser = reqparse.RequestParser()
 skew_experiment_analyze_parser.add_argument('domain', 
                                            type=str, required=True)
@@ -1112,19 +1193,7 @@ class SkewAnalyzeApi(Resource):
         
         
         
-        strategy_names = {
-            'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
-            'seed3_us' : 'Seed-ActiveLabeling',
-            'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
-            'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
-            'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
-            'label-only' : 'RandomLabel-Only',
-            'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
-            'ucb-us' : 'UCB(GenPos-LabelActive)',
-            'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
-            'thompson-constant-ratio' : 'Thompson',
-            'guided-learning': 'Guided-Learning'}
-
+        strategy_names = app.config['STRATEGY_NAMES']
 
         strategy_indexes = {}
         curve_labels = "Skew (Number of Negatives Per Positive)"
@@ -1145,6 +1214,7 @@ class SkewAnalyzeApi(Resource):
         recall_curve  = curve_labels
         f1_curve = curve_labels
 
+        statistics_output_file = open('statistics_output_file', 'w')
 
         for experiment in Experiment.objects:
 
@@ -1156,18 +1226,20 @@ class SkewAnalyzeApi(Resource):
             #print selected_domain
             #print experiment_domain
             #print pickle.loads(experiment.task_information)
-            #sys.stdout.flush()
+            print experiment.id
+            sys.stdout.flush()
 
             if not experiment_domain.lower() == selected_domain.lower():
                 continue
 
             if len(experiment_csc) >= 3:
-                print "Experiment configuration"
-                print experiment_csc
-                sys.stdout.flush()
+                #print "Experiment configuration"
+                #print experiment_csc
+                #sys.stdout.flush()
                 
                 experiment_classifier = experiment_csc[1]
                 experiment_skew = float(experiment_csc[2])
+                experiment_ucb_constant = experiment_csc[0]
             else:
                 continue
                 
@@ -1179,12 +1251,32 @@ class SkewAnalyzeApi(Resource):
              precision_std, recall_std, f1_std] = get_average_aoc(
                  experiment.id)
 
-            print "Computed stuff"
-            print [precision_aoc, recall_aoc, f1_aoc, 
-                   precision_std, recall_std, f1_std]
-            sys.stdout.flush()
+            if experiment.control_strategy == 'ucb-us' or experiment.control_strategy == 'ucb-constant-ratio':
+                statistics_output_file.write(experiment.control_strategy)
+                statistics_output_file.write("%d" % experiment_skew)
+                [first_quartile_skews_avg, first_quartile_skews_std,
+                 all_skews_avg, all_skews_std,
+                 last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
+                
+                print "HERE ARE THE STATISTICS"
+                print experiment_skew
+                print [first_quartile_skews_avg, first_quartile_skews_std,
+                       all_skews_avg, all_skews_std,
+                       last_quartile_skews_avg, last_quartile_skews_std]
+                sys.stdout.flush()
+
+                
+            #print "Computed stuff"
+            #print [precision_aoc, recall_aoc, f1_aoc, 
+            #       precision_std, recall_std, f1_std]
+            #sys.stdout.flush()
                 
             strategy_key = strategy_names[str(experiment.control_strategy)]
+            if (experiment.control_strategy == 'ucb-constant-ratio' or
+                experiment.control_strategy == 'ucb-us' or
+                experiment.control_strategy == 'ucb-us-pp' or
+                experiment.control_strategy == 'ucb-us-constant-ratio'):
+                strategy_key += experiment_ucb_constant
 
             if not strategy_key in strategies_to_include:
                 continue

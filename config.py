@@ -38,7 +38,8 @@ class Config(object):
     MAIL_SUPPRESS_SEND = True
 
 
-    UCB_EXPLORATION_CONSTANT = float(os.environ['UCB_EXPLORATION_CONSTANT'])
+    #IT used to be 2.
+    UCB_EXPLORATION_CONSTANT = 2.0
 
     CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
     CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']
@@ -107,6 +108,24 @@ class Config(object):
     EXAMPLE_CATEGORIES = [RECALL_EXAMPLE_TASK, PRECISION_EXAMPLE_TASK,
                           LABEL_EXAMPLE_TASK]
 
+    STRATEGY_NAMES = {            
+        'seed3' : 'Seed-PositiveLabeling-Bounded-Ratio',
+        'seed3_us' : 'Seed-ActiveLabeling',
+        'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
+        'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
+        'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
+        'label-only' : 'RandomLabel-Only',
+        'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
+        'ucb-us' : 'UCB(GenPos-LabelActive)',
+        'ucb-us-pp' : 'UCB(GenPos-LabelPosUS)',
+        'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
+        'thompson-constant-ratio' : 'Thompson(GenPos-LabelPosBR)',
+        'thompson-us' : 'Thompson(GenPos-LabeActive)',
+        'guided-learning': 'Guided-Learning',
+        'hybrid-5e-1' : 'Hybrid-5e-1'}
+
+    AVAILABLE_UCB_CONSTANTS = [2.0]
+
     CELERY_TIMEZONE = 'UTC'
     CELERY_IMPORTS = ['api.util', 'api.train', 'periodic_tasks']
     CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
@@ -134,6 +153,7 @@ class Config(object):
     #If num_negatives_per_positive is negative, then use the native
     #skew.
     NUM_NEGATIVES_PER_POSITIVE = 3
+
     
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
