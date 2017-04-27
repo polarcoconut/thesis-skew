@@ -40,6 +40,8 @@ class Config(object):
 
     #IT used to be 2.
     UCB_EXPLORATION_CONSTANT = 2.0
+    #It used to be 1.0
+    UCB_SMOOTHING_PARAMETER = 0.5
 
     CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
     CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']
@@ -117,7 +119,7 @@ class Config(object):
         'label-only' : 'RandomLabel-Only',
         'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
         'ucb-us' : 'UCB(GenPos-LabelActive)',
-        'ucb-us-pp' : 'UCB(GenPos-LabelPosUS)',
+        'ucb-us-pp' : 'UCB(GenPos-LabelPosUSBR)',
         'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
         'thompson-constant-ratio' : 'Thompson(GenPos-LabelPosBR)',
         'thompson-us' : 'Thompson(GenPos-LabeActive)',

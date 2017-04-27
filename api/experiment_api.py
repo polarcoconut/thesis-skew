@@ -110,10 +110,10 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        ratios = [2]
+        #ratios = [1]
         #ratios = [999]
         #ratios = [1,2,3,5,9,49,99,499,999]
-        #ratios = [1,9,49,99,499,999]
+        ratios = [1,9,49,99,499,999]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -123,11 +123,12 @@ class ExperimentApi(Resource):
                 task_information = pickle.dumps((task_information, budget)),
                 num_runs = num_runs,
                 control_strategy = control_strategy,
-                control_strategy_configuration = '%s,%s,%s,%s' % (
+                control_strategy_configuration = '%s,%s,%s,%s,%s' % (
                     app.config['UCB_EXPLORATION_CONSTANT'], 
                     app.config['MODEL'],
                     num_of_negatives_per_positive,
-                    app.config['NUM_NEGATIVES_PER_POSITIVE']), 
+                    app.config['NUM_NEGATIVES_PER_POSITIVE'],
+                    app.config['UCB_SMOOTHING_PARAMETER']), 
                 learning_curves= {},
                 statistics = {},
                 gpu_device_string = gpu_device_string,
@@ -844,6 +845,11 @@ class AllExperimentAnalyzeApi(Resource):
                 experiment_classifier = experiment_csc[1]
                 experiment_ucb_constant = experiment_csc[0]
 
+                if len(experiment_csc) == 5:
+                    experiment_ucb_smoothing_parameter = experiment_csc[4]
+                else:
+                    experiment_ucb_smoothing_parameter = "1.0"
+
                 # Use the experiment with a dataset skew of 1:99.
                 if not int(experiment_csc[2]) == selected_skew:
                     print "NOT THE RIGHT SKEW"
@@ -882,6 +888,8 @@ class AllExperimentAnalyzeApi(Resource):
                 experiment.control_strategy == 'ucb-us-constant-ratio'):
                 strategy_key += "-"
                 strategy_key += experiment_ucb_constant
+                strategy_key += "-"
+                strategy_key += experiment_ucb_smoothing_parameter
                 print "STRATEGY KEY"
                 print strategy_key
                 sys.stdout.flush()
@@ -1269,6 +1277,12 @@ class SkewAnalyzeApi(Resource):
                 experiment_classifier = experiment_csc[1]
                 experiment_skew = float(experiment_csc[2])
                 experiment_ucb_constant = experiment_csc[0]
+                
+                if len(experiment_csc) == 5:
+                    experiment_ucb_smoothing_parameter = experiment_csc[4]
+                else:
+                    experiment_ucb_smoothing_parameter = "1.0"
+                    
             else:
                 continue
                 
@@ -1280,7 +1294,9 @@ class SkewAnalyzeApi(Resource):
              precision_std, recall_std, f1_std] = get_average_aoc(
                  experiment.id)
 
-            if experiment.control_strategy == 'ucb-us' or experiment.control_strategy == 'ucb-constant-ratio':
+            if (experiment.control_strategy == 'ucb-us' or 
+                experiment.control_strategy == 'ucb-constant-ratio' or
+                experiment.control_strategy == 'ucb-us-pp'):
                 statistics_output_file.write(experiment.control_strategy)
                 statistics_output_file.write("%d" % experiment_skew)
                 [first_quartile_skews_avg, first_quartile_skews_std,
@@ -1307,6 +1323,8 @@ class SkewAnalyzeApi(Resource):
                 experiment.control_strategy == 'ucb-us-constant-ratio'):
                 strategy_key += "-"
                 strategy_key += experiment_ucb_constant
+                strategy_key += "-"
+                strategy_key += experiment_ucb_smoothing_parameter
                 print "STRATEGY KEY"
                 print strategy_key
                 sys.stdout.flush()

@@ -738,7 +738,7 @@ def ucb_controller(task_ids, task_categories,
             #empirical_skew /= len(training_labels[-1])
 
             if empirical_skew == 0:
-                empirical_skew = 1
+                empirical_skew = app.config['UCB_SMOOTHING_PARAMETER']
 
             empirical_cost_of_positive = (
                 app.config['EXAMPLE_CATEGORIES'][2]['price']  *
@@ -904,7 +904,7 @@ def ucb_US_controller(task_ids, task_categories,
             #empirical_skew /= len(training_labels[-1])
 
             if empirical_skew == 0:
-                empirical_skew = 1
+                empirical_skew = app.config['UCB_SMOOTHING_PARAMETER']
 
             empirical_cost_of_positive = (
                 app.config['EXAMPLE_CATEGORIES'][2]['price']  *
@@ -1072,7 +1072,7 @@ def ucb_US_PP_controller(task_ids, task_categories,
             #empirical_skew /= len(training_labels[-1])
 
             if empirical_skew == 0:
-                empirical_skew = 1
+                empirical_skew = app.config['UCB_SMOOTHING_PARAMETER']
 
             empirical_cost_of_positive = (
                 app.config['EXAMPLE_CATEGORIES'][2]['price']  *
@@ -1240,7 +1240,7 @@ def ucb_US_fixed_ratio_controller(task_ids, task_categories,
             #empirical_skew /= len(training_labels[-1])
 
             if empirical_skew == 0:
-                empirical_skew = 1
+                empirical_skew = app.config['UCB_SMOOTHING_PARAMETER']
 
 
             empirical_cost_of_positive = (
