@@ -111,9 +111,10 @@ class ExperimentApi(Resource):
         event_name = args['event_name'].lower()
 
         #ratios = [999]
+        #ratios = [249, 749]
         #ratios = [499,999]
         #ratios = [1,2,3,5,9,49,99,499,999]
-        ratios = [1,9,49,99,499,999]
+        ratios = [1,9,99,249,499,799,999]
 
         for num_of_negatives_per_positive in ratios:
  
