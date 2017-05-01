@@ -1163,6 +1163,8 @@ def analyze_statistics(experiment_id, output_file):
                 num_labeling_actions += 1
                 total_num_positives += num_positives
                 total_num_negatives += num_negatives
+            elif action == 1: #ignore generate actions for now
+                continue
             else:
                 num_generate_actions += 1
             
@@ -1172,7 +1174,7 @@ def analyze_statistics(experiment_id, output_file):
             
             #running_avg_empirical_skew = 1.0 * total_num_positives / (
             #    total_num_positives + total_num_negatives)
-            running_avg_empirical_skew = 1.0 * total_num_positives 
+            running_avg_empirical_skew = 1.0 * num_positives / 50.0
 
 
             if action == 2:
@@ -1187,8 +1189,11 @@ def analyze_statistics(experiment_id, output_file):
                 elif costSoFar > 75:
                     last_quartile_skews.append(empirical_skew)
                     all_skews.append(empirical_skew)
-            empirical_skews_per_run.append(running_avg_empirical_skew)
-        
+
+                empirical_skews_per_run.append(running_avg_empirical_skew)
+            else:
+                empirical_skews_per_run.append(empirical_skews_per_run[-1])
+                
         #print empirical_skews_per_run
         #sys.stdout.flush()
         
