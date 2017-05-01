@@ -39,9 +39,9 @@ class Config(object):
 
 
     #IT used to be 2.
-    UCB_EXPLORATION_CONSTANT = 2.0
+    UCB_EXPLORATION_CONSTANT = 1.0
     #It used to be 1.0
-    UCB_SMOOTHING_PARAMETER = 0.5
+    UCB_SMOOTHING_PARAMETER = 1.0
 
     CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
     CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']

@@ -110,8 +110,8 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        #ratios = [1]
         #ratios = [999]
+        #ratios = [499,999]
         #ratios = [1,2,3,5,9,49,99,499,999]
         ratios = [1,9,49,99,499,999]
 
@@ -1140,6 +1140,8 @@ def analyze_statistics(experiment_id, output_file):
 
     percentage_of_labeling_actions_all = []
     max_length_of_actions = 0
+    empirical_skews_for_all_runs = []
+
     for job_id in job_ids:
         stats = experiment.statistics[job_id]           
         costSoFars = []
@@ -1148,17 +1150,30 @@ def analyze_statistics(experiment_id, output_file):
         num_labeling_actions = 0.0
         num_generate_actions = 0.0
 
+        empirical_skews_per_run = []
+
+        total_num_positives = 0.0
+        total_num_negatives = 0.0
+
         for point in stats:
+
             costSoFar, action, num_positives, num_negatives = point
             
             if action == 2:
                 num_labeling_actions += 1
+                total_num_positives += num_positives
+                total_num_negatives += num_negatives
             else:
                 num_generate_actions += 1
+            
             percentage_of_labeling_actions.append(
                 num_labeling_actions / (num_labeling_actions + 
                                         num_generate_actions))
             
+            #running_avg_empirical_skew = 1.0 * total_num_positives / (
+            #    total_num_positives + total_num_negatives)
+            running_avg_empirical_skew = 1.0 * total_num_positives 
+
 
             if action == 2:
                 empirical_skew = 1.0 * num_positives / (num_positives + 
@@ -1169,10 +1184,15 @@ def analyze_statistics(experiment_id, output_file):
                     all_skews.append(empirical_skew)
                 elif costSoFar > 25 and costSoFar <= 75:
                     all_skews.append(empirical_skew)
-                if costSoFar > 75:
+                elif costSoFar > 75:
                     last_quartile_skews.append(empirical_skew)
                     all_skews.append(empirical_skew)
+            empirical_skews_per_run.append(running_avg_empirical_skew)
         
+        #print empirical_skews_per_run
+        #sys.stdout.flush()
+        
+        empirical_skews_for_all_runs.append(empirical_skews_per_run)
         percentage_of_labeling_actions_all.append(
             percentage_of_labeling_actions)
         max_length_of_actions = max(max_length_of_actions, 
@@ -1200,7 +1220,22 @@ def analyze_statistics(experiment_id, output_file):
             np.mean(average_percentages))
         output_file.write(",%f" % np.mean(average_percentages))
     output_file.write("\n")
-    
+
+    ###
+    # COMPUTING AERAGE PERCENT POSITIVE
+    ####
+    average_empirical_skews = []
+    for i in range(max_length_of_actions):
+        average_skew_per_cost = []
+        for curve in empirical_skews_for_all_runs:
+            if i >= len(curve):
+                continue
+            average_skew_per_cost.append(curve[i])
+        average_empirical_skews.append(
+            np.mean(average_skew_per_cost))
+        output_file.write(",%f" % np.mean(average_skew_per_cost))
+    output_file.write("\n")
+
     print average_percentage_of_labeling_actions
     sys.stdout.flush()
     
@@ -1294,21 +1329,6 @@ class SkewAnalyzeApi(Resource):
              precision_std, recall_std, f1_std] = get_average_aoc(
                  experiment.id)
 
-            if (experiment.control_strategy == 'ucb-us' or 
-                experiment.control_strategy == 'ucb-constant-ratio' or
-                experiment.control_strategy == 'ucb-us-pp'):
-                statistics_output_file.write(experiment.control_strategy)
-                statistics_output_file.write("%d" % experiment_skew)
-                [first_quartile_skews_avg, first_quartile_skews_std,
-                 all_skews_avg, all_skews_std,
-                 last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
-                
-                print "HERE ARE THE STATISTICS"
-                print experiment_skew
-                print [first_quartile_skews_avg, first_quartile_skews_std,
-                       all_skews_avg, all_skews_std,
-                       last_quartile_skews_avg, last_quartile_skews_std]
-                sys.stdout.flush()
 
                 
             #print "Computed stuff"
@@ -1332,6 +1352,24 @@ class SkewAnalyzeApi(Resource):
 
             if not strategy_key in strategies_to_include:
                 continue
+
+            if (experiment.control_strategy == 'ucb-us' or 
+                experiment.control_strategy == 'ucb-constant-ratio' or
+                experiment.control_strategy == 'ucb-us-constant-ratio' or
+                experiment.control_strategy == 'ucb-us-pp'):
+                    statistics_output_file.write(experiment.control_strategy)
+                    statistics_output_file.write("%s" % experiment_csc[0])
+                    statistics_output_file.write("%d" % experiment_skew)
+                    [first_quartile_skews_avg, first_quartile_skews_std,
+                     all_skews_avg, all_skews_std,
+                     last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
+                    
+                    print "HERE ARE THE STATISTICS"
+                    print experiment_skew
+                    print [first_quartile_skews_avg, first_quartile_skews_std,
+                           all_skews_avg, all_skews_std,
+                           last_quartile_skews_avg, last_quartile_skews_std]
+                    sys.stdout.flush()
 
             starting_index = strategy_indexes[strategy_key] * 2 
             precision_curve += (

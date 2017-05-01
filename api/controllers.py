@@ -1233,7 +1233,7 @@ def ucb_US_fixed_ratio_controller(task_ids, task_categories,
         extra_job_state['action_counts'][last_action] += 1
         if last_action == 2:
             
-            empirical_skew == 0.0
+            empirical_skew = 0.0
             for label in training_labels[-1]:
                 if label == 1:
                     empirical_skew += 1
