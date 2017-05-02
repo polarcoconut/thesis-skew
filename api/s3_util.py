@@ -90,14 +90,26 @@ def generate_dataset(interested_category,
     #THIS IS THE NEWS AGGREGATOR DATASET FROM THE UCI ML REPO
     ###
     input_file = open('temp_datasets/newsCorpora.csv', 'r')
+
+
     categories = {'bus' : 'b', 
                   'sci':'t', 
                   'ent' : 'e', 
-                  'health' : 'm'}
+                  'health' : 'm',
+                  'bus_real' : 'b',
+                  'sci_real' : 't',
+                  'ent_real' : 'e',
+                  'health_real' : 'm'}
     num_examples_per_category = {'b' : 0, 't' : 0,
                                  'e' : 0, 'm' : 0}
     interested_category = categories[interested_category]
 
+    use_real_generated_data = False
+    if (interested_category == 'bus_real' or
+        interested_category == 'sci_real' or
+        interested_category == 'ent_real' or
+        interested_category == 'health_real'):
+        use_real_generated_data = True
 
     data = {}
 
@@ -159,16 +171,42 @@ def generate_dataset(interested_category,
 
 
 
-    num_positive_examples = min(
-        len(negative_examples) / num_of_negatives_per_positive,
-        len(positive_examples) - num_crowd_positives)
+    if use_real_generated_data:
+        num_positive_examples = min(
+            len(negative_examples) / num_of_negatives_per_positive,
+            len(positive_examples))
 
 
-    positive_examples = sample(positive_examples, num_positive_examples + num_crowd_positives)
+        positive_examples = sample(positive_examples, num_positive_examples)
 
-    crowd_positive_examples = positive_examples[0:num_crowd_positives]
-    corpus_positive_examples = positive_examples[num_crowd_positives:len(positive_examples) - num_test_examples]
-    testing_positive_examples = positive_examples[len(positive_examples) - num_test_examples:]
+
+        real_generated_data = open('temp_datasets/%s' % interested_category,
+                                   'r')
+
+        crowd_positive_examples = []
+        for row in real_generate_data:
+            crowd_positive_examples.append(row)
+        real_generated_data.close()
+        
+        corpus_positive_examples = positive_examples[
+            0:len(positive_examples) - num_test_examples]
+        testing_positive_examples = positive_examples[
+            len(positive_examples) - num_test_examples:]
+        
+    else:
+
+        num_positive_examples = min(
+            len(negative_examples) / num_of_negatives_per_positive,
+            len(positive_examples) - num_crowd_positives)
+
+        positive_examples = sample(positive_examples,
+                                   num_positive_examples + num_crowd_positives)
+
+        crowd_positive_examples = positive_examples[0:num_crowd_positives]
+        corpus_positive_examples = positive_examples[
+            num_crowd_positives:len(positive_examples) - num_test_examples]
+        testing_positive_examples = positive_examples[
+            len(positive_examples) - num_test_examples:]
 
     #number_of_negatives_per_positive = (1.0 * len(negative_examples)) / (num_positive_examples - num_crowd_positives)
 

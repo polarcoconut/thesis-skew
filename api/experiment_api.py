@@ -61,33 +61,33 @@ class ExperimentApi(Resource):
       
 
         #Clean up code
-        """
-        for experiment in Experiment.objects():
+        
+       # for experiment in Experiment.objects():
 
             
-            config = experiment.control_strategy_configuration.split(',')
-            if len(config) == 4:
-                new_config = "2.0,"
-                new_config += config[1]
-                new_config += ","
-                new_config += config[2]
-                new_config += ","
-                new_config += config[3]
-                experiment.control_strategy_configuration = new_config
-            elif len(config) == 3:
-                new_config = "2.0,"
-                new_config += config[1]
-                new_config += ","
-                new_config += config[2]
-                experiment.control_strategy_configuration = new_config
-            experiment.save()
+        #    config = experiment.control_strategy_configuration.split(',')
+        #    if len(config) == 4:
+        #        new_config = "2.0,"
+        #        new_config += config[1]
+        #        new_config += ","
+        #        new_config += config[2]
+        #        new_config += ","
+        #        new_config += config[3]
+        #        experiment.control_strategy_configuration = new_config
+        #    elif len(config) == 3:
+        #        new_config = "2.0,"
+        #        new_config += config[1]
+        #        new_config += ","
+        #        new_config += config[2]
+        #        experiment.control_strategy_configuration = new_config
+        #    experiment.save()
 
         #for job in Job.objects():
-             #if not job.status == 'Finished':
-            #if job.control_strategy == 'thompson-constant-ratio':
+        #    if not job.status == 'Finished':
+                #if job.control_strategy == 'thompson-constant-ratio':
         #        job.delete()
-        return None
-        """
+        #return None
+        
         #test_document_1 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
         #test_document_2 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
 
@@ -114,7 +114,7 @@ class ExperimentApi(Resource):
         #ratios = [249, 749]
         #ratios = [499,999]
         #ratios = [1,2,3,5,9,49,99,499,999]
-        ratios = [1,9,99,249,499,799,999]
+        ratios = [1,99,249,499,799,999]
 
         for num_of_negatives_per_positive in ratios:
  
