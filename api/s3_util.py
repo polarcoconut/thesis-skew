@@ -102,14 +102,20 @@ def generate_dataset(interested_category,
                   'health_real' : 'm'}
     num_examples_per_category = {'b' : 0, 't' : 0,
                                  'e' : 0, 'm' : 0}
-    interested_category = categories[interested_category]
 
+    print "INTERESTED CATEGORY"
+    print interested_category
     use_real_generated_data = False
     if (interested_category == 'bus_real' or
         interested_category == 'sci_real' or
         interested_category == 'ent_real' or
         interested_category == 'health_real'):
         use_real_generated_data = True
+
+    data_file_name = interested_category
+
+    interested_category = categories[interested_category]
+
 
     data = {}
 
@@ -172,6 +178,7 @@ def generate_dataset(interested_category,
 
 
     if use_real_generated_data:
+        print "USING REAL GENERATED DATA!!!"
         num_positive_examples = min(
             len(negative_examples) / num_of_negatives_per_positive,
             len(positive_examples))
@@ -180,11 +187,11 @@ def generate_dataset(interested_category,
         positive_examples = sample(positive_examples, num_positive_examples)
 
 
-        real_generated_data = open('temp_datasets/%s' % interested_category,
+        real_generated_data = open('temp_datasets/%s' % data_file_name,
                                    'r')
 
         crowd_positive_examples = []
-        for row in real_generate_data:
+        for row in real_generated_data:
             crowd_positive_examples.append(row)
         real_generated_data.close()
         
@@ -194,7 +201,7 @@ def generate_dataset(interested_category,
             len(positive_examples) - num_test_examples:]
         
     else:
-
+        print "USING SIMULATED DATA!!!"
         num_positive_examples = min(
             len(negative_examples) / num_of_negatives_per_positive,
             len(positive_examples) - num_crowd_positives)

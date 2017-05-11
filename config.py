@@ -39,7 +39,7 @@ class Config(object):
 
 
     #IT used to be 2.
-    UCB_EXPLORATION_CONSTANT = 0.75
+    UCB_EXPLORATION_CONSTANT = 1.0
     #It used to be 1.0
     UCB_SMOOTHING_PARAMETER = 1.0
 
