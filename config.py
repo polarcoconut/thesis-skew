@@ -115,6 +115,8 @@ class Config(object):
         'seed3_us' : 'Seed-ActiveLabeling',
         'seed3_us_constant_ratio' : 'Seed-ActiveLabeling-Bounded-Ratio',
         'round-robin-constant-ratio' : 'Round-Robin-Bounded-Ratio',
+        'round-robin-half-constant-ratio' : 'Round-Robin-Half-Bounded-Ratio',
+        'round-robin-us-constant-ratio' : 'Round-Robin-US-Bounded-Ratio',
         'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
         'label-only' : 'RandomLabel-Only',
         'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
@@ -123,6 +125,7 @@ class Config(object):
         'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
         'thompson-constant-ratio' : 'Thompson(GenPos-LabelPosBR)',
         'thompson-us' : 'Thompson(GenPos-LabeActive)',
+        'thompson-us-constant-ratio' : 'Thompson(GenPos-LabeActiveBR)',
         'guided-learning': 'Guided-Learning',
         'hybrid-5e-1' : 'Hybrid-5e-1'}
 

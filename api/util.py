@@ -86,6 +86,7 @@ def compute_taboo_words(old_sentence, new_sentence, task_id,
         try:
             r = requests.post(put_task_data_url,
                               json=data)
+            r.raise_for_status()
             break
         except Exception:
             print "Exception while communicating with S3:"
@@ -118,7 +119,9 @@ def write_model_to_file(job_id = None, gold_extractor = None):
         while True:
             try:
                 model_file = requests.get(job.model_file)
+                model_file.raise_for_status()
                 model_meta_file =  requests.get(job.model_meta_file)
+                model_meta_file.raise_for_status()
                 break
             except Exception:
                 print "Exception while communicating with S3:"
@@ -171,6 +174,7 @@ def write_crf_model_to_file(job_id = None, gold_extractor = None):
         while True:
             try:
                 model_file = requests.get(job.model_file)
+                model_file.raise_for_status()
                 break
             except Exception:
                 print "Exception while communicating with crowdjs:"
@@ -801,6 +805,7 @@ def get_gold_labels(job, selected_examples):
             try:
                 gold_corpus = str(requests.get(
                     job.gold_extractor).content).split('\n')
+                gold_corpus.raise_for_status()
                 break
             except Exception:
                 print "Exception while communicating with S3:"
@@ -957,6 +962,7 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
         try:
             corpus = str(requests.get(
                 job.unlabeled_corpus).content).split('\n')
+            corpus.raise_for_status()
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -1066,6 +1072,7 @@ def get_random_unlabeled_examples_from_corpus(
         try:
             corpus = str(requests.get(
                 job.unlabeled_corpus).content).split('\n')
+            corpus.raise_for_status()
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -1143,6 +1150,7 @@ def get_US_unlabeled_examples_from_corpus(
         try:
             corpus = str(requests.get(
                 job.unlabeled_corpus).content).split('\n')
+            corpus.raise_for_status()
             break
         except Exception:
                 print "Exception while communicating with S3:"

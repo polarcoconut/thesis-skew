@@ -1,6 +1,6 @@
 import time
 from app import app
-from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, label_only_controller, seed_controller, seed_US_controller, round_robin_constant_ratio_controller, round_robin_constant_ratio_random_labeling_controller, label_only_constant_ratio_controller, label_only_US_controller, ucb_controller, ucb_US_controller, ucb_US_PP_controller, guided_learning_constant_ratio_controller, thompson_controller, thompson_US_controller, seed_US_constant_ratio_controller, ucb_US_fixed_ratio_controller, hybrid_controller
+from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, label_only_controller, seed_controller, seed_US_controller, round_robin_constant_ratio_controller, round_robin_constant_ratio_random_labeling_controller, label_only_constant_ratio_controller, label_only_US_controller, label_only_US_constant_ratio_controller, ucb_controller, ucb_US_controller, ucb_US_PP_controller, guided_learning_constant_ratio_controller, thompson_controller, thompson_US_controller, thompson_US_constant_ratio_controller, seed_US_constant_ratio_controller, ucb_US_fixed_ratio_controller, hybrid_controller, round_robin_half_constant_ratio_controller,  round_robin_US_constant_ratio_controller
 from extra_controllers import impact_sampling_controller, greedy_controller
 import pickle
 import json
@@ -219,6 +219,18 @@ def get_next_batch(task_ids, task_categories,
                                training_labels, task_information,
                                costSoFar, budget, job_id)
 
+    if control_strategy == 'round-robin-half-constant-ratio':
+        return round_robin_half_constant_ratio_controller(task_ids,
+                               task_categories, training_examples,
+                               training_labels, task_information,
+                               costSoFar, budget, job_id)
+
+    if control_strategy == 'round-robin-us-constant-ratio':
+        return round_robin_US_constant_ratio_controller(task_ids,
+                               task_categories, training_examples,
+                               training_labels, task_information,
+                               costSoFar, budget, job_id)
+
     if control_strategy == 'round-robin-constant-ratio-random-labeling':
         return round_robin_constant_ratio_random_labeling_controller(task_ids,
                                task_categories, training_examples,
@@ -283,6 +295,13 @@ def get_next_batch(task_ids, task_categories,
             training_labels, task_information,
             costSoFar, budget, job_id)
 
+    if control_strategy == 'label-only-us-constant-ratio':
+        return label_only_US_constant_ratio_controller(
+            task_ids,
+            task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar, budget, job_id)
+
     if control_strategy == 'greedy':
         return greedy_controller(
             task_ids,
@@ -339,6 +358,15 @@ def get_next_batch(task_ids, task_categories,
     
     if control_strategy == 'thompson-us':
         return thompson_US_controller(
+            task_ids,
+            task_categories, training_examples,
+            training_labels, task_information,
+            costSoFar,
+            extra_job_state,
+            budget, job_id)
+
+    if control_strategy == 'thompson-us-constant-ratio':
+        return thompson_US_constant_ratio_controller(
             task_ids,
             task_categories, training_examples,
             training_labels, task_information,
