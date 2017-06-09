@@ -124,12 +124,13 @@ class ExperimentApi(Resource):
                 task_information = pickle.dumps((task_information, budget)),
                 num_runs = num_runs,
                 control_strategy = control_strategy,
-                control_strategy_configuration = '%s,%s,%s,%s,%s' % (
+                control_strategy_configuration = '%s,%s,%s,%s,%s,%s' % (
                     app.config['UCB_EXPLORATION_CONSTANT'], 
                     app.config['MODEL'],
                     num_of_negatives_per_positive,
                     app.config['NUM_NEGATIVES_PER_POSITIVE'],
-                    app.config['UCB_SMOOTHING_PARAMETER']), 
+                    app.config['UCB_SMOOTHING_PARAMETER'],
+                    app.config['BATCH_SIZE']),
                 learning_curves= {},
                 statistics = {},
                 gpu_device_string = gpu_device_string,
@@ -1323,6 +1324,11 @@ class SkewAnalyzeApi(Resource):
                     experiment_ucb_smoothing_parameter = experiment_csc[4]
                 else:
                     experiment_ucb_smoothing_parameter = "1.0"
+
+                if len(experiment_csc) == 6:
+                    experiment_batch_size = experiment_csc[5]
+                else:
+                    experiment_batch_size = None
                     
             else:
                 continue
@@ -1346,11 +1352,16 @@ class SkewAnalyzeApi(Resource):
             if (experiment.control_strategy == 'ucb-constant-ratio' or
                 experiment.control_strategy == 'ucb-us' or
                 experiment.control_strategy == 'ucb-us-pp' or
-                experiment.control_strategy == 'ucb-us-constant-ratio'):
+                experiment.control_strategy == 'ucb-us-constant-ratio' or
+                experiment.control_strategy == 'thompson-us-constant-ratio'):
                 strategy_key += "-"
                 strategy_key += experiment_ucb_constant
                 strategy_key += "-"
                 strategy_key += experiment_ucb_smoothing_parameter
+                if not experiment_batch_size == None:
+                    strategy_key += "-"
+                    strategy_key += experiment_batch_size
+                    
                 print "STRATEGY KEY"
                 print strategy_key
                 sys.stdout.flush()

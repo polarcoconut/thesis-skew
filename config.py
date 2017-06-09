@@ -66,11 +66,13 @@ class Config(object):
     
     AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
     AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-    
+
+    BATCH_SIZE = int(os.environ[
+        'BATCH_SIZE'])
     CONTROLLER_GENERATE_BATCH_SIZE = int(os.environ[
-        'CONTROLLER_GENERATE_BATCH_SIZE'])
+        'BATCH_SIZE'])
     CONTROLLER_LABELING_BATCH_SIZE = int(os.environ[
-        'CONTROLLER_LABELING_BATCH_SIZE'])
+        'BATCH_SIZE'])
 
     CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE = int(os.environ[
         'CONTROLLER_NUM_MODIFY_TASKS_PER_SENTENCE'])
@@ -125,7 +127,7 @@ class Config(object):
         'ucb-us-constant-ratio' : 'UCB(GenPos-LabelActiveBR)',
         'thompson-constant-ratio' : 'Thompson(GenPos-LabelPosBR)',
         'thompson-us' : 'Thompson(GenPos-LabeActive)',
-        'thompson-us-constant-ratio' : 'Thompson(GenPos-LabeActiveBR)',
+        'thompson-us-constant-ratio' : 'Thompson(GenPos-LabelActiveBR)',
         'guided-learning': 'Guided-Learning',
         'hybrid-5e-1' : 'Hybrid-5e-1'}
 

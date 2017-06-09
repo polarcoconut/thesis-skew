@@ -803,9 +803,9 @@ def get_gold_labels(job, selected_examples):
 
         while True:
             try:
-                gold_corpus = str(requests.get(
-                    job.gold_extractor).content).split('\n')
-                gold_corpus.raise_for_status()
+                r = requests.get(job.gold_extractor)
+                r.raise_for_status()
+                gold_corpus = str(r.content).split('\n')
                 break
             except Exception:
                 print "Exception while communicating with S3:"
@@ -960,9 +960,9 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
 
     while True:
         try:
-            corpus = str(requests.get(
-                job.unlabeled_corpus).content).split('\n')
-            corpus.raise_for_status()
+            r = requests.get(job.unlabeled_corpus)
+            r.raise_for_status()
+            corpus = str(r.content).split('\n')
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -1070,9 +1070,9 @@ def get_random_unlabeled_examples_from_corpus(
 
     while True:
         try:
-            corpus = str(requests.get(
-                job.unlabeled_corpus).content).split('\n')
-            corpus.raise_for_status()
+            r = requests.get(job.unlabeled_corpus)
+            r.raise_for_status()
+            corpus = str(r.content).split('\n')
             break
         except Exception:
                 print "Exception while communicating with S3:"
@@ -1148,9 +1148,9 @@ def get_US_unlabeled_examples_from_corpus(
 
     while True:
         try:
-            corpus = str(requests.get(
-                job.unlabeled_corpus).content).split('\n')
-            corpus.raise_for_status()
+            r = requests.get(job.unlabeled_corpus)
+            r.raise_for_status()
+            corpus = str(r.content).split('\n')
             break
         except Exception:
                 print "Exception while communicating with S3:"
