@@ -140,13 +140,17 @@ def gather_sim(task_information, budget, job_id, mturk_connection):
         costSoFar_before_last_action = (costSoFar - 
                                         cost_of_last_action)
         
-        
+
+
+        #The relevant threshold is 20.5 - (20.5  % 10) = 20
+        #or 22 - (22/10) = 20
         relevant_threshold = costSoFar - (
             costSoFar % app.config[
                 'EXPERIMENT_MEASUREMENT_INTERVAL'])
         
 
-        
+        #If and only if the cost BEFORE the last action is below the
+        #relevant threshold, take a measurement. 
         if (('experiment_id' in job) and 
             (costSoFar_before_last_action < relevant_threshold)):
             #print "Computing current performance"

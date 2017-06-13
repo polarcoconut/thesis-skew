@@ -120,6 +120,7 @@ class Config(object):
         'round-robin-half-constant-ratio' : 'Round-Robin-Half-Bounded-Ratio',
         'round-robin-us-constant-ratio' : 'Round-Robin-US-Bounded-Ratio',
         'label-only-constant-ratio' : 'RandomLabel-Only-Bounded-Ratio',
+        'label-only-us-constant-ratio' : 'USLabel-Only-Bounded-Ratio',
         'label-only' : 'RandomLabel-Only',
         'ucb-constant-ratio' : 'UCB(GenPos-LabelPosBR)',
         'ucb-us' : 'UCB(GenPos-LabelActive)',

@@ -82,11 +82,11 @@ class ExperimentApi(Resource):
         #        experiment.control_strategy_configuration = new_config
         #    experiment.save()
 
-        #for job in Job.objects():
-        #    if not job.status == 'Finished':
-                #if job.control_strategy == 'thompson-constant-ratio':
-        #        job.delete()
-        #return None
+        for job in Job.objects():
+            if job.status == 'Running':
+        #       #if job.control_strategy == 'thompson-constant-ratio':
+                job.delete()
+        return None
         
         #test_document_1 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
         #test_document_2 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
@@ -852,6 +852,11 @@ class AllExperimentAnalyzeApi(Resource):
                 else:
                     experiment_ucb_smoothing_parameter = "1.0"
 
+                if len(experiment_csc) == 6:
+                    experiment_batch_size = experiment_csc[5]
+                else:
+                    experiment_batch_size = None
+
                 # Use the experiment with a dataset skew of 1:99.
                 if not int(experiment_csc[2]) == selected_skew:
                     print "NOT THE RIGHT SKEW"
@@ -892,6 +897,10 @@ class AllExperimentAnalyzeApi(Resource):
                 strategy_key += experiment_ucb_constant
                 strategy_key += "-"
                 strategy_key += experiment_ucb_smoothing_parameter
+                if not experiment_batch_size == None:
+                    strategy_key += "-"
+                    strategy_key += experiment_batch_size
+
                 print "STRATEGY KEY"
                 print strategy_key
                 sys.stdout.flush()
@@ -1132,8 +1141,8 @@ def analyze_statistics(experiment_id, output_file):
     experiment = Experiment.objects.get(id=experiment_id)
     job_ids = experiment.job_ids
     
-    print "ANALYZING THE STATISTICS"
-    print experiment.control_strategy
+    #print "ANALYZING THE STATISTICS"
+    #print experiment.control_strategy
 
 
     first_quartile_skews = []
@@ -1215,7 +1224,7 @@ def analyze_statistics(experiment_id, output_file):
     last_quartile_skews_std = (np.std(last_quartile_skews) / 
                                sqrt(len(last_quartile_skews)))
     
-    print "PERCENTAGE OF LABELING ACTIONS"
+    #print "PERCENTAGE OF LABELING ACTIONS"
     average_percentage_of_labeling_actions = []
     for i in range(max_length_of_actions):
         average_percentages = []
@@ -1243,8 +1252,8 @@ def analyze_statistics(experiment_id, output_file):
         output_file.write(",%f" % np.mean(average_skew_per_cost))
     output_file.write("\n")
 
-    print average_percentage_of_labeling_actions
-    sys.stdout.flush()
+    #print average_percentage_of_labeling_actions
+    #sys.stdout.flush()
     
     return [first_quartile_skews_avg, first_quartile_skews_std,
             all_skews_avg, all_skews_std,
@@ -1362,9 +1371,9 @@ class SkewAnalyzeApi(Resource):
                     strategy_key += "-"
                     strategy_key += experiment_batch_size
                     
-                print "STRATEGY KEY"
-                print strategy_key
-                sys.stdout.flush()
+                #print "STRATEGY KEY"
+                #print strategy_key
+                #sys.stdout.flush()
 
 
             if not strategy_key in strategies_to_include:
@@ -1381,12 +1390,12 @@ class SkewAnalyzeApi(Resource):
                      all_skews_avg, all_skews_std,
                      last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
                     
-                    print "HERE ARE THE STATISTICS"
-                    print experiment_skew
-                    print [first_quartile_skews_avg, first_quartile_skews_std,
-                           all_skews_avg, all_skews_std,
-                           last_quartile_skews_avg, last_quartile_skews_std]
-                    sys.stdout.flush()
+                    #print "HERE ARE THE STATISTICS"
+                    #print experiment_skew
+                    #print [first_quartile_skews_avg, first_quartile_skews_std,
+                    #       all_skews_avg, all_skews_std,
+                    #       last_quartile_skews_avg, last_quartile_skews_std]
+                    #sys.stdout.flush()
 
             starting_index = strategy_indexes[strategy_key] * 2 
             precision_curve += (
@@ -1411,6 +1420,9 @@ class SkewAnalyzeApi(Resource):
                 ("%f" % f1_std) +
                 line_item[starting_index+1:])
 
-                
+
+            print (strategy_key, experiment_skew, f1_aoc)
+            sys.stdout.flush()
+            
 
         return [precision_curve, recall_curve, f1_curve]

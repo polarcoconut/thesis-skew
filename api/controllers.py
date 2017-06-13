@@ -67,7 +67,7 @@ def label_only_controller(task_ids, task_categories, training_examples,
                                       expected_labels,
                                       task_information)
     
-    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
 def label_only_US_controller(task_ids, task_categories, training_examples,
                       training_labels, task_information,
@@ -87,7 +87,7 @@ def label_only_US_controller(task_ids, task_categories, training_examples,
                                       expected_labels,
                                       task_information)
     
-    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+    return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
 
 def label_only_constant_ratio_controller(task_ids, task_categories,
@@ -147,7 +147,7 @@ def label_only_US_constant_ratio_controller(
                                           expected_labels,
                                           task_information)
         
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     
 def round_robin_controller(task_ids, task_categories, training_examples,
@@ -172,7 +172,7 @@ def round_robin_controller(task_ids, task_categories, training_examples,
                                           expected_labels,
                                           task_information)
  
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     if len(task_categories) % 3 == 0:
         print "choosing the RECALL category"
@@ -220,7 +220,7 @@ def round_robin_no_negate_controller(task_ids, task_categories,
                                           expected_labels,
                                           task_information)
  
-        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
+        return next_category['id'], task, len(selected_examples) * app.config['CONTROLLER_LABELS_PER_QUESTION'], app.config['CONTROLLER_LABELING_BATCH_SIZE'] * app.config['CONTROLLER_LABELS_PER_QUESTION'] * next_category['price']
 
     if len(task_categories) % 2 == 0:
         print "choosing the RECALL category"
