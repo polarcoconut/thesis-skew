@@ -55,9 +55,11 @@ ed.js"></script>
     <input type="checkbox" name="strategy" value="Round-Robin-Bounded-Ratio">Round-Robin-Bounded-Ratio</input> <br/>
     <input type="checkbox" name="strategy" value="Round-Robin-Half-Bounded-Ratio">Round-Robin-Half-Bounded-Ratio</input> <br/>
     <input type="checkbox" name="strategy" value="Round-Robin-US-Bounded-Ratio">Round-Robin-US-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="Round-Robin-US">Round-Robin-US</input> <br/>
     <input type="checkbox" name="strategy" value="RandomLabel-Only-Bounded-Ratio">RandomLabel-Only-Bounded-Ratio</input> <br/>
     <input type="checkbox" name="strategy" value="RandomLabel-Only">RandomLabel-Only</input> <br/>
     <input type="checkbox" name="strategy" value="USLabel-Only-Bounded-Ratio">USLabel-Only-Bounded-Ratio</input> <br/>
+    <input type="checkbox" name="strategy" value="USLabel-Only">USLabel-Only</input> <br/>
     <input type="checkbox" name="strategy" value="UCB(GenPos-LabelPosBR)-2.0-1.0">UCB(GenPos-LabelPosBR)-2.0-1.0</input> <br/>
     <input type="checkbox" name="strategy" value="UCB(GenPos-LabelPosUSBR)-2.0-1.0">UCB(GenPos-LabelPosUSBR)-2.0-1.0</input> <br/>
     <input type="checkbox" name="strategy" value="UCB(GenPos-LabelActive)-2.0-1.0">UCB(GenPos-LabelActive)-2.0-1.0</input> <br/>
@@ -72,6 +74,7 @@ ed.js"></script>
     <input type="checkbox" name="strategy" value="UCB(GenPos-LabelActive)-0.75-1.0">UCB(GenPos-LabelActive)-0.75-1.0</input> <br/>
         <input type="checkbox" name="strategy" value="UCB(GenPos-LabelActiveBR)-0.75-1.0">UCB(GenPos-LabelActiveBR)-0.75-1.0</input> <br/>
 	<input type="checkbox" name="strategy" value="Thompson(GenPos-LabelPosBR)">Thompson(GenPos-LabelPosBR)</input> <br/>
+	<input type="checkbox" name="strategy" value="Thompson(GenPos-LabelActiveBR)-1.0-1.0">Thompson(GenPos-LabelActiveBR)-1.0-1.0</input> <br/>
 	<input type="checkbox" name="strategy" value="Thompson(GenPos-LabelActiveBR)-1.0-1.0-10">Thompson(GenPos-LabelActiveBR)-1.0-1.0-10</input> <br/>
     <input type="checkbox" name="strategy" value="Guided-Learning">Guided-Learning</input> <br/>
     <input type="checkbox" name="strategy" value="Hybrid-5e-1">Hybrid-5e-1</input> <br/>
@@ -296,8 +299,9 @@ ed.js"></script>
 
             g_precision = new Dygraph(
                 document.getElementById("precision"),
-                precision_curve,
-                {
+		precision_curve,
+		{
+		    colors:['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#000000'],
                     errorBars: true,
                     xlabel: 'Skew: Number of Negatives Per Positive',
                     ylabel: 'Precision AOC',
@@ -311,7 +315,9 @@ ed.js"></script>
             g_recall = new Dygraph(
                 document.getElementById("recall"),
                 recall_curve,
-                {
+					       {
+					       colors:['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#000000'],
+
                     errorBars: true,
                     xlabel: 'Skew: Number of Negatives Per Positive',
                     ylabel: 'Recall AOC',
@@ -326,7 +332,9 @@ ed.js"></script>
             g_f1 = new Dygraph(
                 document.getElementById("f1"),
                 f1_curve,
-                {
+					       {
+					       		    colors:['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#000000'],
+
                     errorBars: true,
                     xlabel: 'Skew: Number of Negatives Per Positive',
                     ylabel: 'F1 AOC',

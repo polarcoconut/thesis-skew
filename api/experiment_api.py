@@ -82,11 +82,11 @@ class ExperimentApi(Resource):
         #        experiment.control_strategy_configuration = new_config
         #    experiment.save()
 
-        for job in Job.objects():
-            if job.status == 'Running':
-        #       #if job.control_strategy == 'thompson-constant-ratio':
-                job.delete()
-        return None
+        #for job in Job.objects():
+        #    if job.status == 'Running':
+               #if job.control_strategy == 'thompson-constant-ratio':
+        #        job.delete()
+        #return None
         
         #test_document_1 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
         #test_document_2 = Job.objects.get(id="58eec0ddfb8b693c22d7845e")
@@ -112,7 +112,7 @@ class ExperimentApi(Resource):
 
         #ratios = [999]
         #ratios = [249, 749]
-        #ratios = [499,999]
+        #ratios = [799,999]
         #ratios = [1,2,3,5,9,49,99,499,999]
         ratios = [1,99,249,499,799,999]
 
@@ -897,7 +897,8 @@ class AllExperimentAnalyzeApi(Resource):
                 strategy_key += experiment_ucb_constant
                 strategy_key += "-"
                 strategy_key += experiment_ucb_smoothing_parameter
-                if not experiment_batch_size == None:
+                if (not experiment_batch_size == None and
+                    not experiment_batch_size=='50'):
                     strategy_key += "-"
                     strategy_key += experiment_batch_size
 
@@ -1174,8 +1175,8 @@ def analyze_statistics(experiment_id, output_file):
                 num_labeling_actions += 1
                 total_num_positives += num_positives
                 total_num_negatives += num_negatives
-            elif action == 1: #ignore generate actions for now
-                continue
+            #elif action == 1: #ignore generate actions for now
+            #    continue
             else:
                 num_generate_actions += 1
             
@@ -1185,8 +1186,8 @@ def analyze_statistics(experiment_id, output_file):
             
             #running_avg_empirical_skew = 1.0 * total_num_positives / (
             #    total_num_positives + total_num_negatives)
-            running_avg_empirical_skew = 1.0 * num_positives / 50.0
-
+            #running_avg_empirical_skew = 1.0 * num_positives / 50.0
+            running_avg_empirical_skew = 1.0 * total_num_positives
 
             if action == 2:
                 empirical_skew = 1.0 * num_positives / (num_positives + 
@@ -1367,7 +1368,8 @@ class SkewAnalyzeApi(Resource):
                 strategy_key += experiment_ucb_constant
                 strategy_key += "-"
                 strategy_key += experiment_ucb_smoothing_parameter
-                if not experiment_batch_size == None:
+                if (not experiment_batch_size == None and
+                    not experiment_batch_size=='50'):
                     strategy_key += "-"
                     strategy_key += experiment_batch_size
                     
