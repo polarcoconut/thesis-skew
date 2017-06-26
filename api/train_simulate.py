@@ -1,6 +1,6 @@
 import time
 from app import app
-from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, label_only_controller, seed_controller, seed_US_controller, round_robin_constant_ratio_controller, round_robin_constant_ratio_random_labeling_controller, label_only_constant_ratio_controller, label_only_US_controller, label_only_US_constant_ratio_controller, ucb_controller, ucb_US_controller, ucb_US_PP_controller, guided_learning_constant_ratio_controller, thompson_controller, thompson_US_controller, thompson_US_constant_ratio_controller, seed_US_constant_ratio_controller, ucb_US_fixed_ratio_controller, hybrid_controller, round_robin_half_constant_ratio_controller,  round_robin_US_constant_ratio_controller, round_robin_US_controller
+from controllers import round_robin_controller, round_robin_no_negate_controller, uncertainty_sampling_controller, label_only_controller, seed_controller, seed_US_controller, label_only_US_controller, ucb_controller, ucb_US_controller, ucb_US_PP_controller, guided_learning_controller, thompson_controller, thompson_US_controller, hybrid_controller, round_robin_US_controller
 from extra_controllers import impact_sampling_controller, greedy_controller
 import pickle
 import json
@@ -91,12 +91,20 @@ def gather_sim(task_information, budget, job_id, mturk_connection):
         task_ids.append(task_id)
         task_categories.append(category_id)
 
+
+        
         #number of workers per question is set in mturk layout
         (new_training_examples, 
          new_training_labels) = mturk_connection.create_hits(
             category_id, task_id,
             num_hits, task_object)
         
+
+        #Bound the ratio of positives to negatives if so desired:
+        if 'constant-ratio' in  job.control_strategy:
+            (new_training_examples,
+             new_training_labels) = bound_ratio_of_examples(
+                 new_training_examples, new_training_labels)
         
         #update the cost
         print "Updating the Cost so far"
@@ -207,7 +215,7 @@ def get_next_batch(task_ids, task_categories,
 
 
     if control_strategy == 'guided-learning':
-        return guided_learning_constant_ratio_controller(task_ids,
+        return guided_learning_controller(task_ids,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
@@ -217,23 +225,7 @@ def get_next_batch(task_ids, task_categories,
                                       task_categories, training_examples,
                                       training_labels, task_information,
                                       costSoFar, budget, job_id)
-    if control_strategy == 'round-robin-constant-ratio':
-        return round_robin_constant_ratio_controller(task_ids,
-                               task_categories, training_examples,
-                               training_labels, task_information,
-                               costSoFar, budget, job_id)
 
-    if control_strategy == 'round-robin-half-constant-ratio':
-        return round_robin_half_constant_ratio_controller(task_ids,
-                               task_categories, training_examples,
-                               training_labels, task_information,
-                               costSoFar, budget, job_id)
-
-    if control_strategy == 'round-robin-us-constant-ratio':
-        return round_robin_US_constant_ratio_controller(task_ids,
-                               task_categories, training_examples,
-                               training_labels, task_information,
-                               costSoFar, budget, job_id)
 
     if control_strategy == 'round-robin-us':
         return round_robin_US_controller(
@@ -242,11 +234,6 @@ def get_next_batch(task_ids, task_categories,
             training_labels, task_information,
             costSoFar, budget, job_id)
 
-    if control_strategy == 'round-robin-constant-ratio-random-labeling':
-        return round_robin_constant_ratio_random_labeling_controller(task_ids,
-                               task_categories, training_examples,
-                               training_labels, task_information,
-                               costSoFar, budget, job_id)
     if control_strategy == 'seed3':
         return seed_controller(task_ids,
                                task_categories, training_examples,
@@ -258,11 +245,6 @@ def get_next_batch(task_ids, task_categories,
                                training_labels, task_information,
                                costSoFar, budget, job_id)
 
-    if control_strategy == 'seed3_us_constant_ratio':
-        return seed_US_constant_ratio_controller(task_ids,
-                               task_categories, training_examples,
-                               training_labels, task_information,
-                               costSoFar, budget, job_id)
 
     if control_strategy == 'round-robin-no-negate':
         return round_robin_no_negate_controller(
@@ -292,12 +274,6 @@ def get_next_batch(task_ids, task_categories,
             training_labels, task_information,
             costSoFar, budget, job_id)
     
-    if control_strategy == 'label-only-constant-ratio':
-        return label_only_constant_ratio_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar, budget, job_id)
 
     if control_strategy == 'label-only-us':
         return label_only_US_controller(
@@ -306,12 +282,6 @@ def get_next_batch(task_ids, task_categories,
             training_labels, task_information,
             costSoFar, budget, job_id)
 
-    if control_strategy == 'label-only-us-constant-ratio':
-        return label_only_US_constant_ratio_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar, budget, job_id)
 
     if control_strategy == 'greedy':
         return greedy_controller(
@@ -321,14 +291,6 @@ def get_next_batch(task_ids, task_categories,
             costSoFar, budget, job_id)
     
     
-    if control_strategy == 'ucb-constant-ratio':
-        return ucb_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar,
-            extra_job_state,
-            budget, job_id)
     
     if control_strategy == 'ucb-us':
         return ucb_US_controller(
@@ -348,25 +310,7 @@ def get_next_batch(task_ids, task_categories,
             extra_job_state,
             budget, job_id)    
 
-    if control_strategy == 'ucb-us-constant-ratio':
-        return ucb_US_fixed_ratio_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar,
-            extra_job_state,
-            budget, job_id)
-    
-    
-    if control_strategy == 'thompson-constant-ratio':
-        return thompson_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar,
-            extra_job_state,
-            budget, job_id)
-    
+        
     if control_strategy == 'thompson-us':
         return thompson_US_controller(
             task_ids,
@@ -376,14 +320,6 @@ def get_next_batch(task_ids, task_categories,
             extra_job_state,
             budget, job_id)
 
-    if control_strategy == 'thompson-us-constant-ratio':
-        return thompson_US_constant_ratio_controller(
-            task_ids,
-            task_categories, training_examples,
-            training_labels, task_information,
-            costSoFar,
-            extra_job_state,
-            budget, job_id)
 
     if control_strategy == 'hybrid-5e-1':
         return hybrid_controller(
@@ -395,3 +331,53 @@ def get_next_batch(task_ids, task_categories,
             budget, job_id,
             0.00005)
     
+
+
+
+
+def bound_ratio_of_examples(examples, labels):
+
+    negative_examples = []
+    positive_examples = []
+    
+    for (example, label) in zip(examples, labels):
+        if label == 1:
+            positive_examples.append(example)
+        else:
+            negative_examples.append(example)
+            
+    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
+        num_negatives_wanted = len(negative_examples)
+    else:
+        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
+        
+
+        
+    selected_examples = []
+    selected_labels = []
+
+    for positive_example in positive_examples:
+        selected_examples.append(positive_example)
+        selected_labels.append(1)
+
+
+        temp_num_negatives_wanted = num_negatives_wanted
+        while temp_num_negatives_wanted > 0:
+            if len(negative_examples) > 0:
+                selected_examples.append(negative_examples.pop())
+                selected_labels.append(0)
+                temp_num_negatives_wanted -= 1
+            else:
+                break
+
+
+    if len(positive_examples) == 0:
+        if num_negatives_wanted > len(negative_examples):
+            selected_examples += negative_examples
+            selected_labels += [0 for i in range(len(negative_examples))]
+        else:
+            selected_examples += sample(negative_examples,num_negatives_wanted)
+            expected_labels += [0 for i in range(num_negatives_wanted)]
+            
+    return selected_examples, selected_labels
+            

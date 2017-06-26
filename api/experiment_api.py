@@ -1142,9 +1142,9 @@ def analyze_statistics(experiment_id, output_file):
     experiment = Experiment.objects.get(id=experiment_id)
     job_ids = experiment.job_ids
     
-    #print "ANALYZING THE STATISTICS"
-    #print experiment.control_strategy
-
+    print "ANALYZING THE STATISTICS"
+    print experiment.control_strategy
+    sys.stdout.flush()
 
     first_quartile_skews = []
     all_skews = []
@@ -1155,6 +1155,8 @@ def analyze_statistics(experiment_id, output_file):
     empirical_skews_for_all_runs = []
 
     for job_id in job_ids:
+        #if job_id not in experiment.statistics:
+        #    continue
         stats = experiment.statistics[job_id]           
         costSoFars = []
 
@@ -1214,6 +1216,11 @@ def analyze_statistics(experiment_id, output_file):
             percentage_of_labeling_actions)
         max_length_of_actions = max(max_length_of_actions, 
                                     len(percentage_of_labeling_actions))
+
+        print "MAX LENGTH OF ACTIONS"
+        print max_length_of_actions
+        sys.stdout.flush()
+        
     first_quartile_skews_avg = np.mean(first_quartile_skews)
     all_skews_avg = np.mean(all_skews)
     last_quartile_skews_avg = np.mean(last_quartile_skews)
@@ -1227,6 +1234,7 @@ def analyze_statistics(experiment_id, output_file):
     
     #print "PERCENTAGE OF LABELING ACTIONS"
     average_percentage_of_labeling_actions = []
+    ci_percentage_of_labeling_actions = []
     for i in range(max_length_of_actions):
         average_percentages = []
         for curve in percentage_of_labeling_actions_all:
@@ -1235,13 +1243,22 @@ def analyze_statistics(experiment_id, output_file):
             average_percentages.append(curve[i])
         average_percentage_of_labeling_actions.append(
             np.mean(average_percentages))
-        output_file.write(",%f" % np.mean(average_percentages))
+        ci_percentage_of_labeling_actions.append(
+            np.std(average_percentages) /
+            sqrt(len(average_percentages)))
+
+    for item in average_percentage_of_labeling_actions:
+        output_file.write(",%f" % item)
+    output_file.write("\n")
+    for item in ci_percentage_of_labeling_actions:
+        output_file.write(",%f" % item)
     output_file.write("\n")
 
     ###
     # COMPUTING AERAGE PERCENT POSITIVE
     ####
     average_empirical_skews = []
+    ci_empirical_skews = []
     for i in range(max_length_of_actions):
         average_skew_per_cost = []
         for curve in empirical_skews_for_all_runs:
@@ -1250,9 +1267,17 @@ def analyze_statistics(experiment_id, output_file):
             average_skew_per_cost.append(curve[i])
         average_empirical_skews.append(
             np.mean(average_skew_per_cost))
-        output_file.write(",%f" % np.mean(average_skew_per_cost))
+        ci_empirical_skews.append(
+            np.std(average_skew_per_cost) / sqrt(len(average_skew_per_cost)))
+
+    for item in average_empirical_skews:
+        output_file.write(",%f" % item)
+    output_file.write("\n")
+    for item in ci_empirical_skews:
+        output_file.write(",%f" % item)
     output_file.write("\n")
 
+    
     #print average_percentage_of_labeling_actions
     #sys.stdout.flush()
     
@@ -1384,13 +1409,15 @@ class SkewAnalyzeApi(Resource):
             if (experiment.control_strategy == 'ucb-us' or 
                 experiment.control_strategy == 'ucb-constant-ratio' or
                 experiment.control_strategy == 'ucb-us-constant-ratio' or
-                experiment.control_strategy == 'ucb-us-pp'):
-                    statistics_output_file.write(experiment.control_strategy)
-                    statistics_output_file.write("%s" % experiment_csc[0])
-                    statistics_output_file.write("%d" % experiment_skew)
-                    [first_quartile_skews_avg, first_quartile_skews_std,
-                     all_skews_avg, all_skews_std,
-                     last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
+                experiment.control_strategy == 'ucb-us-pp' or
+                experiment.control_strategy=='label-only-us-constant-ratio' or
+                experiment.control_strategy == 'label-only-us'):
+                statistics_output_file.write(experiment.control_strategy)
+                statistics_output_file.write("%s" % experiment_csc[0])
+                statistics_output_file.write("%d" % experiment_skew)
+                [first_quartile_skews_avg, first_quartile_skews_std,
+                 all_skews_avg, all_skews_std,
+                 last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
                     
                     #print "HERE ARE THE STATISTICS"
                     #print experiment_skew

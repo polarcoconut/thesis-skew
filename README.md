@@ -7,9 +7,7 @@ THIS IS RESEARCH CODE. USE AT YOUR OWN RISK.
 - Download and set up Heroku
 - Dependencies are in requirements.txt
 
-- Set up MongoDB, Redis, and RabbitMQ. A good way to do this is to create a free Heroku instance and then add the following add-ons:
-- Set up a MongoDB database (e.g., mlab) . 
-- Set up a Redis instance. (e.g., heroku redis)
+- Set up MongoDB, Redis, and RabbitMQ. A good way to do this is to create a free Heroku instance and then add the following free add-ons: mlab, heroku redis)
 - Set up a RabbitMQ instance. (e.g., rabbitmq bigwig)
 
 - Create a `.env` file in the root directory with the following lines:

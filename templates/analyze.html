@@ -297,7 +297,9 @@ ed.js"></script>
             var recall_curve = analysis[1];
             var f1_curve = analysis[2];
 
-            g_precision = new Dygraph(
+					       //axes : {x : {logscale : true},y: {logscale : true}},
+
+					       g_precision = new Dygraph(
                 document.getElementById("precision"),
 		precision_curve,
 		{
@@ -308,8 +310,10 @@ ed.js"></script>
                     legend: 'always',
 		    labelsDiv: 'precision_legend',
 		    connectSeparatedPoints: true,
-		    drawPoints:true,
-		    axes : {x : {logscale : true}}
+					       drawPoints:true,
+					       drawAxesAtZero: true,
+
+
                 }
             );
             g_recall = new Dygraph(
@@ -325,7 +329,9 @@ ed.js"></script>
 		    labelsDiv: 'recall_legend',
 		    connectSeparatedPoints: true,
 		    drawPoints:true,
-		    axes : {x : {logscale : true}}
+
+					       drawAxesAtZero: true,
+
 
                 }
             );
@@ -340,9 +346,9 @@ ed.js"></script>
                     ylabel: 'F1 AOC',
                     legend: 'always',
 		    labelsDiv: 'f1_legend',
-		    connectSeparatedPoints: true,
-		    drawPoints:true,
-		    axes : {x : {logscale : true}}
+					       connectSeparatedPoints: true,
+					       drawPoints:true,
+					       drawAxesAtZero: true,
 
 		}
 	    );

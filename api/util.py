@@ -754,30 +754,6 @@ def test(job_id, test_examples, test_labels):
         return predicted_labels, []
 
 
-####
-#GET PREDICTED POSITIVES AT A FIXED RATIO
-####
-def get_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
-                                                      task_categories,
-                                                      training_examples,
-                                                      training_labels,
-                                                      task_information,
-                                                      costSoFar,
-                                                      budget, job_id):
-
-    print "GETTING PREDICTED POSITIVES FROM CORPUS AT FIXED RATIO"
-    sys.stdout.flush()
-
-    (selected_examples,
-     expected_labels) = get_unlabeled_examples_from_corpus(
-        task_ids, task_categories,
-        training_examples, training_labels,
-        task_information, costSoFar,
-        budget, job_id)
-
-    job = Job.objects.get(id = job_id)
- 
-    return bound_ratio_of_examples(selected_examples, job_id)
 
 
 def get_gold_labels(job, selected_examples):
@@ -833,75 +809,8 @@ def get_gold_labels(job, selected_examples):
     return predicted_labels
 
 
-def bound_ratio_of_examples(selected_examples, job_id):
-
-    job = Job.objects.get(id = job_id)
-    experiment = Experiment.objects.get(id=job.experiment_id)
-
-    predicted_labels = get_gold_labels(job, selected_examples)
-
-    expected_positive_examples = []
-    expected_negative_examples = []
-    for predicted_label, selected_example in zip(predicted_labels,
-                                             selected_examples):
-        if predicted_label == 1:
-            expected_positive_examples.append(selected_example)
-        elif predicted_label == 0:
-            expected_negative_examples.append(selected_example)
-        else:
-            raise Exception
 
 
-    selected_examples = []
-    expected_labels = []
-
-    if app.config['NUM_NEGATIVES_PER_POSITIVE'] < 0:
-        num_negatives_wanted = len(expected_negative_examples)
-    else:
-        num_negatives_wanted = app.config['NUM_NEGATIVES_PER_POSITIVE']
-
-    for pos_example in expected_positive_examples:
-        selected_examples.append(pos_example)
-        expected_labels.append(1)
-
-        temp_num_negatives_wanted = num_negatives_wanted
-        while temp_num_negatives_wanted > 0:
-            if len(expected_negative_examples) > 0:
-                selected_examples.append(expected_negative_examples.pop())
-                expected_labels.append(0)
-                temp_num_negatives_wanted -= 1
-            else:
-                break
-
-    if len(expected_positive_examples) == 0:
-        if num_negatives_wanted > len(expected_negative_examples):
-            selected_examples += expected_negative_examples
-            expected_labels += [
-                0 for i in range(len(expected_negative_examples))]
-        else:
-            selected_examples += sample(expected_negative_examples,
-                                        num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
-
-    return selected_examples, expected_labels
-
-
-def get_random_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
-                                                      task_categories,
-                                                      training_examples,
-                                                      training_labels,
-                                                      task_information,
-                                                      costSoFar,
-                                                      budget, job_id):
-    (selected_examples,
-     expected_labels) = get_random_unlabeled_examples_from_corpus(
-         task_ids, task_categories,
-         training_examples, training_labels,
-         task_information, costSoFar,
-         budget, job_id)
-    
-    return bound_ratio_of_examples(selected_examples, 
-                                   job_id)
 ######
 #Gets examples that are predicted positive
 ######
@@ -1114,22 +1023,6 @@ def get_random_unlabeled_examples_from_corpus(
     return selected_examples, expected_labels
 
 
-def get_US_unlabeled_examples_from_corpus_at_fixed_ratio(task_ids, 
-                                                      task_categories,
-                                                      training_examples,
-                                                      training_labels,
-                                                      task_information,
-                                                      costSoFar,
-                                                      budget, job_id):
-    (selected_examples,
-     expected_labels) = get_US_unlabeled_examples_from_corpus(
-         task_ids, task_categories,
-         training_examples, training_labels,
-         task_information, costSoFar,
-         budget, job_id)
-    
-    return bound_ratio_of_examples(selected_examples,
-                                   job_id)
 
 
 #Gets examples by uncertainty sampling
