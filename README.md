@@ -7,8 +7,7 @@ THIS IS RESEARCH CODE. USE AT YOUR OWN RISK.
 - Create and activate a Python virtual environment like conda.
 - Dependencies are in requirements.txt
 
-- Set up MongoDB, Redis, and RabbitMQ. A good way to do this is to create a free Heroku instance and then add the following free add-ons: mlab, heroku redis)
-- Set up a RabbitMQ instance. (e.g., rabbitmq bigwig)
+- Set up MongoDB, Redis, and RabbitMQ. An easy way to do this is to create a free Heroku instance and then add the following free add-ons: mlab, heroku redis, rabbitmq bigwig)
 
 - Create a `.env` file in the root directory with the following lines:
 ```
@@ -52,8 +51,11 @@ AWS_SECRET_ACCESS_KEY = YOUR_ACS_SECRET_ACCESS_KEY_HERE
 
 
 ## Usage
-- Go to `index.html` to run an experiment.
-- Go to 'analyze to view graphs
+- Go to `/index.html` to run an experiment. To reproduce graphs in the thesis, choose one of Health, Entertainment, Business, Science, Health_real, Entertainment_real, Business_real, Science_real, as the domain. Set the total budget to be 100, choose a control strategy, set the number of simulations to be 10, and set the skews to be 1,99,249,499,799,999. It will take awhile to run. If you want to run something fast, pick a strategy like round-robin-US, set the number ofsimulations to 1 and pick a single skew, like 99. Then click Experiment!
+
+-Control strategies that correspond to algorithms in the thesis: MB-CB(Active) is ucb-us-constant-ratio. MB-T(Active) is thompson-us-constant-ratio. Label-Only(Active) is label-only-us-constant-ratio. Round-Robin is round-robin-us-constant-ratio. GL is Guided Learning. GL-Hybrid is hybrid-5e-1.
+
+- Go to `/analyze` to view graphs. Skew-Analyze! will show average AUCs for each skew. Draw Individual Learning Curve will show the learning curves for each strategy for a single skew. Drawing graphs is slow, because the code is stupid. Be patient.
 
 
 ## Training Data

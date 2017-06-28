@@ -100,8 +100,16 @@ def gather_sim(task_information, budget, job_id, mturk_connection):
             num_hits, task_object)
         
 
-        #Bound the ratio of positives to negatives if so desired:
-        if 'constant-ratio' in job.control_strategy and category_id == 2:
+        
+        #Bound the ratio of positives to negatives if one of two cases:
+        #1) The algorithm is a constant-ratio algorithm, and the action was a
+        #   labeling action
+        #2) The algorithm is a non-constant-ratio ucb/thompson sampling
+        #   algorithm, in which case the first action is to randomly
+        #   sample, and so we should bound the ratio there.
+        if (('constant-ratio' in job.control_strategy and category_id == 2) or
+            ('ucb' in job.control_strategy and len(task_ids) == 1) or
+            ('thompson' in job.control_strategy and len(task_ids) == 1)):
             print "BOUNDING RATIO OF EXAMPLES"
             sys.stdout.flush()
             (new_training_examples,
@@ -382,7 +390,7 @@ def bound_ratio_of_examples(examples, labels):
             selected_labels += [0 for i in range(len(negative_examples))]
         else:
             selected_examples += sample(negative_examples,num_negatives_wanted)
-            expected_labels += [0 for i in range(num_negatives_wanted)]
+            selected_labels += [0 for i in range(num_negatives_wanted)]
             
     return selected_examples, selected_labels
             

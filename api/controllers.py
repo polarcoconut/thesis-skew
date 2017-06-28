@@ -894,7 +894,7 @@ def ucb_US_controller(task_ids, task_categories,
         if extra_job_state['action_counts'][2] == 0:
         
             (selected_examples, 
-             expected_labels) = get_random_unlabeled_examples_from_corpus_at_fixed_ratio(
+             expected_labels) = get_random_unlabeled_examples_from_corpus(
                  task_ids, task_categories,
                  training_examples, training_labels,
                  task_information, costSoFar,
@@ -1062,7 +1062,7 @@ def ucb_US_PP_controller(task_ids, task_categories,
         if extra_job_state['action_counts'][2] == 0:
         
             (selected_examples, 
-             expected_labels) = get_random_unlabeled_examples_from_corpus_at_fixed_ratio(
+             expected_labels) = get_random_unlabeled_examples_from_corpus(
                  task_ids, task_categories,
                  training_examples, training_labels,
                  task_information, costSoFar,
@@ -1128,7 +1128,9 @@ def thompson_controller(task_ids, task_categories,
                     raise Exception
 
             extra_job_state['action_beta'][2][0] += num_positives_retrieved
-            extra_job_state['action_beta'][2][1] += num_negatives_retrieved
+            extra_job_state['action_beta'][2][1] += (
+                app.config['CONTROLLER_LABELING_BATCH_SIZE'] -
+                num_positives_retrieved)
             
             print "UPDATING THE BETA DISTRIBUTION"
             print extra_job_state['action_beta'][2]
@@ -1285,7 +1287,9 @@ def thompson_US_controller(task_ids, task_categories,
                     raise Exception
 
             extra_job_state['action_beta'][2][0] += num_positives_retrieved
-            extra_job_state['action_beta'][2][1] += num_negatives_retrieved
+            extra_job_state['action_beta'][2][1] += (
+                app.config['CONTROLLER_LABELING_BATCH_SIZE'] -
+                num_positives_retrieved)
             
             print "UPDATING THE BETA DISTRIBUTION"
             print extra_job_state['action_beta'][2]
@@ -1377,7 +1381,7 @@ def thompson_US_controller(task_ids, task_categories,
         if extra_job_state['action_counts'][2] == 0:
         
             (selected_examples, 
-             expected_labels) = get_random_unlabeled_examples_from_corpus_at_fixed_ratio(
+             expected_labels) = get_random_unlabeled_examples_from_corpus(
                  task_ids, task_categories,
                  training_examples, training_labels,
                  task_information, costSoFar,

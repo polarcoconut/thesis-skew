@@ -876,13 +876,6 @@ class AllExperimentAnalyzeApi(Resource):
 
 
 
-            [precisions_avgs, recalls_avgs, f1s_avgs, 
-             precisions_stds, recalls_stds, f1s_stds,
-             costSoFars_avgs, costSoFars_std] = get_average_curve(
-                 experiment.id)
-
-            x_axis = costSoFars_avgs
-
 
             strategy_key = strategy_names[str(experiment.control_strategy)]
 
@@ -907,22 +900,26 @@ class AllExperimentAnalyzeApi(Resource):
                 continue
 
 
-            if (strategy_key, experiment_skew) not in experiments_to_average:
-                experiments_to_average[(strategy_key, experiment_skew)] = []
-                experiments_to_average[(strategy_key,
-                                        experiment_skew)].append(experiment.id)
+            
+
+            if strategy_key not in experiments_to_average:
+                experiments_to_average[strategy_key] = []
+            experiments_to_average[strategy_key].append(experiment.id)
 
 
-        for (strategy_key, experiment_skew) in experiments_to_average.keys():
+        for strategy_key in experiments_to_average.keys():
 
-            experiment_ids = experiments_to_average[(strategy_key,
-                                                     experiment_skew)]
+            experiment_ids = experiments_to_average[strategy_key]
             
             print "Averaging over %d domains" % len(experiment_ids)
             sys.stdout.flush()
-            [precision_aoc, recall_aoc, f1_aoc, 
-             precision_std, recall_std, f1_std] = get_average_aoc(
-                 experiments_to_average[(strategy_key, experiment_skew)])
+
+            [precisions_avgs, recalls_avgs, f1s_avgs, 
+             precisions_stds, recalls_stds, f1s_stds,
+             costSoFars_avgs, costSoFars_std] = get_average_curve(
+                 experiment_ids)
+
+            x_axis = costSoFars_avgs
 
             starting_index = strategy_indexes[strategy_key] * 2 
 
@@ -1000,10 +997,8 @@ def get_num_examples_labeled(experiment_id):
     print np.mean(num_label_actions)
     sys.stdout.flush()
 
-def get_average_curve(experiment_id):
+def get_average_curve(experiment_ids):
 
-    experiment = Experiment.objects.get(id=experiment_id)
-    job_ids = experiment.job_ids
     precisions = []
     recalls = []
     f1s = []
@@ -1018,28 +1013,30 @@ def get_average_curve(experiment_id):
     #first figure out the longest curve
 
 
+    for experiment_id in experiment_ids:
+        experiment = Experiment.objects.get(id=experiment_id)
+        job_ids = experiment.job_ids
     
+        for job_id in job_ids:
+            learning_curve = experiment.learning_curves[job_id]
+            if len(learning_curve) > len_longest_curve:
+                len_longest_curve = len(learning_curve)
+                print len(learning_curve)
 
-    for job_id in job_ids:
-        learning_curve = experiment.learning_curves[job_id]
-        if len(learning_curve) > len_longest_curve:
-            len_longest_curve = len(learning_curve)
-            print len(learning_curve)
-            
-    precisions = [[] for i in range(len_longest_curve)]
-    recalls = [[] for i in range(len_longest_curve)]
-    f1s = [[] for i in range(len_longest_curve)]
-    costSoFars =  [[] for i in range(len_longest_curve)]
-        
-    for job_id in job_ids:
-        learning_curve = experiment.learning_curves[job_id]           
-        for point_index, point in zip(range(len(learning_curve)),
-                                      learning_curve):
-            task_id, precision, recall, f1, action, costSoFar = point
-            precisions[point_index].append(precision)
-            recalls[point_index].append(recall)
-            f1s[point_index].append(f1)
-            costSoFars[point_index].append(costSoFar)
+        precisions = [[] for i in range(len_longest_curve)]
+        recalls = [[] for i in range(len_longest_curve)]
+        f1s = [[] for i in range(len_longest_curve)]
+        costSoFars =  [[] for i in range(len_longest_curve)]
+
+        for job_id in job_ids:
+            learning_curve = experiment.learning_curves[job_id]           
+            for point_index, point in zip(range(len(learning_curve)),
+                                          learning_curve):
+                task_id, precision, recall, f1, action, costSoFar = point
+                precisions[point_index].append(precision)
+                recalls[point_index].append(recall)
+                f1s[point_index].append(f1)
+                costSoFars[point_index].append(costSoFar)
 
     precisions_avgs = [np.mean(numbers) for numbers in precisions]
     recalls_avgs = [np.mean(numbers) for numbers in recalls]
