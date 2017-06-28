@@ -754,62 +754,27 @@ def test(job_id, test_examples, test_labels):
         return predicted_labels, []
 
 
-
-
-def get_gold_labels(job, selected_examples):
-
-    if not 'https' in job.gold_extractor:
-        gold_extractor = Gold_Extractor.objects.get(
-            name=job.gold_extractor)
-        model_file_name = write_model_to_file(
-            gold_extractor = gold_extractor.name)
-        vocabulary = cPickle.loads(str(gold_extractor.vocabulary))
-        predicted_labels, label_probabilities = test_cnn(
-            selected_examples,
-            [0 for i in selected_examples],
-            model_file_name,
-            vocabulary)
-
-        os.remove(os.path.join(
-            os.getcwd(), model_file_name))
-        os.remove(os.path.join(
-            os.getcwd(),'%s.meta' % model_file_name))
-    else:
-        gold_labels = {}
-
+def get_unlabeled_corpus(job):
+    if 'https' in job.unlabeled_corpus:        
         while True:
             try:
-                r = requests.get(job.gold_extractor)
+                r = requests.get(job.unlabeled_corpus)
                 r.raise_for_status()
-                gold_corpus = str(r.content).split('\n')
+                corpus = str(r.content).split('\n')
                 break
             except Exception:
-                print "Exception while communicating with S3:"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(10)
-                continue
+                    print "Exception while communicating with S3:"
+                    print '-'*60
+                    traceback.print_exc(file=sys.stdout)
+                    print '-'*60
+                    sys.stdout.flush()
+                    time.sleep(10)
+                    continue
+    else:
+        corpus = open(job.unlabeled_corpus, 'r').read().split('\n')        
+        
 
-        for line in gold_corpus:
-            if line == "":
-                continue
-
-            line = line.split('\t')
-            example = line[0]
-            #example = unicode(line[0], 'utf-8')
-            label = int(line[1])
-            gold_labels[example] = label
-
-        predicted_labels = []
-        for example in selected_examples:
-            predicted_labels.append(gold_labels[example])
-    
-    return predicted_labels
-
-
-
+    return corpus
 
 ######
 #Gets examples that are predicted positive
@@ -867,20 +832,8 @@ def get_unlabeled_examples_from_corpus(task_ids, task_categories,
     test_examples = []
     test_labels = []
 
-    while True:
-        try:
-            r = requests.get(job.unlabeled_corpus)
-            r.raise_for_status()
-            corpus = str(r.content).split('\n')
-            break
-        except Exception:
-                print "Exception while communicating with S3:"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(10)
-                continue
+    corpus = get_unlabeled_corpus(job)
+    
 
     #Get all the previous examples that we labeled already
     used_examples = []
@@ -977,20 +930,9 @@ def get_random_unlabeled_examples_from_corpus(
     job = Job.objects.get(id = job_id)
     test_examples = []
 
-    while True:
-        try:
-            r = requests.get(job.unlabeled_corpus)
-            r.raise_for_status()
-            corpus = str(r.content).split('\n')
-            break
-        except Exception:
-                print "Exception while communicating with S3:"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(10)
-                continue
+
+    corpus = get_unlabeled_corpus(job)
+
 
     #Get all the previous examples that we labeled already
     used_examples = []
@@ -1039,20 +981,8 @@ def get_US_unlabeled_examples_from_corpus(
     job = Job.objects.get(id = job_id)
     test_examples = []
 
-    while True:
-        try:
-            r = requests.get(job.unlabeled_corpus)
-            r.raise_for_status()
-            corpus = str(r.content).split('\n')
-            break
-        except Exception:
-                print "Exception while communicating with S3:"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(10)
-                continue
+
+    corpus = get_unlabeled_corpus(job)
 
     #Get all the previous examples that we labeled already and do not 
     #include them.

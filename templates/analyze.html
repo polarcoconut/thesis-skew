@@ -28,8 +28,21 @@ ed.js"></script>
 
     <h2> <b> Results: </b></h2>
 
-      Domain: <select id="domains" name="domains">
-        <option value="death">death</option>
+      Domains to include: <br/>
+
+      <input type="checkbox" name="domains" value="death">death</input> <br/>
+      <input type="checkbox" name="domains" value="health">health</input> <br/>
+      <input type="checkbox" name="domains" value="ent">ent</input> <br/>
+      <input type="checkbox" name="domains" value="bus">bus</input> <br/>
+      <input type="checkbox" name="domains" value="sci">sci</input> <br/>
+      <input type="checkbox" name="domains" value="health_real">health_real</input> <br/>
+      <input type="checkbox" name="domains" value="ent_real">ent_real</input> <br/>
+      <input type="checkbox" name="domains" value="bus_real">bus_real</input> <br/>
+      <input type="checkbox" name="domains" value="sci_real">sci_real</input> <br/>
+
+      <!--
+      <select id="domains" name="domains">
+      <option value="death">death</option>
         <option value="health" selected>health</option>
         <option value="ent">ent</option>
         <option value="bus">bus</option>
@@ -38,9 +51,9 @@ ed.js"></script>
         <option value="ent_real">ent_real</option>
         <option value="bus_real">bus_real</option>
         <option value="sci_real">sci_real</option>
-
       </select>
-
+      -->
+      
      Classifier:  <select id="classifiers" name="classifiers">
         <option value="CNN">CNN</option>
         <option value="LR" selected>LR</option>
@@ -135,8 +148,8 @@ ed.js"></script>
     var xmlhttp_analyze_experiment = new XMLHttpRequest();
     
     function analyze_all_experiments() {
-	var menu = document.getElementById("domains");
-	var selected_domain = menu.options[menu.selectedIndex].value;
+	//var menu = document.getElementById("domains");
+	//var selected_domain = menu.options[menu.selectedIndex].value;
 
 	var classifier_menu = document.getElementById("classifiers");
 	var selected_classifier = classifier_menu.options[
@@ -148,10 +161,10 @@ ed.js"></script>
 	
 	
 
-	var analyze_experiment_url = '/analyze_all_experiments?domain=';
-	analyze_experiment_url += selected_domain;
+	var analyze_experiment_url = '/analyze_all_experiments?classifier=';
+	//analyze_experiment_url += selected_domain;
 
-	analyze_experiment_url += '&classifier=';
+	//analyze_experiment_url += '&classifier=';
 	analyze_experiment_url += selected_classifier;
 
 	analyze_experiment_url += '&skew=';
@@ -174,7 +187,21 @@ ed.js"></script>
 		analyze_experiment_url += '&strategies=';
 		analyze_experiment_url += checkboxes[i].value;
 	    }
+					       }
+
+	var domain_checkboxes = document.getElementsByName("domains");
+	// loop over them all
+	var none_checked = true;
+	for (var i=0; i<domain_checkboxes.length; i++) {
+	    // And stick the checked ones onto an array...
+	    if (domain_checkboxes[i].checked) {
+		none_checked = false;
+		analyze_experiment_url += '&domain=';
+		analyze_experiment_url += domain_checkboxes[i].value;
+	    }
 	}
+
+					       
 
 	xmlhttp_analyze_experiment.open("GET", analyze_experiment_url, true);
         xmlhttp_analyze_experiment.send();
@@ -244,8 +271,8 @@ ed.js"></script>
     var xmlhttp_skew_analyze = new XMLHttpRequest();
     
     function skew_analyze() {
-	var menu = document.getElementById("domains");
-	var selected_domain = menu.options[menu.selectedIndex].value;
+	//var menu = document.getElementById("domains");
+	//var selected_domain = menu.options[menu.selectedIndex].value;
 
 	var classifier_menu = document.getElementById("classifiers");
 	var selected_classifier = classifier_menu.options[
@@ -253,10 +280,10 @@ ed.js"></script>
 	
 	
 
-	var skew_analyze_url = '/skew_analyze?domain=';
-	skew_analyze_url += selected_domain;
+	var skew_analyze_url = '/skew_analyze?classifier=';
+	//skew_analyze_url += selected_domain;
 
-	skew_analyze_url += '&classifier=';
+	//skew_analyze_url += '&classifier=';
 	skew_analyze_url += selected_classifier;
 
 
@@ -276,6 +303,19 @@ ed.js"></script>
 	    for (var i=0; i<checkboxes.length; i++) {
 		skew_analyze_url += '&strategies=';
 		skew_analyze_url += checkboxes[i].value;
+	    }
+	}
+
+
+	var domain_checkboxes = document.getElementsByName("domains");
+	// loop over them all
+	var none_checked = true;
+	for (var i=0; i<domain_checkboxes.length; i++) {
+	    // And stick the checked ones onto an array...
+	    if (domain_checkboxes[i].checked) {
+		none_checked = false;
+		skew_analyze_url += '&domain=';
+		skew_analyze_url += domain_checkboxes[i].value;
 	    }
 	}
 
@@ -304,7 +344,7 @@ ed.js"></script>
 		precision_curve,
 		{
 		    colors:['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#000000'],
-                    errorBars: true,
+					       errorBars: true,
                     xlabel: 'Skew: Number of Negatives Per Positive',
                     ylabel: 'Precision AOC',
                     legend: 'always',
@@ -312,7 +352,7 @@ ed.js"></script>
 		    connectSeparatedPoints: true,
 					       drawPoints:true,
 					       drawAxesAtZero: true,
-
+					       logscale: true,
 
                 }
             );
@@ -331,7 +371,7 @@ ed.js"></script>
 		    drawPoints:true,
 
 					       drawAxesAtZero: true,
-
+					       logscale : true,
 
                 }
             );
@@ -349,6 +389,7 @@ ed.js"></script>
 					       connectSeparatedPoints: true,
 					       drawPoints:true,
 					       drawAxesAtZero: true,
+					       logscale: true,
 
 		}
 	    );

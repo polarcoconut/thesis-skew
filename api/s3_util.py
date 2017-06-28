@@ -187,7 +187,7 @@ def generate_dataset(interested_category,
         positive_examples = sample(positive_examples, num_positive_examples)
 
 
-        real_generated_data = open('temp_datasets/%s' % data_file_name,
+        real_generated_data = open('data/%s' % data_file_name,
                                    'r')
 
         crowd_positive_examples = []

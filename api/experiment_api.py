@@ -53,6 +53,7 @@ experiment_parser.add_argument('event_neg_example_nearmiss',
 experiment_parser.add_argument('budget', type=str, required=True)
 experiment_parser.add_argument('control_strategy', type=str, required=True)
 experiment_parser.add_argument('num_runs', type=int, required=True)
+experiment_parser.add_argument('ratios', type=str, required=True)
 experiment_parser.add_argument('gpu_device_string', type=str, required=True)
 
 
@@ -110,11 +111,7 @@ class ExperimentApi(Resource):
 
         event_name = args['event_name'].lower()
 
-        #ratios = [999]
-        #ratios = [249, 749]
-        #ratios = [799,999]
-        #ratios = [1,2,3,5,9,49,99,499,999]
-        ratios = [1,99,249,499,799,999]
+        ratios = [int(ratio) for ratio in args['ratios'].split(',')]
 
         for num_of_negatives_per_positive in ratios:
  
@@ -823,7 +820,7 @@ class AllExperimentAnalyzeApi(Resource):
         f1_curve = curve_labels
         
 
-
+        experiments_to_average = {}
         for experiment in Experiment.objects:
 
             experiment_domain = pickle.loads(experiment.task_information)[0][0]
@@ -908,6 +905,24 @@ class AllExperimentAnalyzeApi(Resource):
 
             if not strategy_key in strategies_to_include:
                 continue
+
+
+            if (strategy_key, experiment_skew) not in experiments_to_average:
+                experiments_to_average[(strategy_key, experiment_skew)] = []
+                experiments_to_average[(strategy_key,
+                                        experiment_skew)].append(experiment.id)
+
+
+        for (strategy_key, experiment_skew) in experiments_to_average.keys():
+
+            experiment_ids = experiments_to_average[(strategy_key,
+                                                     experiment_skew)]
+            
+            print "Averaging over %d domains" % len(experiment_ids)
+            sys.stdout.flush()
+            [precision_aoc, recall_aoc, f1_aoc, 
+             precision_std, recall_std, f1_std] = get_average_aoc(
+                 experiments_to_average[(strategy_key, experiment_skew)])
 
             starting_index = strategy_indexes[strategy_key] * 2 
 
@@ -1048,13 +1063,11 @@ def get_average_curve(experiment_id):
 
 
 
-def get_average_aoc(experiment_id):
+def get_average_aoc(experiment_ids):
 
-    experiment = Experiment.objects.get(id=experiment_id)
-    job_ids = experiment.job_ids
-    precisions = []
-    recalls = []
-    f1s = []
+    #precisions = []
+    #recalls = []
+    #f1s = []
     
     #print "GETTING THE AVERAGE CURVE FOR CONTROL STRATEGY"
     #print experiment.control_strategy
@@ -1075,50 +1088,54 @@ def get_average_aoc(experiment_id):
     recall_curve_aocs = []
     f1_curve_aocs = []
 
-    for job_id in job_ids:
-        learning_curve = experiment.learning_curves[job_id]           
-        precisions = [0.0]
-        recalls = [0.0]
-        f1s = [0.0]
-        costSoFars = [0.0]
-
-        for point in learning_curve:
-            task_id, precision, recall, f1, action, costSoFar = point
-            precisions.append(precision)
-            recalls.append(recall)
-            f1s.append(f1)
-            costSoFars.append(costSoFar)
+    for experiment_id in experiment_ids:
+        experiment = Experiment.objects.get(id=experiment_id)
+        job_ids = experiment.job_ids
         
-        #if (experiment.control_strategy == 'label-only' or
-        #    experiment.control_strategy == 'label-only-constant-ratio'):
-        #    costSoFars = [7,14,20,27,34,40,47,54,60,67,67]
-        #elif experiment.control_strategy == 'round-robin-constant-ratio':
-        #    costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
-        #elif experiment.control_strategy == 'seed3':
-        #    costSoFars = [2,3,8,15,22,28,35,42,48,55,55]
+        for job_id in job_ids:
+            learning_curve = experiment.learning_curves[job_id]           
+            precisions = [0.0]
+            recalls = [0.0]
+            f1s = [0.0]
+            costSoFars = [0.0]
 
-        """
-        if (experiment.control_strategy == 'label-only' or
-            experiment.control_strategy == 'label-only-constant-ratio'):
-            costSoFars = [7,14,20]
-            precisions = precisions[0:3]
-            recalls = recalls[0:3]
-            f1s = f1s[0:3]
-        elif experiment.control_strategy == 'round-robin-constant-ratio':
-            costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
-            precisions = precisions[0:11]
-            recalls = recalls[0:11]
-            f1s = f1s[0:11]
-        elif experiment.control_strategy == 'seed3':
-            costSoFars = [2,3,8,15,22]
-            precisions = precisions[0:5]
-            recalls = recalls[0:5]
-            f1s = f1s[0:5]
-        """
+            for point in learning_curve:
+                task_id, precision, recall, f1, action, costSoFar = point
+                precisions.append(precision)
+                recalls.append(recall)
+                f1s.append(f1)
+                costSoFars.append(costSoFar)
 
-        precision_curve_aocs.append(np.trapz(precisions, costSoFars))
-        recall_curve_aocs.append(np.trapz(recalls, costSoFars))
-        f1_curve_aocs.append(np.trapz(f1s, costSoFars))
+            #if (experiment.control_strategy == 'label-only' or
+            #    experiment.control_strategy == 'label-only-constant-ratio'):
+            #    costSoFars = [7,14,20,27,34,40,47,54,60,67,67]
+            #elif experiment.control_strategy == 'round-robin-constant-ratio':
+            #    costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
+            #elif experiment.control_strategy == 'seed3':
+            #    costSoFars = [2,3,8,15,22,28,35,42,48,55,55]
+
+            """
+            if (experiment.control_strategy == 'label-only' or
+                experiment.control_strategy == 'label-only-constant-ratio'):
+                costSoFars = [7,14,20]
+                precisions = precisions[0:3]
+                recalls = recalls[0:3]
+                f1s = f1s[0:3]
+            elif experiment.control_strategy == 'round-robin-constant-ratio':
+                costSoFars = [3,5,7,9,11,13,15,18,20,23,23]
+                precisions = precisions[0:11]
+                recalls = recalls[0:11]
+                f1s = f1s[0:11]
+            elif experiment.control_strategy == 'seed3':
+                costSoFars = [2,3,8,15,22]
+                precisions = precisions[0:5]
+                recalls = recalls[0:5]
+                f1s = f1s[0:5]
+            """
+
+            precision_curve_aocs.append(np.trapz(precisions, costSoFars))
+            recall_curve_aocs.append(np.trapz(recalls, costSoFars))
+            f1_curve_aocs.append(np.trapz(f1s, costSoFars))
 
     precision_aoc_avg = np.mean(precision_curve_aocs)
     recall_aoc_avg = np.mean(recall_curve_aocs)
@@ -1287,7 +1304,7 @@ def analyze_statistics(experiment_id, output_file):
 
 skew_experiment_analyze_parser = reqparse.RequestParser()
 skew_experiment_analyze_parser.add_argument('domain', 
-                                           type=str, required=True)
+                                           type=str, action='append')
 skew_experiment_analyze_parser.add_argument('classifier', 
                                            type=str, required=True)
 skew_experiment_analyze_parser.add_argument('strategies', 
@@ -1300,7 +1317,7 @@ class SkewAnalyzeApi(Resource):
         sys.stdout.flush()
 
         args = skew_experiment_analyze_parser.parse_args()
-        selected_domain = args['domain']
+        selected_domains = [domain.lower() for domain in args['domain']]
         selected_classifier = args['classifier']
 
         strategies_to_include = args['strategies']
@@ -1330,6 +1347,8 @@ class SkewAnalyzeApi(Resource):
 
         statistics_output_file = open('statistics_output_file', 'w')
 
+        experiments_to_average = {}
+        
         for experiment in Experiment.objects:
 
             experiment_domain = pickle.loads(experiment.task_information)[0][0]
@@ -1343,7 +1362,7 @@ class SkewAnalyzeApi(Resource):
             print experiment.id
             sys.stdout.flush()
 
-            if not experiment_domain.lower() == selected_domain.lower():
+            if not experiment_domain.lower() in selected_domains:
                 continue
 
             if len(experiment_csc) >= 3:
@@ -1372,9 +1391,11 @@ class SkewAnalyzeApi(Resource):
                     selected_classifier.lower()):
                 continue
 
-            [precision_aoc, recall_aoc, f1_aoc, 
-             precision_std, recall_std, f1_std] = get_average_aoc(
-                 experiment.id)
+
+            
+            #[precision_aoc, recall_aoc, f1_aoc, 
+            # precision_std, recall_std, f1_std] = get_average_aoc(
+            #     experiment.id)
 
 
                 
@@ -1417,7 +1438,10 @@ class SkewAnalyzeApi(Resource):
                 statistics_output_file.write("%d" % experiment_skew)
                 [first_quartile_skews_avg, first_quartile_skews_std,
                  all_skews_avg, all_skews_std,
-                 last_quartile_skews_avg, last_quartile_skews_std] = analyze_statistics(experiment.id, statistics_output_file)
+                 last_quartile_skews_avg,
+                 last_quartile_skews_std] = analyze_statistics(
+                     experiment.id,
+                     statistics_output_file)
                     
                     #print "HERE ARE THE STATISTICS"
                     #print experiment_skew
@@ -1426,7 +1450,25 @@ class SkewAnalyzeApi(Resource):
                     #       last_quartile_skews_avg, last_quartile_skews_std]
                     #sys.stdout.flush()
 
-            starting_index = strategy_indexes[strategy_key] * 2 
+            if (strategy_key, experiment_skew) not in experiments_to_average:
+                experiments_to_average[(strategy_key, experiment_skew)] = []
+            experiments_to_average[(strategy_key,
+                                    experiment_skew)].append(experiment.id)
+
+
+        for (strategy_key, experiment_skew) in experiments_to_average.keys():
+
+            experiment_ids = experiments_to_average[(strategy_key,
+                                                     experiment_skew)]
+            
+            print "Averaging over %d domains" % len(experiment_ids)
+            sys.stdout.flush()
+            [precision_aoc, recall_aoc, f1_aoc, 
+             precision_std, recall_std, f1_std] = get_average_aoc(
+                 experiments_to_average[(strategy_key, experiment_skew)])
+
+            starting_index = strategy_indexes[strategy_key] * 2
+            """
             precision_curve += (
                 ("%f," % experiment_skew) + 
                 line_item[0:starting_index] +
@@ -1447,6 +1489,29 @@ class SkewAnalyzeApi(Resource):
                 ("%f" % f1_aoc) +
                 line_item[starting_index:starting_index+1] +
                 ("%f" % f1_std) +
+                line_item[starting_index+1:])
+            """
+            
+            precision_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % precision_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % 0) +
+                line_item[starting_index+1:])
+            recall_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % recall_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % 0) +
+                line_item[starting_index+1:])
+            f1_curve += (
+                ("%f," % experiment_skew) + 
+                line_item[0:starting_index] +
+                ("%f" % f1_aoc) +
+                line_item[starting_index:starting_index+1] +
+                ("%f" % 0) +
                 line_item[starting_index+1:])
 
 

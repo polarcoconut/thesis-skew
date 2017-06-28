@@ -2,7 +2,7 @@ from app import app
 import sys
 from mturk_connection import MTurk_Connection
 from api.crowdjs_util import get_next_assignment, submit_answer, submit_answers, get_answers
-from api.util import parse_answers, write_model_to_file, test
+from api.util import parse_answers, write_model_to_file, test, get_unlabeled_corpus
 from api.ml.extractors.cnn_core.test import test_cnn
 from random import shuffle
 import uuid
@@ -40,7 +40,9 @@ class MTurk_Connection_Super_Sim(MTurk_Connection):
 
         # If the gold extractor is a cached neural net and our 
         # generated data is from the crowd:
-        if not 'https' in job.gold_extractor:
+        # The other poosibilities are the gold_extractor is on the web,
+        # or the gold_extractor is a file name with / in it.
+        if not 'https' in job.gold_extractor and not '/' in job.gold_extractor:
             """
             generate_files = files_for_simulation[0]
             for generate_file in generate_files:
@@ -135,20 +137,10 @@ class MTurk_Connection_Super_Sim(MTurk_Connection):
             #########
             job = Job.objects.get(id=self.job_id)
 
-            while True:
-                try:
-                    r = requests.get(job.unlabeled_corpus).content
-                    break
-                except Exception:
-                    print "Exception while communicating with S3"
-                    print '-'*60
-                    traceback.print_exc(file=sys.stdout)
-                    print '-'*60
-                    sys.stdout.flush()
-                    time.sleep(60)
-                    continue
 
-            self.unlabeled_corpus = str(r).split('\n')
+
+            
+            self.unlabeled_corpus = get_unlabeled_corpus(job)
             shuffle(self.unlabeled_corpus)
 
             #self.generate_data = self.modify_data.keys()
@@ -166,9 +158,13 @@ class MTurk_Connection_Super_Sim(MTurk_Connection):
 
             print  job.gold_extractor
             sys.stdout.flush()
-            
-            gold_corpus = str(requests.get(
-                job.gold_extractor).content).split('\n')
+
+            if 'https' in job.gold_extractor:
+                gold_corpus = str(requests.get(
+                    job.gold_extractor).content).split('\n')
+            else:
+                gold_corpus = open(job.gold_extractor, 'r').read().split('\n')
+                
             for line in gold_corpus:
                 if line == "":
                     continue

@@ -14,7 +14,7 @@ from util import getLatestCheckpoint, split_examples, parse_answers, retrain, ge
 from crowdjs_util import get_answers, upload_questions
 from test_api import test_on_held_out_set, compute_performance_on_test_set
 import uuid
-
+from random import sample
 
 @app.celery.task(name='restart')
 def restart(job_id):
@@ -101,7 +101,9 @@ def gather_sim(task_information, budget, job_id, mturk_connection):
         
 
         #Bound the ratio of positives to negatives if so desired:
-        if 'constant-ratio' in  job.control_strategy:
+        if 'constant-ratio' in job.control_strategy and category_id == 2:
+            print "BOUNDING RATIO OF EXAMPLES"
+            sys.stdout.flush()
             (new_training_examples,
              new_training_labels) = bound_ratio_of_examples(
                  new_training_examples, new_training_labels)
@@ -214,6 +216,9 @@ def get_next_batch(task_ids, task_categories,
     sys.stdout.flush()
 
 
+    if '-constant-ratio' in control_strategy:
+        control_strategy = control_strategy.replace('-constant-ratio', '')
+        
     if control_strategy == 'guided-learning':
         return guided_learning_controller(task_ids,
                                       task_categories, training_examples,

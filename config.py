@@ -143,17 +143,6 @@ class Config(object):
     CELERYD_PREFETCH_MULTIPLIER = 1
     CELERY_ACKS_LATE = True
 
-    UCI_NEWS_AGGREGATOR_HEALTH = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_corpus'
-    UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/health_labeled_corpus'
-
-    UCI_NEWS_AGGREGATOR_ENT = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/ent_corpus'
-    UCI_NEWS_AGGREGATOR_ENT_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/ent_labeled_corpus'
-
-    UCI_NEWS_AGGREGATOR_BUS = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/bus_corpus'
-    UCI_NEWS_AGGREGATOR_BUS_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/bus_labeled_corpus'
-
-    UCI_NEWS_AGGREGATOR_SCI = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/sci_corpus'
-    UCI_NEWS_AGGREGATOR_SCI_LABELED = 'https://s3-us-west-2.amazonaws.com/extremest-extraction-uci-news-aggregator-data/sci_labeled_corpus'
     
 
     EXPERIMENT_WORKER_ACC = 1.0
@@ -188,9 +177,18 @@ class DevelopmentConfig(Config):
         },
     }
 
-    #TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-2k'
-    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-270k'
 
+    UCI_NEWS_AGGREGATOR_HEALTH = 'data/health_corpus'
+    UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'data/health_labeled_corpus'
+
+    UCI_NEWS_AGGREGATOR_ENT = 'data/ent_corpus'
+    UCI_NEWS_AGGREGATOR_ENT_LABELED = 'data/ent_labeled_corpus'
+
+    UCI_NEWS_AGGREGATOR_BUS = 'data/bus_corpus'
+    UCI_NEWS_AGGREGATOR_BUS_LABELED = 'data/bus_labeled_corpus'
+
+    UCI_NEWS_AGGREGATOR_SCI = 'data/sci_corpus'
+    UCI_NEWS_AGGREGATOR_SCI_LABELED = 'data/sci_labeled_corpus'
 
     
 
@@ -218,5 +216,3 @@ class Production(Config):
             'args': ()
         },
     }
-    TACKBP_NW_09_CORPUS_URL = 'https://s3-us-west-2.amazonaws.com/tac-kbp-2009/sentences.meta-sentencesonly-no-liu-et-al-naacl2016-test-set-270k'
-
