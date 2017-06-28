@@ -55,7 +55,9 @@ AWS_SECRET_ACCESS_KEY = YOUR_ACS_SECRET_ACCESS_KEY_HERE
 
 -Control strategies that correspond to algorithms in the thesis: MB-CB(Active) is ucb-us-constant-ratio. MB-T(Active) is thompson-us-constant-ratio. Label-Only(Active) is label-only-us-constant-ratio. Round-Robin is round-robin-us-constant-ratio. GL is Guided Learning. GL-Hybrid is hybrid-5e-1.
 
-- Go to `/analyze` to view graphs. Skew-Analyze! will show average AUCs for each skew. Draw Individual Learning Curve will show the learning curves for each strategy for a single skew. Drawing graphs is slow, because the code is stupid. Be patient.
+- Go to `/analyze` to view graphs. Skew-Analyze! will show average AUCs for each skew. Draw Individual Learning Curve will show the learning curves for each strategy for a single skew. Drawing graphs is slow, because the code is stupid. Be patient. To reproduce graphs, select strategies Round-Robin-US-Bounded-Ratio, USLabel-Only-Bounded-Ratio, UCB(GenPos-LabelActiveBR)-1.0-1.0, Thompson(GenPos-LabelActiveBR)-1.0-1.0, Guided-Learning, and Hybrid-5e-1.
+
+
 
 
 ## Training Data
