@@ -43,10 +43,20 @@ class Config(object):
     #It used to be 1.0
     UCB_SMOOTHING_PARAMETER = 1.0
 
-    CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
-    CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']
+    if 'CROWDJS_API_KEY' not in os.environ:
+        CROWDJS_API_KEY = 'FAKE_API_KEY'
+    else:
+        CROWDJS_API_KEY = os.environ['CROWDJS_API_KEY']
 
-    CROWDJS_BASE_URL = os.environ['CROWDJS_BASE_URL']
+    if 'CROWDJS_REQUESTER_ID' not in os.environ:
+        CROWDJS_REQUESTER_ID = 'FAKE_REQUESTER_ID'
+    else:
+        CROWDJS_REQUESTER_ID = os.environ['CROWDJS_REQUESTER_ID']
+
+    if 'CROWDJS_BASE_URL' not in os.environ:
+        CROWDJS_BASE_URL = 'FAKE_CROWDJS_BASE_URL'
+    else:
+        CROWDJS_BASE_URL = os.environ['CROWDJS_BASE_URL']
     CROWDJS_GET_ANSWERS_URL = CROWDJS_BASE_URL + '/answers'
     CROWDJS_SUBMIT_ANSWER_URL = CROWDJS_BASE_URL + '/answers'
     CROWDJS_SUBMIT_BATCH_ANSWER_URL = CROWDJS_BASE_URL + '/answers2'
@@ -60,9 +70,13 @@ class Config(object):
     CROWDJS_RETURN_HIT_URL =  CROWDJS_BASE_URL + '/requeue'
     CROWDJS_ASSIGN_URL =  CROWDJS_BASE_URL + '/assign_next_question'
 
-    EE_BASE_URL = os.environ['EE_BASE_URL']
+    if 'EE_BASE_URL' not in os.environ:
+        EE_BASE_URL = 'FAKE_EE_BASE_URL'
+    else:
+        EE_BASE_URL = os.environ['EE_BASE_URL']
+        
     SUBMIT_TABOO_URL = EE_BASE_URL + '/taboo'
-
+    
     
     AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
     AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']

@@ -1465,7 +1465,19 @@ class SkewAnalyzeApi(Resource):
                  experiments_to_average[(strategy_key, experiment_skew)])
 
             starting_index = strategy_indexes[strategy_key] * 2
-            """
+
+
+
+            ####
+            # THIS IS A HACK TO DISPLAY ZERO POINTS ON LOG-SCALE FOR DYGRAPHS
+            ####
+            if abs(precision_aoc) <= 0.000001:
+                precision_aoc = 0.001
+            if abs(recall_aoc) <= 0.000001:
+                recall_aoc = 0.001
+            if abs(f1_aoc) <= 0.00001:
+                f1_aoc = 0.001
+                    
             precision_curve += (
                 ("%f," % experiment_skew) + 
                 line_item[0:starting_index] +
@@ -1487,8 +1499,12 @@ class SkewAnalyzeApi(Resource):
                 line_item[starting_index:starting_index+1] +
                 ("%f" % f1_std) +
                 line_item[starting_index+1:])
-            """
             
+
+
+            #USE THESE IF YOU WANT TO DISPLAY LOG SCALE ON THE Y-AXIS
+            #BECAUSE IT CANT SHOW CONFIDENCE INTERVALS
+            """
             precision_curve += (
                 ("%f," % experiment_skew) + 
                 line_item[0:starting_index] +
@@ -1510,9 +1526,9 @@ class SkewAnalyzeApi(Resource):
                 line_item[starting_index:starting_index+1] +
                 ("%f" % 0) +
                 line_item[starting_index+1:])
-
-
-            print (strategy_key, experiment_skew, f1_aoc)
+            """
+            
+            print (strategy_key, experiment_skew, f1_aoc, f1_std)
             sys.stdout.flush()
             
 

@@ -230,7 +230,8 @@ ed.js"></script>
                     legend: 'always',
 		    labelsDiv: 'precision_legend',
 		    drawPoints:true,
-		    connectSeparatedPoints: true,
+						  connectSeparatedPoints: true,
+						  sigma: 1.0,
                 }
             );
             g_recall = new Dygraph(
@@ -243,7 +244,8 @@ ed.js"></script>
                     legend: 'always',
 		    labelsDiv: 'recall_legend',
 		    drawPoints:true,
-		    connectSeparatedPoints: true,
+						  connectSeparatedPoints: true,
+						  sigma: 1.0,
 
                 }
             );
@@ -257,7 +259,8 @@ ed.js"></script>
                     legend: 'always',
 		    labelsDiv: 'f1_legend',
 		    drawPoints:true,
-		    connectSeparatedPoints: true
+						  connectSeparatedPoints: true,
+						  sigma: 1.0,
 
 		}
 	    );
@@ -352,7 +355,10 @@ ed.js"></script>
 		    connectSeparatedPoints: true,
 					       drawPoints:true,
 					       drawAxesAtZero: true,
-					       logscale: true,
+						  logscale: false,
+						  errorBars: true,
+						  sigma: 1.0,
+						  //strokeBorderWidth: 1,
 
                 }
             );
@@ -370,8 +376,11 @@ ed.js"></script>
 		    connectSeparatedPoints: true,
 		    drawPoints:true,
 
-					       drawAxesAtZero: true,
-					       logscale : true,
+					       drawAxesAtZero:true,
+						  logscale: false,
+						  errorBars: true,
+						  sigma: 1.0,
+	  					  //strokeBorderWidth: 1,
 
                 }
             );
@@ -381,7 +390,7 @@ ed.js"></script>
 					       {
 					       		    colors:['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#000000'],
 
-                    errorBars: true,
+
                     xlabel: 'Skew: Number of Negatives Per Positive',
                     ylabel: 'F1 AOC',
                     legend: 'always',
@@ -389,7 +398,10 @@ ed.js"></script>
 					       connectSeparatedPoints: true,
 					       drawPoints:true,
 					       drawAxesAtZero: true,
-					       logscale: true,
+						  logscale: false,
+						  errorBars: true,
+						  sigma: 1.0,
+						  //strokeBorderWidth: 1,
 
 		}
 	    );
