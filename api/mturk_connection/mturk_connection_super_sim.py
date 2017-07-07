@@ -98,7 +98,14 @@ class MTurk_Connection_Super_Sim(MTurk_Connection):
             
             generate_files = files_for_simulation[0]
             for generate_file in generate_files:
-                generate_file_handle = urllib2.urlopen(generate_file)
+
+                if 'https' in generate_file:
+                    generate_file_handle = str(requests.get(
+                        generate_file).content)
+                else:
+                    generate_file_handle = open(generate_file, 'r')
+
+                #generate_file_handle = urllib2.urlopen(generate_file)
                 for line in generate_file_handle:
                     self.generate_data.append(line.rstrip())
                         

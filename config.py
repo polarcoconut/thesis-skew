@@ -192,17 +192,17 @@ class DevelopmentConfig(Config):
     }
 
 
-    UCI_NEWS_AGGREGATOR_HEALTH = 'data/health_corpus'
-    UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'data/health_labeled_corpus'
+    #UCI_NEWS_AGGREGATOR_HEALTH = 'data/health_corpus'
+    #UCI_NEWS_AGGREGATOR_HEALTH_LABELED = 'data/health_labeled_corpus'
 
-    UCI_NEWS_AGGREGATOR_ENT = 'data/ent_corpus'
-    UCI_NEWS_AGGREGATOR_ENT_LABELED = 'data/ent_labeled_corpus'
+    #UCI_NEWS_AGGREGATOR_ENT = 'data/ent_corpus'
+    #UCI_NEWS_AGGREGATOR_ENT_LABELED = 'data/ent_labeled_corpus'
 
-    UCI_NEWS_AGGREGATOR_BUS = 'data/bus_corpus'
-    UCI_NEWS_AGGREGATOR_BUS_LABELED = 'data/bus_labeled_corpus'
+    #UCI_NEWS_AGGREGATOR_BUS = 'data/bus_corpus'
+    #UCI_NEWS_AGGREGATOR_BUS_LABELED = 'data/bus_labeled_corpus'
 
-    UCI_NEWS_AGGREGATOR_SCI = 'data/sci_corpus'
-    UCI_NEWS_AGGREGATOR_SCI_LABELED = 'data/sci_labeled_corpus'
+    #UCI_NEWS_AGGREGATOR_SCI = 'data/sci_corpus'
+    #UCI_NEWS_AGGREGATOR_SCI_LABELED = 'data/sci_labeled_corpus'
 
     
 

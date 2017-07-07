@@ -51,6 +51,8 @@ AWS_SECRET_ACCESS_KEY = YOUR_ACS_SECRET_ACCESS_KEY_HERE
 
 
 ## Usage
+
+- First create a top-level directory called `temp_datasets`. Then, go to https://archive.ics.uci.edu/ml/datasets/News+Aggregator, download the data folder, and copy the file newsCorpora.csv into temp_datasets.
 - Go to `/index.html` to run an experiment. To reproduce graphs in the thesis, choose one of Health, Entertainment, Business, Science, Health_real, Entertainment_real, Business_real, Science_real, as the domain. Set the total budget to be 100, choose a control strategy, set the number of simulations to be 10, and set the skews to be 1,99,249,499,799,999. It will take awhile to run. If you want to run something fast, pick a strategy like round-robin-US, set the number ofsimulations to 1 and pick a single skew, like 99. Then click Experiment!
 
 -Control strategies that correspond to algorithms in the thesis: MB-CB(Active) is ucb-us-constant-ratio. MB-T(Active) is thompson-us-constant-ratio. Label-Only(Active) is label-only-us-constant-ratio. Round-Robin is round-robin-us-constant-ratio. GL is Guided Learning. GL-Hybrid is hybrid-5e-1.

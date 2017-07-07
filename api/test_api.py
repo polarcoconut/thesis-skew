@@ -72,36 +72,53 @@ def test_on_held_out_set(job_id, positive_types, test_set):
         #Otherwise, if the test set contains urls
         (positive_testing_examples_url,
          negative_testing_examples_url) = test_set
-        while True:
-            try:
-                r = requests.get(positive_testing_examples_url).content
-                break
-            except Exception:
-                print "Exception while communicating with S3"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(60)
-                continue
-                    
+
+
+        #print positive_testing_examples_url
+        #print 'https' in positive_testing_examples_url
+        #sys.stdout.flush()        
+        if 'https' in positive_testing_examples_url:
+            while True:
+                try:
+                    r = requests.get(positive_testing_examples_url).content
+                    break
+                except Exception:
+                    print "Exception while communicating with S3"
+                    print '-'*60
+                    traceback.print_exc(file=sys.stdout)
+                    print '-'*60
+                    sys.stdout.flush()
+                    time.sleep(60)
+                    continue
+        else:
+            file_handle = open(positive_testing_examples_url, 'r')
+            r = file_handle.read()
+            file_handle.close()
+
         test_positive_examples = str(r).split('\n')
 
-        while True:
-            try:
-                r = requests.get(negative_testing_examples_url).content
-                break
-            except Exception:
-                print "Exception while communicating with S3"
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                sys.stdout.flush()
-                time.sleep(60)
-                continue
+        if 'https' in negative_testing_examples_url:
+            while True:
+                try:
+                    r = requests.get(negative_testing_examples_url).content
+                    break
+                except Exception:
+                    print "Exception while communicating with S3"
+                    print '-'*60
+                    traceback.print_exc(file=sys.stdout)
+                    print '-'*60
+                    sys.stdout.flush()
+                    time.sleep(60)
+                    continue
+        else:
+            file_handle = open(negative_testing_examples_url, 'r')
+            r = file_handle.read()
+            file_handle.close()
                     
         test_negative_examples = str(r).split('\n')
+        
 
+        
         test_examples = test_positive_examples + test_negative_examples
         test_labels = ([1 for e in test_positive_examples] +
                        [0 for e in test_negative_examples])

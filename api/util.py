@@ -771,8 +771,9 @@ def get_unlabeled_corpus(job):
                     time.sleep(10)
                     continue
     else:
-        corpus = open(job.unlabeled_corpus, 'r').read().split('\n')        
-        
+        file_handle = open(job.unlabeled_corpus, 'r')
+        corpus = file_handle.read().split('\n')        
+        file_handle.close()
 
     return corpus
 

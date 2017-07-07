@@ -296,6 +296,7 @@ def generate_dataset(interested_category,
     output_file_negative_testing_examples.close()
 
 
+    """
     s3 = S3Connection(app.config['AWS_ACCESS_KEY_ID'],
                       app.config['AWS_SECRET_ACCESS_KEY'])
 
@@ -331,18 +332,28 @@ def generate_dataset(interested_category,
     s3_key.set_contents_from_filename(filename_negative_testing_examples)
     s3_key.make_public()
     negative_testing_examples_url = s3_key.generate_url(3600000)
-
+    """
     
-    #Delete all the temp files
-    os.remove(filename_positive_crowd_examples)
-    os.remove(filename_negative_crowd_examples)
+
+    return [filename_positive_crowd_examples,
+            filename_negative_crowd_examples,
+            filename_unlabeled_corpus,
+            filename_labeled_corpus,
+            filename_positive_testing_examples,
+            filename_negative_testing_examples]
+    #return [positive_crowd_examples_url, negative_crowd_examples_url,
+    #        unlabeled_corpus_url, labeled_corpus_url,
+    #        positive_testing_examples_url, negative_testing_examples_url]
+
+
+
+    """
+#Delete all the temp files
+os.remove(filename_positive_crowd_examples)
+os.remove(filename_negative_crowd_examples)
     os.remove(filename_unlabeled_corpus)
     os.remove(filename_labeled_corpus)
     os.remove(filename_positive_testing_examples)
     os.remove(filename_negative_testing_examples)
     
-    
-    return [positive_crowd_examples_url, negative_crowd_examples_url,
-            unlabeled_corpus_url, labeled_corpus_url,
-            positive_testing_examples_url, negative_testing_examples_url]
-
+    """
